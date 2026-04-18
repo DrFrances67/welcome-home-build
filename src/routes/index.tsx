@@ -1,26 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { TheTechSavvyTeacherApp } from "@/components/TheTechSavvyTeacherApp";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "The Tech Savvy Teacher — AI Tools for Educators" },
+      {
+        name: "description",
+        content:
+          "Generate differentiated lesson plans, build print-ready worksheets aligned to NY Standards, and polish professional emails — all in one AI-powered toolkit for teachers.",
+      },
+      { property: "og:title", content: "The Tech Savvy Teacher" },
+      {
+        property: "og:description",
+        content:
+          "AI-powered lesson plans, worksheet builder, and professional email assistant for teachers.",
+      },
+      { property: "og:type", content: "website" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
 function Index() {
-  return <PlaceholderIndex />;
+  return <TheTechSavvyTeacherApp />;
 }
