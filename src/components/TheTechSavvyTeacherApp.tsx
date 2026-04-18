@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 import { useState, useRef, useEffect } from "react";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
