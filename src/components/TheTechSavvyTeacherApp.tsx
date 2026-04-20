@@ -2380,8 +2380,10 @@ export function WorksheetBuilder() {
 
   const insertStandard = (std, showHeader = true) => {
     if (!showHeader) return; // standard used for context only — no element inserted
-    const el = { id: uid(), type: "instruction", text: `📌 NYS Standard ${std.code}: ${std.desc}` };
-    setWs(p => ({ ...p, elements: [el, ...p.elements] }));
+    // Header spans full width at top of page
+    const el = { id: uid(), type: "instruction", text: `📌 NYS Standard ${std.code}: ${std.desc}`, x: 0, y: 0, widthOverride: 100 };
+    // Push existing elements down to make room
+    setWs(p => ({ ...p, elements: [el, ...p.elements.map(e => ({ ...e, y: (e.y || 0) + ROW_HEIGHT }))] }));
     setSelId(el.id);
   };
 
