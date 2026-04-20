@@ -2452,7 +2452,8 @@ Include a variety of activity types. Make the content directly address the stand
   };
 
   const addGeneratedImage = (url) => {
-    const el = mkEl("image"); el.url = url; el.caption = ""; el.size = "small"; el.align = "left";
+    const slot = nextSlot(ws.elements.length);
+    const el = mkEl("image", slot); el.url = url; el.caption = ""; el.size = "small"; el.align = "left";
     setWs(p => ({ ...p, elements: [...p.elements, el] })); setSelId(el.id); setRightTab("edit");
   };
 
