@@ -721,7 +721,7 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 // ELEMENT VIEW
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ElView({ el, gv, selected, onClick, onResize, onDelete }) {
+function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
   const elFamily  = (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Nunito', sans-serif";
@@ -731,15 +731,21 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete }) {
   const elAlign   = el.textAlign || undefined;
 
   const wrap = {
-    position: "relative", marginBottom: 16,
-    cursor: "pointer",
+    position: "absolute",
+    left: `${el.x ?? 0}%`,
+    top: (el.y ?? 0),
+    width: `${el.widthOverride ?? 32}%`,
+    cursor: "move",
     outline: selected ? `2px solid ${gv.color}` : "2px solid transparent",
     outlineOffset: 2,
     borderRadius: 8, padding: "6px 6px 14px 6px",
+    background: "white",
     transition: "outline 0.1s",
     minHeight: el.heightOverride || undefined,
-    width: el.widthOverride ? `${el.widthOverride}%` : undefined,
+    boxSizing: "border-box",
   };
+
+  const handleMouseDown = (e) => { onDragStart && onDragStart(e, el.id); };
 
   // ── Delete button — top-right, visible on hover or when selected ──
   const DeleteBtn = () => (
