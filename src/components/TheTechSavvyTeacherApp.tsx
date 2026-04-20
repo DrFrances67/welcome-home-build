@@ -2314,7 +2314,7 @@ export function WorksheetBuilder() {
 
   const setF = (k, v) => setWs(p => ({ ...p, [k]: v }));
   const addEl = (type) => {
-    const el = mkEl(type);
+    const el = mkEl(type, nextSlot(ws.elements.length));
     setWs(p => ({ ...p, elements: [...p.elements, el] }));
     setSelId(el.id); setRightTab("edit");
     announce(`${PALETTE.find(p => p.type === type)?.label || type} element added`);
