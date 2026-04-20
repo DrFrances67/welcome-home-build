@@ -2432,12 +2432,16 @@ Include a variety of activity types. Make the content directly address the stand
       const raw = data.content?.map(b => b.text || "").join("") || "[]";
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      const newEls = parsed.map(el => ({ ...mkEl(el.type), ...el, id: uid() }));
+      const startIdx = showHeader ? 1 : 0; // reserve slot 0 for header row
+      const newEls = parsed.map((el, i) => {
+        const slot = nextSlot(startIdx + i);
+        return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride };
+      });
       setWs(p => ({
         ...p,
         title: p.title === "My Worksheet" ? `${std.code} Worksheet` : p.title,
         elements: showHeader
-          ? [p.elements[0], ...newEls].filter(Boolean)   // keep the header we just inserted
+          ? [{ ...p.elements[0], y: 0, x: 0, widthOverride: 100 }, ...newEls].filter(Boolean)
           : newEls
       }));
       setSelId(null);
