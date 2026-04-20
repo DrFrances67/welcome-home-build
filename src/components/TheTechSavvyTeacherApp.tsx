@@ -491,8 +491,24 @@ const PALETTE = [
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const mkEl = (type) => {
+// 3-col grid placement helpers — paper inner width ≈ 632px
+const COLS = 3;
+const COL_GAP_PCT = 2;                  // % gap between columns
+const COL_W_PCT = (100 - COL_GAP_PCT * (COLS - 1)) / COLS; // ≈ 32%
+const ROW_HEIGHT = 220;                 // px per row when auto-placing
+const nextSlot = (count) => {
+  const col = count % COLS;
+  const row = Math.floor(count / COLS);
+  return {
+    x: col * (COL_W_PCT + COL_GAP_PCT), // % from left
+    y: row * ROW_HEIGHT,                // px from top
+    widthOverride: Math.round(COL_W_PCT),
+  };
+};
+
+const mkEl = (type, slot) => {
   const id = uid();
+  const pos = slot || { x: 0, y: 0, widthOverride: Math.round(COL_W_PCT) };
   const map = {
     instruction:    { id, type, text: "Look at each item carefully. Follow the directions below." },
     text:           { id, type, text: "Enter your text content here. This block will scale with your selected grade level." },
