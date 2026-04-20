@@ -2376,6 +2376,42 @@ export function WorksheetBuilder() {
     window.addEventListener("mouseup", onUp);
   };
 
+  // ── Free-position drag — move element anywhere on the page ─────────
+  const dragRef = useRef(null);
+  const handleDragStart = (e, elId) => {
+    // Don't start drag from interactive children (resize handles, delete btn, inputs)
+    const tgt = e.target;
+    if (tgt.closest && (tgt.closest("[data-resize-handle]") || tgt.closest("[data-delete-btn]") || tgt.closest("input,textarea,select,button,a"))) return;
+    e.preventDefault();
+    const el = ws.elements.find(x => x.id === elId);
+    if (!el) return;
+    const paperWidth = 632;
+    dragRef.current = {
+      elId,
+      startX: e.clientX, startY: e.clientY,
+      startElX: el.x || 0,                // %
+      startElY: el.y || 0,                // px
+      paperWidth,
+    };
+    setSelId(elId);
+    const onMove = (mv) => {
+      if (!dragRef.current) return;
+      const { startX, startY, startElX, startElY, paperWidth } = dragRef.current;
+      const dxPct = ((mv.clientX - startX) / paperWidth) * 100;
+      const dyPx  = mv.clientY - startY;
+      const newX = Math.max(0, Math.min(100, startElX + dxPct));
+      const newY = Math.max(0, startElY + dyPx);
+      updEl(elId, { x: newX, y: newY });
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   const [generating, setGenerating] = useState(false);
 
   const insertStandard = (std, showHeader = true) => {
