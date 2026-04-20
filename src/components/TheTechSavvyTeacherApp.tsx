@@ -3185,8 +3185,6 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
 
   // Google Docs: write text into a visible textarea the user can select-all + copy,
   // then link them to docs.new — no blob URLs needed, works in all CSP environments
-  const [showGdocsBox, setShowGdocsBox] = useState(false);
-
   const exportToGoogleDocs = () => {
     if (!result) return;
     setShowGdocsBox(true);
