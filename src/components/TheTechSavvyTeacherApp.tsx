@@ -2657,19 +2657,28 @@ Include a variety of activity types. Make the content directly address the stand
               </div>
             </div>
 
-            {/* Elements */}
+            {/* Free-position canvas — elements absolutely positioned, draggable */}
             {ws.elements.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
                 <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
                 <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>Your worksheet is empty</p>
-                <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Browse NY Standards · Generate AI images · Get ideas from AI Help</p>
+                <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
               </div>
-            ) : ws.elements.map(el => (
-              <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
-                onClick={() => { setSelId(el.id); setRightTab("edit"); }}
-                onResize={handleResizeStart}
-                onDelete={(id) => delEl(id)} />
-            ))}
+            ) : (
+              <div style={{
+                position: "relative",
+                width: "100%",
+                minHeight: Math.max(700, ...ws.elements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
+              }}>
+                {ws.elements.map(el => (
+                  <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
+                    onClick={() => { setSelId(el.id); setRightTab("edit"); }}
+                    onResize={handleResizeStart}
+                    onDragStart={handleDragStart}
+                    onDelete={(id) => delEl(id)} />
+                ))}
+              </div>
+            )}
           </div>
         </main>
 
