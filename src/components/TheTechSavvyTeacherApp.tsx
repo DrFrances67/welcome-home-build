@@ -750,7 +750,9 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   // ── Delete button — top-right, visible on hover or when selected ──
   const DeleteBtn = () => (
     <button
+      data-delete-btn
       className="el-delete-btn"
+      onMouseDown={e => e.stopPropagation()}
       onClick={e => { e.stopPropagation(); onDelete && onDelete(el.id); }}
       aria-label="Delete element"
       title="Delete element"
