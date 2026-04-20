@@ -528,7 +528,8 @@ const mkEl = (type, slot) => {
                       ], layout:"2-col" },
     divider:        { id, type },
   };
-  return map[type] || { id, type };
+  const base = map[type] || { id, type };
+  return { ...pos, ...base };
 };
 
 const PRINT_CSS = `
