@@ -743,6 +743,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     transition: "outline 0.1s",
     minHeight: el.heightOverride || undefined,
     boxSizing: "border-box",
+    touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
   const handleMouseDown = (e) => { onDragStart && onDragStart(e, el.id); };
@@ -752,7 +753,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     <button
       data-delete-btn
       className="el-delete-btn"
-      onMouseDown={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
       onClick={e => { e.stopPropagation(); onDelete && onDelete(el.id); }}
       aria-label="Delete element"
       title="Delete element"
@@ -775,29 +776,29 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   const ResizeHandles = () => !selected ? null : (
     <>
       {/* Bottom */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "bottom"); }}
-        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:48, height:8, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "bottom"); }}
+        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:48, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:36, height:4, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Top */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "top"); }}
-        style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:48, height:8, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "top"); }}
+        style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:48, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:36, height:4, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Right */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "right"); }}
-        style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:8, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "right"); }}
+        style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:14, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:4, height:36, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Left */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "left"); }}
-        style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:8, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "left"); }}
+        style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:14, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:4, height:36, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Bottom-right corner */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "corner"); }}
-        style={{ position:"absolute", bottom:0, right:0, width:16, height:16, cursor:"nwse-resize", zIndex:11 }}>
-        <svg width="12" height="12" viewBox="0 0 12 12" style={{ position:"absolute", bottom:3, right:3 }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "corner"); }}
+        style={{ position:"absolute", bottom:0, right:0, width:22, height:22, cursor:"nwse-resize", zIndex:11, touchAction:"none" }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" style={{ position:"absolute", bottom:5, right:5 }}>
           <path d="M2,10 L10,2 M6,10 L10,6 M10,10 L10,10" stroke={gv.color} strokeWidth="2" strokeLinecap="round"/>
         </svg>
       </div>
