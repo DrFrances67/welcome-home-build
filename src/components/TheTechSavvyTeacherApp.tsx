@@ -806,14 +806,14 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "instruction") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <div style={{ fontSize: Math.max(fs - 6, 12), fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: "10px 16px", borderRadius: 8, borderLeft: `5px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "text") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
       <DeleteBtn /><ResizeHandles />
     </div>
@@ -827,7 +827,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
     return (
-      <div className="ws-element" style={containerStyle} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+      <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.url ? (
           <img src={el.url} alt={el.caption || "Worksheet illustration"} style={{ ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" }} />
         ) : (
@@ -851,7 +851,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   }
 
   if (el.type === "blank") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Write lines element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Write lines element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.label && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 10px 0", fontFamily: elFamily, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.label}</p>}
       {Array.from({ length: el.lines || 3 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH, borderBottom: "2px solid #D1D5DB", marginBottom: 6 }} />)}
       <DeleteBtn /><ResizeHandles />
@@ -859,7 +859,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "wordBank") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF, letterSpacing: 0.3 }}>{el.title}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 14px", background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25` }}>
         {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "4px 14px", border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827" }}>{w}</span>)}
@@ -869,7 +869,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "matching") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily }}>{el.title}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 6, alignItems: "center" }}>
         {(el.left || []).map((item, i) => (
@@ -885,7 +885,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "multipleChoice") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 5px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
       {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 12px 0", fontFamily: F }}>{el.note}</p>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -901,7 +901,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "truefalse") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
       {(el.statements || []).map((stmt, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, padding: "8px 12px", background: gv.light, borderRadius: 8 }}>
@@ -916,7 +916,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "shortAnswer") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
       {Array.from({ length: el.lines || 4 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 }} />)}
       <DeleteBtn /><ResizeHandles />
@@ -924,7 +924,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "fillBlank") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 8px 0", fontFamily: F }}>{el.note}</p>}
       <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign }}>
         {(el.text || "").split("______").map((part, i, arr) => (
@@ -936,7 +936,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "essay") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.prompt}</p>
         {el.points && <span style={{ fontSize: Math.max(fs - 6, 10), fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12, fontFamily: F, padding: "3px 9px", border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
@@ -947,7 +947,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "table") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: Math.max(fs - 4, 11), fontFamily: elFamily }} role="table">
         <thead>
@@ -964,7 +964,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "divider") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="separator" tabIndex={0} aria-label="Section divider" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="separator" tabIndex={0} aria-label="Section divider" onKeyDown={e => e.key === "Enter" && onClick()}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
         <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, transparent, ${gv.color}35)` }} />
         <span aria-hidden="true" style={{ fontSize: 14, color: gv.color + "80" }}>✦</span>
@@ -979,7 +979,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const cols = colMap[el.layout] || 2;
     const fs = el.fontSizeOverride || gv.fontSize;
     return (
-      <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Custom shapes element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Custom shapes element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.title && <p style={{ fontSize: Math.max(fs - 1, 12), fontWeight: 700, color: "#111827", margin: "0 0 12px 0", fontFamily: (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Inter',sans-serif" }}>{el.title}</p>}
         <div style={{ display:"grid", gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:16, alignItems:"start" }}>
           {shapes.map((s, i) => (
