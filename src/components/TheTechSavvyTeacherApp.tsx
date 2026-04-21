@@ -743,6 +743,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     transition: "outline 0.1s",
     minHeight: el.heightOverride || undefined,
     boxSizing: "border-box",
+    touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
   const handleMouseDown = (e) => { onDragStart && onDragStart(e, el.id); };
@@ -752,7 +753,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     <button
       data-delete-btn
       className="el-delete-btn"
-      onMouseDown={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
       onClick={e => { e.stopPropagation(); onDelete && onDelete(el.id); }}
       aria-label="Delete element"
       title="Delete element"
@@ -775,29 +776,29 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   const ResizeHandles = () => !selected ? null : (
     <>
       {/* Bottom */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "bottom"); }}
-        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:48, height:8, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "bottom"); }}
+        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:48, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:36, height:4, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Top */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "top"); }}
-        style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:48, height:8, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "top"); }}
+        style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:48, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:36, height:4, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Right */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "right"); }}
-        style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:8, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "right"); }}
+        style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:14, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:4, height:36, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Left */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "left"); }}
-        style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:8, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "left"); }}
+        style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:14, height:48, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:4, height:36, borderRadius:2, background:gv.color+"90" }} />
       </div>
       {/* Bottom-right corner */}
-      <div onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "corner"); }}
-        style={{ position:"absolute", bottom:0, right:0, width:16, height:16, cursor:"nwse-resize", zIndex:11 }}>
-        <svg width="12" height="12" viewBox="0 0 12 12" style={{ position:"absolute", bottom:3, right:3 }}>
+      <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "corner"); }}
+        style={{ position:"absolute", bottom:0, right:0, width:22, height:22, cursor:"nwse-resize", zIndex:11, touchAction:"none" }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" style={{ position:"absolute", bottom:5, right:5 }}>
           <path d="M2,10 L10,2 M6,10 L10,6 M10,10 L10,10" stroke={gv.color} strokeWidth="2" strokeLinecap="round"/>
         </svg>
       </div>
@@ -805,14 +806,14 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "instruction") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <div style={{ fontSize: Math.max(fs - 6, 12), fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: "10px 16px", borderRadius: 8, borderLeft: `5px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "text") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
       <DeleteBtn /><ResizeHandles />
     </div>
@@ -826,7 +827,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
     return (
-      <div className="ws-element" style={containerStyle} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+      <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.url ? (
           <img src={el.url} alt={el.caption || "Worksheet illustration"} style={{ ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" }} />
         ) : (
@@ -850,7 +851,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   }
 
   if (el.type === "blank") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Write lines element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Write lines element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.label && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 10px 0", fontFamily: elFamily, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.label}</p>}
       {Array.from({ length: el.lines || 3 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH, borderBottom: "2px solid #D1D5DB", marginBottom: 6 }} />)}
       <DeleteBtn /><ResizeHandles />
@@ -858,7 +859,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "wordBank") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF, letterSpacing: 0.3 }}>{el.title}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 14px", background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25` }}>
         {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "4px 14px", border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827" }}>{w}</span>)}
@@ -868,7 +869,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "matching") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily }}>{el.title}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 6, alignItems: "center" }}>
         {(el.left || []).map((item, i) => (
@@ -884,7 +885,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "multipleChoice") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 5px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
       {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 12px 0", fontFamily: F }}>{el.note}</p>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -900,7 +901,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "truefalse") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
       {(el.statements || []).map((stmt, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, padding: "8px 12px", background: gv.light, borderRadius: 8 }}>
@@ -915,7 +916,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "shortAnswer") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
       {Array.from({ length: el.lines || 4 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 }} />)}
       <DeleteBtn /><ResizeHandles />
@@ -923,7 +924,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "fillBlank") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 8px 0", fontFamily: F }}>{el.note}</p>}
       <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign }}>
         {(el.text || "").split("______").map((part, i, arr) => (
@@ -935,7 +936,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "essay") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.prompt}</p>
         {el.points && <span style={{ fontSize: Math.max(fs - 6, 10), fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12, fontFamily: F, padding: "3px 9px", border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
@@ -946,7 +947,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "table") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: Math.max(fs - 4, 11), fontFamily: elFamily }} role="table">
         <thead>
@@ -963,7 +964,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   );
 
   if (el.type === "divider") return (
-    <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="separator" tabIndex={0} aria-label="Section divider" onKeyDown={e => e.key === "Enter" && onClick()}>
+    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="separator" tabIndex={0} aria-label="Section divider" onKeyDown={e => e.key === "Enter" && onClick()}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
         <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, transparent, ${gv.color}35)` }} />
         <span aria-hidden="true" style={{ fontSize: 14, color: gv.color + "80" }}>✦</span>
@@ -978,7 +979,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const cols = colMap[el.layout] || 2;
     const fs = el.fontSizeOverride || gv.fontSize;
     return (
-      <div className="ws-element" style={wrap} onMouseDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Custom shapes element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Custom shapes element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.title && <p style={{ fontSize: Math.max(fs - 1, 12), fontWeight: 700, color: "#111827", margin: "0 0 12px 0", fontFamily: (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Inter',sans-serif" }}>{el.title}</p>}
         <div style={{ display:"grid", gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:16, alignItems:"start" }}>
           {shapes.map((s, i) => (
@@ -1471,7 +1472,7 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
 function AIImageGen({ gv, onAddImage }) {
   const [prompt, setPrompt]         = useState("");
   const [style, setStyle]           = useState("cartoon");
-  // 2 slots only: null | { svg, loading, error, errMsg }
+  // 2 slots: null | { url, loading, error, errMsg }
   const [slots, setSlots]           = useState([null, null]);
   const [selected, setSelected]     = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -1479,96 +1480,54 @@ function AIImageGen({ gv, onAddImage }) {
   const suggTimerRef = useRef(null);
 
   const anyLoading = slots.some(s => s?.loading);
-  const hasResults = slots.some(s => s?.svg || s?.error);
+  const hasResults = slots.some(s => s?.url || s?.error);
   const selSlot    = selected !== null ? slots[selected] : null;
 
-  const svgToDataUri = (svg) =>
-    "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+  // ── Fetch one image from Lovable AI Gateway (Nano Banana) ──────────
+  const fetchImage = async (promptText, styleKey, variationIdx) => {
+    // Add a tiny variation hint so the two slots differ
+    const variationHints = [
+      "centered front-facing composition",
+      "slightly different angle or perspective for variety",
+    ];
+    const hint = variationHints[variationIdx] || variationHints[0];
+    const fullPrompt = `${promptText}. ${hint}.`;
 
-  const parseSvg = (raw) => {
-    // Strip markdown fences and whitespace
-    const cleaned = raw.replace(/```[\w]*\n?/g, "").replace(/```/g, "").trim();
-    const start = cleaned.indexOf("<svg");
-    if (start === -1) throw new Error("Response did not contain an SVG element");
-    const end = cleaned.lastIndexOf("</svg>");
-    if (end === -1) throw new Error("SVG element was not closed");
-    return cleaned.slice(start, end + 6);
-  };
-
-  const styleGuides = {
-    cartoon: "bright colorful cartoon with thick black outlines, bold flat fills, cheerful child-friendly style",
-    lineart: "clean black-and-white line art, thin strokes only, no color fills, white background, coloring-page style",
-    clipart: "flat design clipart, simple geometric shapes, solid color fills, no gradients, clean educational style",
-    diagram: "educational diagram with labeled boxes, arrows, and simple geometric shapes, clean textbook illustration style",
-    minimal: "minimalist illustration using only 2-3 flat colors, simple geometric shapes, very clean and modern",
-  };
-
-  const variationHints = [
-    "Show the full scene with the main subject prominent and centered. Use warm tones.",
-    "Show a close-up or detail view of the most interesting part. Use cool tones.",
-  ];
-
-  // ── Fetch one SVG from Claude (sequential-safe) ─────────────────────
-  const fetchSvg = async (promptText, styleKey, variationIdx) => {
-    const guide = styleGuides[styleKey] || styleGuides.cartoon;
-    const hint  = variationHints[variationIdx] || variationHints[0];
-
-    const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+    const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1500,
-        system: `You are an SVG illustrator creating simple educational images for classroom worksheets.
-STRICT OUTPUT RULE: Respond with ONLY the raw SVG markup. No prose, no markdown, no code fences, no explanation before or after.
-
-SVG requirements:
-- viewBox="0 0 400 300" width="400" height="300"
-- First child element must be <rect width="400" height="300" fill="white"/>
-- Use basic SVG shapes: rect, circle, ellipse, line, polyline, polygon, path, text
-- Keep total element count under 40 for reliability
-- Short text labels are fine but keep them small (font-size 12-16)
-- Style: ${guide}
-- Composition: ${hint}`,
-        messages: [{
-          role: "user",
-          content: `Create an SVG illustration of: ${promptText}\n\nRemember: output ONLY the SVG. Start your response with <svg and end with </svg>.`
-        }]
-      })
+      body: JSON.stringify({ prompt: fullPrompt, style: styleKey }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `API error ${res.status}`);
+      throw new Error(err?.error || `API error ${res.status}`);
     }
 
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message || "API returned error");
-
-    const raw = data.content?.map(b => b.type === "text" ? b.text : "").join("") || "";
-    if (!raw.trim()) throw new Error("Empty response from API");
-
-    return parseSvg(raw);
+    if (data.error) throw new Error(data.error);
+    if (!data.url) throw new Error("No image URL returned");
+    return data.url; // data:image/...;base64,...
   };
 
   // ── Generate one slot (marks loading, calls API, updates slot) ───────
   const runSlot = async (slotIdx, promptText, styleKey) => {
     setSlots(prev => {
       const next = [...prev];
-      next[slotIdx] = { svg: null, loading: true, error: false, errMsg: "" };
+      next[slotIdx] = { url: null, loading: true, error: false, errMsg: "" };
       return next;
     });
     try {
-      const svg = await fetchSvg(promptText, styleKey, slotIdx);
+      const url = await fetchImage(promptText, styleKey, slotIdx);
       setSlots(prev => {
         const next = [...prev];
-        next[slotIdx] = { svg, loading: false, error: false, errMsg: "" };
+        next[slotIdx] = { url, loading: false, error: false, errMsg: "" };
         return next;
       });
     } catch (e) {
       setSlots(prev => {
         const next = [...prev];
-        next[slotIdx] = { svg: null, loading: false, error: true, errMsg: e.message || "Unknown error" };
+        next[slotIdx] = { url: null, loading: false, error: true, errMsg: e.message || "Unknown error" };
         return next;
       });
     }
@@ -1581,9 +1540,8 @@ SVG requirements:
     setSlots([null, null]);
     const p = prompt.trim();
     const s = style;
-    // Start slot 0 immediately, slot 1 after a 1.5s stagger
     runSlot(0, p, s);
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1200));
     runSlot(1, p, s);
   };
 
@@ -1629,14 +1587,14 @@ SVG requirements:
       {/* Header */}
       <div style={{ background: `linear-gradient(135deg, ${gv.color}18, ${gv.light})`, borderRadius: 12, padding: "12px 14px", border: `2px solid ${gv.color}25` }}>
         <p style={{ fontFamily: FF, color: gv.color, fontSize: 15, margin: "0 0 3px 0" }}>🎨 AI Image Generator</p>
-        <p style={{ fontFamily: F, fontSize: 11.5, color: "#777", margin: 0, lineHeight: 1.5 }}>Describe an image — Claude draws 2 variations. Pick one to add to your worksheet.</p>
+        <p style={{ fontFamily: F, fontSize: 11.5, color: "#777", margin: 0, lineHeight: 1.5 }}>Describe an image — AI creates 2 photo-quality variations. Pick one to add to your worksheet.</p>
       </div>
 
       {/* Style picker */}
       <div>
         <label style={LBL}>Style</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
-          {[["cartoon","🎨 Cartoon"],["lineart","✏️ Line Art"],["clipart","🎭 Clipart"],["diagram","📐 Diagram"],["minimal","◻️ Minimal"]].map(([id, lbl]) => (
+          {[["cartoon","🎨 Cartoon"],["photo","📷 Photo"],["lineart","✏️ Line Art"],["clipart","🎭 Clipart"],["diagram","📐 Diagram"],["minimal","◻️ Minimal"]].map(([id, lbl]) => (
             <button key={id} onClick={() => setStyle(id)}
               style={{ padding: "4px 10px", borderRadius: 16, border: `2px solid ${style === id ? gv.color : "#E8E8E8"}`, background: style === id ? gv.light : "white", color: style === id ? gv.color : "#777", fontFamily: F, fontWeight: 800, fontSize: 11, cursor: "pointer", transition: "all 0.15s" }}>
               {lbl}
@@ -1676,27 +1634,26 @@ SVG requirements:
       {/* Generate button */}
       <button onClick={generateBoth} disabled={!prompt.trim() || anyLoading}
         style={{ padding: "10px", borderRadius: 11, border: "none", background: !prompt.trim() || anyLoading ? "#CCC" : gv.color, color: "white", fontFamily: FF, fontSize: 14, cursor: !prompt.trim() || anyLoading ? "not-allowed" : "pointer", transition: "background 0.2s" }}>
-        {anyLoading ? "✨  Drawing…" : hasResults ? "🔄  Generate 2 New Images" : "✨  Generate 2 Images"}
+        {anyLoading ? "✨  Generating…" : hasResults ? "🔄  Generate 2 New Images" : "✨  Generate 2 Images"}
       </button>
 
-      {/* 2 slots stacked side-by-side */}
+      {/* 2 slots side-by-side */}
       {(hasResults || anyLoading) && (
         <div>
-          <label style={{ ...LBL, marginTop: 2 }}>{anyLoading ? "Drawing…" : "Pick Your Favourite"}</label>
+          <label style={{ ...LBL, marginTop: 2 }}>{anyLoading ? "Generating…" : "Pick Your Favourite"}</label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
             {slots.map((slot, i) => {
               const isSel = selected === i;
               return (
                 <div key={i}>
-                  {/* Image tile — all controls live inside as overlays */}
                   <div
-                    onClick={() => slot?.svg && !anyLoading && setSelected(isSel ? null : i)}
-                    style={{ borderRadius: 10, border: `3px solid ${isSel ? gv.color : slot?.svg ? "#D0D0D0" : "#EBEBEB"}`, background: "#F8F8F8", overflow: "hidden", cursor: slot?.svg && !anyLoading ? "pointer" : "default", position: "relative", aspectRatio: "4/3", transition: "all 0.15s", transform: isSel ? "scale(1.02)" : "none", boxShadow: isSel ? `0 4px 18px ${gv.color}55` : "none" }}>
+                    onClick={() => slot?.url && !anyLoading && setSelected(isSel ? null : i)}
+                    style={{ borderRadius: 10, border: `3px solid ${isSel ? gv.color : slot?.url ? "#D0D0D0" : "#EBEBEB"}`, background: "#F8F8F8", overflow: "hidden", cursor: slot?.url && !anyLoading ? "pointer" : "default", position: "relative", aspectRatio: "1/1", transition: "all 0.15s", transform: isSel ? "scale(1.02)" : "none", boxShadow: isSel ? `0 4px 18px ${gv.color}55` : "none" }}>
 
                     {slot?.loading && (
                       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
                         <div style={{ fontSize: 22, animation: "spin 1.6s linear infinite" }}>✨</div>
-                        <span style={{ fontFamily: F, fontSize: 10, color: "#BBB", fontWeight: 700 }}>Drawing…</span>
+                        <span style={{ fontFamily: F, fontSize: 10, color: "#BBB", fontWeight: 700 }}>Generating…</span>
                       </div>
                     )}
                     {!slot && (
@@ -1708,26 +1665,23 @@ SVG requirements:
                       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: 8 }}>
                         <span style={{ fontSize: 20 }}>⚠️</span>
                         <span style={{ fontFamily: F, fontSize: 10, color: "#BB4444", fontWeight: 700, textAlign: "center", lineHeight: 1.3 }}>Failed</span>
-                        {slot.errMsg && <span style={{ fontFamily: F, fontSize: 9, color: "#CCC", textAlign: "center", lineHeight: 1.3 }}>{slot.errMsg.slice(0, 60)}</span>}
+                        {slot.errMsg && <span style={{ fontFamily: F, fontSize: 9, color: "#CCC", textAlign: "center", lineHeight: 1.3 }}>{slot.errMsg.slice(0, 80)}</span>}
                       </div>
                     )}
-                    {slot?.svg && (
-                      <div style={{ width: "100%", height: "100%" }}
-                        dangerouslySetInnerHTML={{ __html: slot.svg.replace(/<svg/, '<svg style="width:100%;height:100%;display:block"') }} />
+                    {slot?.url && (
+                      <img src={slot.url} alt={`Generated variation ${i + 1}`}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     )}
 
-                    {/* ── Overlay: slot number (top-left) ── */}
                     <div style={{ position: "absolute", top: 5, left: 5, background: "rgba(255,255,255,0.9)", borderRadius: 5, padding: "1px 6px", fontFamily: F, fontSize: 10, fontWeight: 900, color: "#888", zIndex: 2 }}>{i + 1}</div>
 
-                    {/* ── Overlay: checkmark when selected (top-right) ── */}
                     {isSel && (
                       <div style={{ position: "absolute", top: 5, right: 5, width: 20, height: 20, borderRadius: "50%", background: gv.color, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
                         <span style={{ color: "white", fontSize: 11, fontWeight: 900 }}>✓</span>
                       </div>
                     )}
 
-                    {/* ── Overlay: regenerate button (bottom-right corner) ── */}
-                    {(slot?.svg || slot?.error) && !anyLoading && (
+                    {(slot?.url || slot?.error) && !anyLoading && (
                       <button
                         onClick={e => { e.stopPropagation(); regenSlot(i); }}
                         title="Generate a new version"
@@ -1746,19 +1700,20 @@ SVG requirements:
       )}
 
       {/* Full preview for selected */}
-      {selSlot?.svg && (
+      {selSlot?.url && (
         <div style={{ animation: "fadeIn 0.2s ease" }}>
           <label style={{ ...LBL, marginTop: 2 }}>Preview — Image {selected + 1}</label>
-          <div style={{ borderRadius: 12, overflow: "hidden", border: `3px solid ${gv.color}`, background: "white", marginTop: 5, marginBottom: 8 }}
-            dangerouslySetInnerHTML={{ __html: selSlot.svg.replace(/<svg/, '<svg style="width:100%;height:auto;display:block"') }} />
-          <button onClick={() => { onAddImage(svgToDataUri(selSlot.svg)); setSelected(null); }}
+          <div style={{ borderRadius: 12, overflow: "hidden", border: `3px solid ${gv.color}`, background: "white", marginTop: 5, marginBottom: 8 }}>
+            <img src={selSlot.url} alt={`Selected variation ${selected + 1}`} style={{ width: "100%", height: "auto", display: "block" }} />
+          </div>
+          <button onClick={() => { onAddImage(selSlot.url); setSelected(null); }}
             style={{ width: "100%", padding: "10px", borderRadius: 11, border: "none", background: "#0FAB8C", color: "white", fontFamily: FF, fontSize: 14, cursor: "pointer", boxShadow: "0 3px 10px #0FAB8C44" }}>
             ➕ Add Image {selected + 1} to Worksheet
           </button>
         </div>
       )}
 
-      <p style={{ fontFamily: F, fontSize: 10, color: "#CCC", textAlign: "center", margin: "0 0 2px" }}>Generated by Claude AI · SVG · print-ready</p>
+      <p style={{ fontFamily: F, fontSize: 10, color: "#CCC", textAlign: "center", margin: "0 0 2px" }}>Powered by Lovable AI · Nano Banana · print-ready</p>
     </div>
   );
 }
@@ -2377,14 +2332,16 @@ export function WorksheetBuilder() {
     };
     const onUp = () => {
       resizeRef.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   };
 
-  // ── Free-position drag — move element anywhere on the page ─────────
+  // ── Free-position drag — move element anywhere on the page (mouse + touch) ─
   const dragRef = useRef(null);
   const handleDragStart = (e, elId) => {
     // Don't start drag from interactive children (resize handles, delete btn, inputs)
@@ -2413,11 +2370,13 @@ export function WorksheetBuilder() {
     };
     const onUp = () => {
       dragRef.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   };
 
   const [generating, setGenerating] = useState(false);
@@ -3774,7 +3733,7 @@ function TheTechSavvyTeacherAppRoot() {
         {/* Powered-by badge — top right */}
         <div style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)", zIndex:2 }}>
           <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ADE80", boxShadow:"0 0 0 2px rgba(74,222,128,0.35)" }} />
-          <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600, fontFamily:"'Inter',sans-serif", letterSpacing:0.3 }}>Powered by Claude AI</span>
+          <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600, fontFamily:"'Inter',sans-serif", letterSpacing:0.3 }}>Powered by Lovable AI</span>
         </div>
 
         {/* Centered branding */}
