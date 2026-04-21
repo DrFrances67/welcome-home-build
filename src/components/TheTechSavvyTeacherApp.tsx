@@ -2377,14 +2377,16 @@ export function WorksheetBuilder() {
     };
     const onUp = () => {
       resizeRef.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   };
 
-  // ── Free-position drag — move element anywhere on the page ─────────
+  // ── Free-position drag — move element anywhere on the page (mouse + touch) ─
   const dragRef = useRef(null);
   const handleDragStart = (e, elId) => {
     // Don't start drag from interactive children (resize handles, delete btn, inputs)
@@ -2413,11 +2415,13 @@ export function WorksheetBuilder() {
     };
     const onUp = () => {
       dragRef.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   };
 
   const [generating, setGenerating] = useState(false);
