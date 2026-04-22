@@ -625,8 +625,11 @@ const SHAPE_TYPES = [
 // Returns SVG <path> or shape element string for a given id, rendered into a W×H viewBox
 function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, lines, fontSize }) {
   const sw = borderWidth || 2;
-  const W = width  || 180;
-  const H = height || 120;
+  // Allow width="100%" or "auto" — use a numeric basis for the viewBox math
+  // and let CSS scale the SVG to fit its container.
+  const fluidW = typeof width === "string";
+  const W = fluidW ? 240 : (width  || 180);
+  const H = (typeof height === "number" ? height : parseInt(height as any)) || 120;
   const f = fill   || "#FFFFFF";
   const b = border || "#6D28D9";
   const fs = fontSize || 13;
@@ -681,7 +684,6 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
         return <path d={d} fill={f} stroke={b} strokeWidth={sw} />;
       }
       case "cloud": {
-        // simplified cloud using overlapping circles via path
         const d=`M${W*0.2},${H*0.7} Q${W*0.05},${H*0.7} ${W*0.08},${H*0.52} Q${W*0.08},${H*0.35} ${W*0.22},${H*0.35} Q${W*0.24},${H*0.18} ${W*0.42},${H*0.2} Q${W*0.5},${H*0.06} ${W*0.65},${H*0.18} Q${W*0.8},${H*0.12} ${W*0.88},${H*0.28} Q${W*0.98},${H*0.28} ${W*0.96},${H*0.46} Q${W},${H*0.6} ${W*0.88},${H*0.68} Q${W*0.88},${H*0.78} ${W*0.78},${H*0.78} H${W*0.22} Q${W*0.2},${H*0.78} ${W*0.2},${H*0.7} Z`;
         return <path d={d} fill={f} stroke={b} strokeWidth={sw} />;
       }
@@ -700,14 +702,14 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
     }
   };
 
+  const svgWidth = fluidW ? "100%" : W;
+  const svgHeight = fluidW ? H : H;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display:"block", overflow:"visible" }} aria-hidden="true">
+    <svg viewBox={`0 0 ${W} ${H}`} width={svgWidth} height={svgHeight} preserveAspectRatio={fluidW ? "xMidYMid meet" : undefined} style={{ display:"block", overflow:"visible", maxWidth:"100%" }} aria-hidden="true">
       {shapeEl()}
-      {/* Label at top inside shape */}
       {label && (
         <text x={W/2} y={labelPad} textAnchor="middle" fontSize={fs} fontFamily="Inter,sans-serif" fontWeight="600" fill="#374151" dominantBaseline="middle">{label}</text>
       )}
-      {/* Write lines inside shape */}
       {lineCount > 0 && Array.from({length:lineCount}).map((_,i) => {
         const y = innerTop + i * lineSpacing + lineSpacing * 0.7;
         if (y > H - 8) return null;
@@ -823,13 +825,20 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const isSmall = el.size === "small";
     const isLarge = el.size === "large";
     const floated = isSmall && (el.align === "left" || el.align === "right");
+    // If user has manually resized the wrapper, let the image fill it on BOTH
+    // axes (fixes "image only resizes from one plane"). Otherwise fall back to
+    // the size-preset caps.
+    const userSized = !!(el.widthOverride || el.heightOverride);
     const imgMaxW = isSmall ? "32%" : isLarge ? "94%" : "62%";
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
+    const fillImgStyle = userSized && !floated
+      ? { width: "100%", height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto", maxWidth: "100%", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
+      : { ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" };
     return (
       <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.url ? (
-          <img src={el.url} alt={el.caption || "Worksheet illustration"} style={{ ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" }} />
+          <img src={el.url} alt={el.caption || "Worksheet illustration"} style={fillImgStyle} />
         ) : (
           <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: isSmall ? 150 : isLarge ? 400 : 260, height: isSmall ? 110 : isLarge ? 290 : 190, border: `2px dashed ${gv.color}50`, borderRadius: 10, background: gv.light, gap: 8, ...floatStyle }}>
             <span style={{ fontSize: 34 }} aria-hidden="true">🖼️</span>
@@ -978,19 +987,33 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const colMap = { "1-col":1, "2-col":2, "3-col":3, "4-col":4, "2x2":2 };
     const cols = colMap[el.layout] || 2;
     const fs = el.fontSizeOverride || gv.fontSize;
+    // When the user resizes the customShape wrapper, scale shapes proportionally
+    // to fill the new width and height (fixes "shapes don't resize").
+    const userSized = !!(el.widthOverride || el.heightOverride);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Custom shapes element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.title && <p style={{ fontSize: Math.max(fs - 1, 12), fontWeight: 700, color: "#111827", margin: "0 0 12px 0", fontFamily: (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Inter',sans-serif" }}>{el.title}</p>}
         <div style={{ display:"grid", gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:16, alignItems:"start" }}>
-          {shapes.map((s, i) => (
-            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <ShapeSVG
-                shape={s.shape} fill={s.fill} border={s.border} borderWidth={s.borderWidth}
-                width={s.width} height={s.height} label={s.label} lines={s.lines} fontSize={fs}
-              />
-              {s.caption && <span style={{ fontSize: Math.max(fs-3,10), color:"#6B7280", fontFamily:F, fontWeight:600, textAlign:"center" }}>{s.caption}</span>}
-            </div>
-          ))}
+          {shapes.map((s, i) => {
+            // If user-sized, ignore fixed s.width and let the SVG scale to its
+            // grid cell. Height scales proportionally based on cell count.
+            const shapeW = userSized ? "100%" : s.width;
+            const baseRowH = el.heightOverride
+              ? Math.max(80, (el.heightOverride - 60) / Math.max(1, Math.ceil(shapes.length / cols)))
+              : null;
+            const shapeH = userSized && baseRowH ? Math.round(baseRowH) : s.height;
+            return (
+              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, width:"100%" }}>
+                <div style={{ width:"100%", display:"flex", justifyContent:"center" }}>
+                  <ShapeSVG
+                    shape={s.shape} fill={s.fill} border={s.border} borderWidth={s.borderWidth}
+                    width={shapeW} height={shapeH} label={s.label} lines={s.lines} fontSize={fs}
+                  />
+                </div>
+                {s.caption && <span style={{ fontSize: Math.max(fs-3,10), color:"#6B7280", fontFamily:F, fontWeight:600, textAlign:"center" }}>{s.caption}</span>}
+              </div>
+            );
+          })}
         </div>
         <DeleteBtn /><ResizeHandles />
       </div>
@@ -1360,7 +1383,18 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
       <label style={LBL}>Layout</label>
       <div style={{ display:"flex", gap:6, marginTop:4, flexWrap:"wrap" }}>
         {[["1-col","1"],["2-col","2"],["3-col","3"],["4-col","4"]].map(([v,lbl]) => (
-          <button key={v} onClick={() => onChange({ layout:v })} aria-pressed={el.layout===v}
+          <button key={v} onClick={() => {
+            // Auto-add empty shapes so the new column count is actually filled.
+            const targetCols = parseInt(lbl, 10);
+            const current = el.shapes || [];
+            const updates: any = { layout: v };
+            if (current.length < targetCols) {
+              const blank = { shape:"rectangle", label:"", fill:"#FFFFFF", border:gv.color, borderWidth:2, width:180, height:120, lines:0, caption:"" };
+              const extras = Array.from({ length: targetCols - current.length }, () => ({ ...blank }));
+              updates.shapes = [...current, ...extras];
+            }
+            onChange(updates);
+          }} aria-pressed={el.layout===v}
             style={{ padding:"5px 12px", borderRadius:6, border:`1.5px solid ${el.layout===v ? gv.color : "#E5E7EB"}`, background:el.layout===v ? gv.light : "white", color:el.layout===v ? gv.color : "#6B7280", fontFamily:F, fontWeight:700, fontSize:12, cursor:"pointer" }}>
             {lbl} col
           </button>
@@ -2892,6 +2926,7 @@ function LessonPlanGenerator() {
   const [exemplarUrl, setExemplarUrl]   = useState("");
   const [exemplarText, setExemplarText] = useState("");
   const [exemplarDesc, setExemplarDesc] = useState("");
+  const [exemplarRaw,  setExemplarRaw]  = useState(""); // full text extracted from file/url/paste
   const [analyzingEx, setAnalyzingEx]   = useState(false);
   const [exError, setExError]           = useState("");
   const dropRef                         = useRef(null);
@@ -2953,30 +2988,66 @@ function LessonPlanGenerator() {
 
   const ANALYZE_Q = "Analyze this exemplar lesson plan. In 3 sentences describe: (1) sections and their order, (2) level of detail, (3) formatting style (bullets/tables/numbered steps). This will guide format replication.";
 
+  const extractPdfText = async (file) => {
+    // Lazy-load pdfjs only when needed; configure the worker from the same package.
+    const pdfjs = await import("pdfjs-dist");
+    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const pages = Math.min(doc.numPages, 15); // cap pages to keep prompt small
+    let text = "";
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
+    }
+    return text.trim();
+  };
+
+  const extractDocxText = async (file) => {
+    const mammoth = await import("mammoth/mammoth.browser.js");
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return (result.value || "").trim();
+  };
+
   const handleExemplarFile = async (file) => {
     if (!file) return;
     setExError(""); setExemplarDesc(""); setAnalyzingEx(true);
     try {
       const isImage = file.type.startsWith("image/");
+      const isPdf   = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const isDocx  = /\.docx$/i.test(file.name) || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       const isTxt   = /\.(txt|md|rtf)$/i.test(file.name) || file.type === "text/plain";
       let preview = null;
       let desc = "";
+      let raw  = "";
       if (isImage) {
         const dataUrl = await readFileAsB64(file);
         preview = dataUrl;
         const b64 = dataUrl.split(",")[1];
         desc = await callClaude(
-          "Analyze lesson plan images briefly.", 
+          "Analyze lesson plan images briefly.",
           [{ type:"image", source:{ type:"base64", media_type:file.type, data:b64 } }, { type:"text", text:ANALYZE_Q }]
         );
+      } else if (isPdf) {
+        raw = await extractPdfText(file);
+        if (!raw) throw new Error("Could not read text from PDF (it may be scanned images). Try the Paste Text tab.");
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${raw.slice(0,8000)}`);
+      } else if (isDocx) {
+        raw = await extractDocxText(file);
+        if (!raw) throw new Error("Could not read text from this Word document. Try the Paste Text tab.");
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${raw.slice(0,8000)}`);
       } else if (isTxt) {
-        const txt = await readFileAsText(file);
-        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,4000)}`);
+        raw = await readFileAsText(file);
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${raw.slice(0,8000)}`);
       } else {
-        desc = `"${file.name}" uploaded. For best analysis, paste the text content in the Paste Text tab.`;
+        desc = `"${file.name}" uploaded but its format isn't supported here. Try uploading a PDF, DOCX, image, or paste the text.`;
       }
       setExemplarFile({ name:file.name, preview });
       setExemplarDesc(desc);
+      setExemplarRaw(raw);
     } catch(e) { setExError(`Could not analyze: ${e.message}. Try the Paste Text tab.`); }
     setAnalyzingEx(false);
   };
@@ -2984,7 +3055,7 @@ function LessonPlanGenerator() {
   const handleUrlAnalyze = async () => {
     const url = exemplarUrl.trim();
     if (!url) return;
-    setExError(""); setExemplarDesc(""); setAnalyzingEx(true);
+    setExError(""); setExemplarDesc(""); setExemplarRaw(""); setAnalyzingEx(true);
     if (/docs\.google\.com/.test(url)) {
       setExemplarDesc("Google Docs: File → Download → Plain Text (.txt) then upload — or Select All, Copy, and use the Paste Text tab.");
       setAnalyzingEx(false); return;
@@ -2993,8 +3064,9 @@ function LessonPlanGenerator() {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
-      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nCONTENT:\n${text.slice(0,4000)}`);
+      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nCONTENT:\n${text.slice(0,8000)}`);
       setExemplarDesc(desc);
+      setExemplarRaw(text);
     } catch(e) { setExError(`Could not load URL: ${e.message}. Try the Paste Text tab.`); }
     setAnalyzingEx(false);
   };
@@ -3003,13 +3075,14 @@ function LessonPlanGenerator() {
     if (!exemplarText.trim()) return;
     setExError(""); setExemplarDesc(""); setAnalyzingEx(true);
     try {
-      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${exemplarText.slice(0,4000)}`);
+      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${exemplarText.slice(0,8000)}`);
       setExemplarDesc(desc);
+      setExemplarRaw(exemplarText);
     } catch(e) { setExError(`Analysis failed: ${e.message}`); }
     setAnalyzingEx(false);
   };
 
-  const clearExemplar = () => { setExemplarFile(null); setExemplarUrl(""); setExemplarText(""); setExemplarDesc(""); setExError(""); setAnalyzingEx(false); };
+  const clearExemplar = () => { setExemplarFile(null); setExemplarUrl(""); setExemplarText(""); setExemplarDesc(""); setExemplarRaw(""); setExError(""); setAnalyzingEx(false); };
   const handleDrop = (e) => { e.preventDefault(); setDraggingOver(false); const f = e.dataTransfer.files?.[0]; if (f) { setExMode("file"); handleExemplarFile(f); } };
 
   // ── MAIN GENERATE ─────────────────────────────────────────────────
@@ -3047,7 +3120,8 @@ function LessonPlanGenerator() {
       form.objectives ? `Objectives: ${form.objectives}` : "",
       form.materials  ? `Materials: ${form.materials}` : "",
       form.notes.trim() ? `Teacher notes: ${form.notes}` : "",
-      exemplarDesc ? `Format reference: ${exemplarDesc.slice(0, 200)}` : "",
+      exemplarDesc ? `Format analysis of teacher's exemplar: ${exemplarDesc.slice(0, 600)}` : "",
+      exemplarRaw  ? `Exemplar lesson plan to mimic in structure, tone, and section detail (replicate this format closely):\n${exemplarRaw.slice(0, 4000)}` : "",
     ].filter(Boolean).join("\n");
 
     const systemPrompt = `You are an expert NY State curriculum designer. Respond with ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit.`;
