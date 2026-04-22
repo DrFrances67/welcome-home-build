@@ -2932,6 +2932,10 @@ function LessonPlanGenerator() {
   const dropRef                         = useRef(null);
   const [draggingOver, setDraggingOver] = useState(false);
 
+  // Slide deck generation state
+  const [slidesLoading, setSlidesLoading] = useState(false);
+  const [slidesError,   setSlidesError]   = useState("");
+
   const setF = (k,v) => setForm(p => ({...p,[k]:v}));
   const toggleDiff = (d) => setF("diff", form.diff.includes(d) ? form.diff.filter(x=>x!==d) : [...form.diff, d]);
 
