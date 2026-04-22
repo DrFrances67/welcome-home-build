@@ -3175,6 +3175,25 @@ Return this JSON (replace all placeholder text with real content, keep values co
       clean = clean.slice(start, end + 1);
 
       const parsed = JSON.parse(clean);
+
+      // Scrub "N/A"-style answers from homework/extension and ask AI to retry just those if needed
+      const isEmpty = v => !v || /^(n\/?a|none|not applicable|tbd|n\.a\.?)\.?$/i.test(String(v).trim());
+      if (isEmpty(parsed.homework) || isEmpty(parsed.extension)) {
+        try {
+          const fixPrompt = `For a ${form.grade} ${form.subject} lesson on "${form.topic}" (${form.duration}), suggest:
+1. ONE specific, grade-appropriate homework activity (10-15 min, family-friendly for early grades)
+2. ONE specific extension/enrichment activity for students who need a deeper challenge
+Return ONLY this JSON: {"homework":"...","extension":"..."}`;
+          const fixRaw = await callClaude("Return only valid JSON.", fixPrompt, 400);
+          const fStart = fixRaw.indexOf("{"), fEnd = fixRaw.lastIndexOf("}");
+          if (fStart !== -1 && fEnd !== -1) {
+            const fixObj = JSON.parse(fixRaw.slice(fStart, fEnd + 1));
+            if (!isEmpty(fixObj.homework))  parsed.homework  = fixObj.homework;
+            if (!isEmpty(fixObj.extension)) parsed.extension = fixObj.extension;
+          }
+        } catch(_) { /* fall through with whatever we have */ }
+      }
+
       setResult(parsed);
     } catch (e) {
       setError(`Generation failed: ${e.message}`);
