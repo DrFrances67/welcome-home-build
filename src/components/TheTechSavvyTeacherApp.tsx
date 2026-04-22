@@ -3225,6 +3225,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       `  Gifted: ${result.differentiation?.gifted||""}`,
       `  Universal: ${result.differentiation?.universal||""}`, "",
       `HOMEWORK: ${result.homework||""}`, "",
+      `EXTENSION ACTIVITY: ${result.extension||""}`, "",
       `TEACHER NOTES: ${result.teacherNotes||""}`
     ].join("\n");
   };
