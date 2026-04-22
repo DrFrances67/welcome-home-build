@@ -625,8 +625,11 @@ const SHAPE_TYPES = [
 // Returns SVG <path> or shape element string for a given id, rendered into a W×H viewBox
 function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, lines, fontSize }) {
   const sw = borderWidth || 2;
-  const W = width  || 180;
-  const H = height || 120;
+  // Allow width="100%" or "auto" — use a numeric basis for the viewBox math
+  // and let CSS scale the SVG to fit its container.
+  const fluidW = typeof width === "string";
+  const W = fluidW ? 240 : (width  || 180);
+  const H = (typeof height === "number" ? height : parseInt(height as any)) || 120;
   const f = fill   || "#FFFFFF";
   const b = border || "#6D28D9";
   const fs = fontSize || 13;
@@ -681,7 +684,6 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
         return <path d={d} fill={f} stroke={b} strokeWidth={sw} />;
       }
       case "cloud": {
-        // simplified cloud using overlapping circles via path
         const d=`M${W*0.2},${H*0.7} Q${W*0.05},${H*0.7} ${W*0.08},${H*0.52} Q${W*0.08},${H*0.35} ${W*0.22},${H*0.35} Q${W*0.24},${H*0.18} ${W*0.42},${H*0.2} Q${W*0.5},${H*0.06} ${W*0.65},${H*0.18} Q${W*0.8},${H*0.12} ${W*0.88},${H*0.28} Q${W*0.98},${H*0.28} ${W*0.96},${H*0.46} Q${W},${H*0.6} ${W*0.88},${H*0.68} Q${W*0.88},${H*0.78} ${W*0.78},${H*0.78} H${W*0.22} Q${W*0.2},${H*0.78} ${W*0.2},${H*0.7} Z`;
         return <path d={d} fill={f} stroke={b} strokeWidth={sw} />;
       }
@@ -700,14 +702,14 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
     }
   };
 
+  const svgWidth = fluidW ? "100%" : W;
+  const svgHeight = fluidW ? H : H;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display:"block", overflow:"visible" }} aria-hidden="true">
+    <svg viewBox={`0 0 ${W} ${H}`} width={svgWidth} height={svgHeight} preserveAspectRatio={fluidW ? "xMidYMid meet" : undefined} style={{ display:"block", overflow:"visible", maxWidth:"100%" }} aria-hidden="true">
       {shapeEl()}
-      {/* Label at top inside shape */}
       {label && (
         <text x={W/2} y={labelPad} textAnchor="middle" fontSize={fs} fontFamily="Inter,sans-serif" fontWeight="600" fill="#374151" dominantBaseline="middle">{label}</text>
       )}
-      {/* Write lines inside shape */}
       {lineCount > 0 && Array.from({length:lineCount}).map((_,i) => {
         const y = innerTop + i * lineSpacing + lineSpacing * 0.7;
         if (y > H - 8) return null;
