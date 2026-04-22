@@ -2987,11 +2987,37 @@ function LessonPlanGenerator() {
 
   const ANALYZE_Q = "Analyze this exemplar lesson plan. In 3 sentences describe: (1) sections and their order, (2) level of detail, (3) formatting style (bullets/tables/numbered steps). This will guide format replication.";
 
+  const extractPdfText = async (file) => {
+    // Lazy-load pdfjs only when needed; configure the worker from the same package.
+    const pdfjs = await import("pdfjs-dist");
+    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const pages = Math.min(doc.numPages, 15); // cap pages to keep prompt small
+    let text = "";
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
+    }
+    return text.trim();
+  };
+
+  const extractDocxText = async (file) => {
+    const mammoth = await import("mammoth/mammoth.browser.js");
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return (result.value || "").trim();
+  };
+
   const handleExemplarFile = async (file) => {
     if (!file) return;
     setExError(""); setExemplarDesc(""); setAnalyzingEx(true);
     try {
       const isImage = file.type.startsWith("image/");
+      const isPdf   = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const isDocx  = /\.docx$/i.test(file.name) || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       const isTxt   = /\.(txt|md|rtf)$/i.test(file.name) || file.type === "text/plain";
       let preview = null;
       let desc = "";
@@ -3000,14 +3026,22 @@ function LessonPlanGenerator() {
         preview = dataUrl;
         const b64 = dataUrl.split(",")[1];
         desc = await callClaude(
-          "Analyze lesson plan images briefly.", 
+          "Analyze lesson plan images briefly.",
           [{ type:"image", source:{ type:"base64", media_type:file.type, data:b64 } }, { type:"text", text:ANALYZE_Q }]
         );
+      } else if (isPdf) {
+        const txt = await extractPdfText(file);
+        if (!txt) throw new Error("Could not read text from PDF (it may be scanned images). Try the Paste Text tab.");
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,8000)}`);
+      } else if (isDocx) {
+        const txt = await extractDocxText(file);
+        if (!txt) throw new Error("Could not read text from this Word document. Try the Paste Text tab.");
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,8000)}`);
       } else if (isTxt) {
         const txt = await readFileAsText(file);
-        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,4000)}`);
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,8000)}`);
       } else {
-        desc = `"${file.name}" uploaded. For best analysis, paste the text content in the Paste Text tab.`;
+        desc = `"${file.name}" uploaded but its format isn't supported here. Try uploading a PDF, DOCX, image, or paste the text.`;
       }
       setExemplarFile({ name:file.name, preview });
       setExemplarDesc(desc);
