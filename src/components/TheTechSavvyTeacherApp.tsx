@@ -823,13 +823,20 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const isSmall = el.size === "small";
     const isLarge = el.size === "large";
     const floated = isSmall && (el.align === "left" || el.align === "right");
+    // If user has manually resized the wrapper, let the image fill it on BOTH
+    // axes (fixes "image only resizes from one plane"). Otherwise fall back to
+    // the size-preset caps.
+    const userSized = !!(el.widthOverride || el.heightOverride);
     const imgMaxW = isSmall ? "32%" : isLarge ? "94%" : "62%";
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
+    const fillImgStyle = userSized && !floated
+      ? { width: "100%", height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto", maxWidth: "100%", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
+      : { ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" };
     return (
       <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.url ? (
-          <img src={el.url} alt={el.caption || "Worksheet illustration"} style={{ ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" }} />
+          <img src={el.url} alt={el.caption || "Worksheet illustration"} style={fillImgStyle} />
         ) : (
           <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: isSmall ? 150 : isLarge ? 400 : 260, height: isSmall ? 110 : isLarge ? 290 : 190, border: `2px dashed ${gv.color}50`, borderRadius: 10, background: gv.light, gap: 8, ...floatStyle }}>
             <span style={{ fontSize: 34 }} aria-hidden="true">🖼️</span>
