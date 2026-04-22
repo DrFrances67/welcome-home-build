@@ -985,19 +985,33 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const colMap = { "1-col":1, "2-col":2, "3-col":3, "4-col":4, "2x2":2 };
     const cols = colMap[el.layout] || 2;
     const fs = el.fontSizeOverride || gv.fontSize;
+    // When the user resizes the customShape wrapper, scale shapes proportionally
+    // to fill the new width and height (fixes "shapes don't resize").
+    const userSized = !!(el.widthOverride || el.heightOverride);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Custom shapes element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.title && <p style={{ fontSize: Math.max(fs - 1, 12), fontWeight: 700, color: "#111827", margin: "0 0 12px 0", fontFamily: (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Inter',sans-serif" }}>{el.title}</p>}
         <div style={{ display:"grid", gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:16, alignItems:"start" }}>
-          {shapes.map((s, i) => (
-            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <ShapeSVG
-                shape={s.shape} fill={s.fill} border={s.border} borderWidth={s.borderWidth}
-                width={s.width} height={s.height} label={s.label} lines={s.lines} fontSize={fs}
-              />
-              {s.caption && <span style={{ fontSize: Math.max(fs-3,10), color:"#6B7280", fontFamily:F, fontWeight:600, textAlign:"center" }}>{s.caption}</span>}
-            </div>
-          ))}
+          {shapes.map((s, i) => {
+            // If user-sized, ignore fixed s.width and let the SVG scale to its
+            // grid cell. Height scales proportionally based on cell count.
+            const shapeW = userSized ? "100%" : s.width;
+            const baseRowH = el.heightOverride
+              ? Math.max(80, (el.heightOverride - 60) / Math.max(1, Math.ceil(shapes.length / cols)))
+              : null;
+            const shapeH = userSized && baseRowH ? Math.round(baseRowH) : s.height;
+            return (
+              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, width:"100%" }}>
+                <div style={{ width:"100%", display:"flex", justifyContent:"center" }}>
+                  <ShapeSVG
+                    shape={s.shape} fill={s.fill} border={s.border} borderWidth={s.borderWidth}
+                    width={shapeW} height={shapeH} label={s.label} lines={s.lines} fontSize={fs}
+                  />
+                </div>
+                {s.caption && <span style={{ fontSize: Math.max(fs-3,10), color:"#6B7280", fontFamily:F, fontWeight:600, textAlign:"center" }}>{s.caption}</span>}
+              </div>
+            );
+          })}
         </div>
         <DeleteBtn /><ResizeHandles />
       </div>
