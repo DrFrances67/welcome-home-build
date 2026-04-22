@@ -3323,7 +3323,113 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     setTimeout(()=>{ try{ iframe.contentWindow.focus(); iframe.contentWindow.print(); }catch(e){ alert("Print blocked by browser. Please use Ctrl+P / Cmd+P to print."); } }, 600);
   };
 
-  // Google Docs: write text into a visible textarea the user can select-all + copy,
+  // ── Slide deck generation ─────────────────────────────────────────
+  // Asks the AI to outline slides from the full lesson plan, then renders
+  // a self-contained HTML deck (arrow-key navigable, printable) in a new tab.
+  const generateSlideDeck = async () => {
+    if (!result) return;
+    setSlidesError(""); setSlidesLoading(true);
+    try {
+      const lessonContext = buildPlanText().slice(0, 6000);
+      const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 8–14 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure as applicable), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
+      const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
+
+      const raw = await callClaude(sys, userMsg, 3500);
+      let clean = (raw || "").trim();
+      if (clean.startsWith("```")) clean = clean.replace(/^```json?\s*/i,"").replace(/```\s*$/,"").trim();
+      const s = clean.indexOf("{"), e = clean.lastIndexOf("}");
+      if (s === -1 || e === -1) throw new Error("AI response was not valid JSON.");
+      const deck = JSON.parse(clean.slice(s, e + 1));
+      if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
+        throw new Error("No slides were returned. Try again.");
+      }
+
+      const safe = v => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      const slidesHtml = deck.slides.map((sl, i) => {
+        const isTitle = sl.kind === "title" || i === 0;
+        const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
+        return `<section class="slide ${isTitle ? "slide-title" : ""}" data-i="${i}">
+          <div class="slide-inner">
+            ${isTitle
+              ? `<div class="title-block"><h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
+              : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}
+            <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
+          </div>
+        </section>`;
+      }).join("");
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result.title)} — Slide Deck</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0F0A1A;font-family:'Inter','Segoe UI',sans-serif;color:#1F2937;overflow:hidden}
+.deck{position:relative;width:100vw;height:100vh}
+.slide{position:absolute;inset:0;display:none;background:linear-gradient(135deg,#FFFFFF 0%,#FDF4FF 100%);padding:6vh 8vw;animation:fadeIn .25s ease}
+.slide.active{display:flex;flex-direction:column;justify-content:center}
+.slide-title{background:linear-gradient(135deg,#8B0AB0 0%,#CF27F5 60%,#E05BFF 100%);color:white}
+.slide-inner{max-width:1100px;margin:0 auto;width:100%;position:relative;height:100%;display:flex;flex-direction:column;justify-content:center}
+h1{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,68px);font-weight:800;line-height:1.1;margin-bottom:18px}
+.title-block{text-align:center}
+.subtitle{font-size:clamp(16px,2vw,22px);font-weight:500;opacity:0.9;letter-spacing:0.5px}
+h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weight:700;color:#8B0AB0;margin-bottom:28px;border-bottom:3px solid #CF27F5;padding-bottom:12px;display:inline-block}
+ul{list-style:none;display:flex;flex-direction:column;gap:14px}
+li{font-size:clamp(16px,2vw,24px);line-height:1.5;padding-left:34px;position:relative;color:#1F2937}
+li::before{content:"●";position:absolute;left:0;color:#CF27F5;font-size:0.9em;top:0.15em}
+.slide-num{position:absolute;bottom:-3vh;right:0;font-size:13px;color:#9CA3AF;font-weight:600;letter-spacing:1px}
+.slide-title .slide-num{color:rgba(255,255,255,0.7)}
+.controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);padding:8px 14px;border-radius:30px;z-index:10}
+.controls button{background:transparent;border:none;color:white;cursor:pointer;font-size:14px;font-weight:600;padding:6px 12px;border-radius:20px;transition:background .15s;font-family:inherit}
+.controls button:hover{background:rgba(255,255,255,0.18)}
+.controls .pill{padding:6px 12px;color:rgba(255,255,255,0.8);font-size:13px;font-weight:600}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media print{
+  html,body{background:white;overflow:visible;height:auto}
+  .deck{height:auto}
+  .slide{position:relative;display:flex !important;page-break-after:always;width:100vw;height:100vh;animation:none}
+  .controls{display:none}
+  @page{size:landscape;margin:0}
+}
+</style></head>
+<body><div class="deck">${slidesHtml}</div>
+<div class="controls">
+  <button id="prev">◀ Prev</button>
+  <span class="pill" id="pos">1 / ${deck.slides.length}</span>
+  <button id="next">Next ▶</button>
+  <button id="print">🖨️ Print</button>
+</div>
+<script>
+const slides=document.querySelectorAll('.slide');let i=0;
+function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');document.getElementById('pos').textContent=(i+1)+' / '+slides.length;}
+slides[0].classList.add('active');
+document.getElementById('next').onclick=()=>show(i+1);
+document.getElementById('prev').onclick=()=>show(i-1);
+document.getElementById('print').onclick=()=>window.print();
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown')show(i+1);
+  else if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
+  else if(e.key==='Home')show(0);
+  else if(e.key==='End')show(slides.length-1);
+});
+<\/script></body></html>`;
+
+      // Open in a new tab. If popup blocked, fall back to iframe + offer download.
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.open(); win.document.write(html); win.document.close();
+      } else {
+        // Popup blocked — write to a hidden iframe and trigger a download instead.
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `${(deck.title || result.title || "lesson").replace(/[^a-z0-9]+/gi,"_")}_slides.html`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+    } catch (err) {
+      setSlidesError(`Could not generate slides: ${err.message}`);
+    }
+    setSlidesLoading(false);
+  };
+
   // then link them to docs.new — no blob URLs needed, works in all CSP environments
   const exportToGoogleDocs = () => {
     if (!result) return;
