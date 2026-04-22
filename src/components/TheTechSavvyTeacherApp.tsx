@@ -3120,7 +3120,8 @@ function LessonPlanGenerator() {
       form.objectives ? `Objectives: ${form.objectives}` : "",
       form.materials  ? `Materials: ${form.materials}` : "",
       form.notes.trim() ? `Teacher notes: ${form.notes}` : "",
-      exemplarDesc ? `Format reference: ${exemplarDesc.slice(0, 200)}` : "",
+      exemplarDesc ? `Format analysis of teacher's exemplar: ${exemplarDesc.slice(0, 600)}` : "",
+      exemplarRaw  ? `Exemplar lesson plan to mimic in structure, tone, and section detail (replicate this format closely):\n${exemplarRaw.slice(0, 4000)}` : "",
     ].filter(Boolean).join("\n");
 
     const systemPrompt = `You are an expert NY State curriculum designer. Respond with ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit.`;
