@@ -3301,6 +3301,7 @@ ${(result.sections||[]).map((s,i)=>`<div class="sec"><div class="sec-h" style="b
 <div class="box"><div class="box-l">Gifted</div><p>${safeHtml(result.differentiation?.gifted)}</p></div>
 <div class="box"><div class="box-l">Universal Design</div><p>${safeHtml(result.differentiation?.universal)}</p></div></div>
 ${result.homework?`<h2>Homework</h2><div class="hw">${safeHtml(result.homework)}</div>`:""}
+${result.extension?`<h2>Extension Activity</h2><div class="hw" style="background:#f0fdf4;border-color:#bbf7d0">${safeHtml(result.extension)}</div>`:""}
 ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(result.teacherNotes)}</div>`:""}
 <script>window.onload=function(){window.print()}<\/script>
 </body></html>`;
