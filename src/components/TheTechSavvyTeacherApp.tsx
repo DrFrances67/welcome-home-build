@@ -3124,7 +3124,7 @@ function LessonPlanGenerator() {
       exemplarRaw  ? `Exemplar lesson plan to mimic in structure, tone, and section detail (replicate this format closely):\n${exemplarRaw.slice(0, 4000)}` : "",
     ].filter(Boolean).join("\n");
 
-    const systemPrompt = `You are an expert NY State curriculum designer. Respond with ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit.`;
+    const systemPrompt = `You are an expert NY State curriculum designer. Respond with ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
 
     const userPrompt = `Create a lesson plan for:
 Grade: ${form.grade} | Subject: ${form.subject} | Topic: ${form.topic}
@@ -3134,6 +3134,10 @@ Differentiation: ${diffList}
 ${diffSection}
 Sections: ${sectionNames}
 ${extras}
+
+REQUIRED for homework and extension:
+- "homework" MUST be a specific, grade-appropriate at-home activity tied to today's objective. For Kindergarten and early grades, suggest a short hands-on family activity (10-15 min) such as drawing, sorting household objects, reading aloud with a caregiver, or a scavenger hunt. NEVER write "N/A" or "None".
+- "extension" MUST be a specific enrichment / challenge activity for students who finish early or need a deeper push. NEVER write "N/A" or "None".
 
 Return this JSON (replace all placeholder text with real content, keep values concise):
 {
@@ -3150,6 +3154,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
   "assessment": {"formative": "...", "summative": "...", "exitTicket": "..."},
   "differentiation": {"ell": "...", "iep": "...", "gifted": "...", "universal": "..."},
   "homework": "...",
+  "extension": "...",
   "teacherNotes": "..."
 }`;
 
