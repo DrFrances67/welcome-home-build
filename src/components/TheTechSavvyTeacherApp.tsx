@@ -3755,19 +3755,38 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
               ))}
             </div>
 
-            {/* Homework & Notes */}
+            {/* Homework / Extension / Notes */}
             {result.homework && (
               <div style={{ background:"#F0F9FF", border:"1px solid #BAE6FD", borderRadius:8, padding:"12px 14px", marginBottom:12 }}>
-                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.7, color:"#0369A1", margin:"0 0 5px" }}>📚 Homework / Extension</p>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.7, color:"#0369A1", margin:"0 0 5px" }}>📚 Homework</p>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#1F2937", margin:0, lineHeight:1.55 }}>{result.homework}</p>
               </div>
             )}
+            {result.extension && (
+              <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:8, padding:"12px 14px", marginBottom:12 }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.7, color:"#15803D", margin:"0 0 5px" }}>🚀 Extension Activity</p>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#1F2937", margin:0, lineHeight:1.55 }}>{result.extension}</p>
+              </div>
+            )}
             {result.teacherNotes && (
-              <div style={{ background:"#FEFCE8", border:"1px solid #FDE68A", borderRadius:8, padding:"12px 14px" }}>
+              <div style={{ background:"#FEFCE8", border:"1px solid #FDE68A", borderRadius:8, padding:"12px 14px", marginBottom:12 }}>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.7, color:"#B45309", margin:"0 0 5px" }}>💡 Teacher Notes</p>
                 <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#1F2937", margin:0, lineHeight:1.55 }}>{result.teacherNotes}</p>
               </div>
             )}
+
+            {/* Generate Slide Deck CTA */}
+            <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10, textAlign:"center" }}>
+              <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px" }}>🎞️ Want a slide deck for this lesson?</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280", margin:"0 0 12px", lineHeight:1.5 }}>Generate a presentation-ready slide deck built from every section of this plan.</p>
+              <button onClick={generateSlideDeck} disabled={slidesLoading}
+                style={{ padding:"10px 22px", borderRadius:8, border:"none", background: slidesLoading ? "#D1D5DB" : BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor: slidesLoading ? "wait" : "pointer", boxShadow: slidesLoading ? "none" : "0 4px 12px rgba(207,39,245,0.3)", display:"inline-flex", alignItems:"center", gap:8 }}>
+                {slidesLoading ? (
+                  <><span style={{ width:13, height:13, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /> Building slides…</>
+                ) : "🎬 Generate Slide Deck"}
+              </button>
+              {slidesError && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11.5, color:"#DC2626", margin:"10px 0 0" }}>{slidesError}</p>}
+            </div>
           </div>
         ) : (
           <div style={{ padding:"80px 40px", display:"flex", flexDirection:"column", alignItems:"center", gap:14, textAlign:"center" }}>
