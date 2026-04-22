@@ -1383,7 +1383,18 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
       <label style={LBL}>Layout</label>
       <div style={{ display:"flex", gap:6, marginTop:4, flexWrap:"wrap" }}>
         {[["1-col","1"],["2-col","2"],["3-col","3"],["4-col","4"]].map(([v,lbl]) => (
-          <button key={v} onClick={() => onChange({ layout:v })} aria-pressed={el.layout===v}
+          <button key={v} onClick={() => {
+            // Auto-add empty shapes so the new column count is actually filled.
+            const targetCols = parseInt(lbl, 10);
+            const current = el.shapes || [];
+            const updates: any = { layout: v };
+            if (current.length < targetCols) {
+              const blank = { shape:"rectangle", label:"", fill:"#FFFFFF", border:gv.color, borderWidth:2, width:180, height:120, lines:0, caption:"" };
+              const extras = Array.from({ length: targetCols - current.length }, () => ({ ...blank }));
+              updates.shapes = [...current, ...extras];
+            }
+            onChange(updates);
+          }} aria-pressed={el.layout===v}
             style={{ padding:"5px 12px", borderRadius:6, border:`1.5px solid ${el.layout===v ? gv.color : "#E5E7EB"}`, background:el.layout===v ? gv.light : "white", color:el.layout===v ? gv.color : "#6B7280", fontFamily:F, fontWeight:700, fontSize:12, cursor:"pointer" }}>
             {lbl} col
           </button>
