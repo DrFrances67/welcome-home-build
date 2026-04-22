@@ -37,18 +37,39 @@ serve(async (req) => {
     const body = await req.json();
     const { model, system, messages, max_tokens } = body ?? {};
 
-    const oaiMessages: Array<{ role: string; content: string }> = [];
+    // Convert Anthropic-style content (string OR blocks of {type:text|image}) to
+    // OpenAI-compatible content. For multimodal we emit an array of parts:
+    //   { type:"text", text } | { type:"image_url", image_url:{ url } }
+    const convertContent = (content: any): any => {
+      if (typeof content === "string") return content;
+      if (!Array.isArray(content)) return "";
+      const parts: any[] = [];
+      for (const b of content) {
+        if (!b) continue;
+        if (b.type === "text" && typeof b.text === "string") {
+          parts.push({ type: "text", text: b.text });
+        } else if (b.type === "image" && b.source) {
+          // Anthropic block: { type:"image", source:{ type:"base64", media_type, data } }
+          const url = b.source.type === "base64"
+            ? `data:${b.source.media_type || "image/png"};base64,${b.source.data}`
+            : b.source.url;
+          if (url) parts.push({ type: "image_url", image_url: { url } });
+        } else if (b.type === "image_url" && b.image_url?.url) {
+          parts.push({ type: "image_url", image_url: { url: b.image_url.url } });
+        }
+      }
+      // If only one text part, send as plain string for older models
+      if (parts.length === 1 && parts[0].type === "text") return parts[0].text;
+      return parts;
+    };
+
+    const oaiMessages: Array<{ role: string; content: any }> = [];
     if (system && typeof system === "string") {
       oaiMessages.push({ role: "system", content: system });
     }
     if (Array.isArray(messages)) {
       for (const m of messages) {
-        const content = typeof m.content === "string"
-          ? m.content
-          : Array.isArray(m.content)
-            ? m.content.map((b: any) => b?.text ?? "").join("")
-            : "";
-        oaiMessages.push({ role: m.role || "user", content });
+        oaiMessages.push({ role: m.role || "user", content: convertContent(m.content) });
       }
     }
 
