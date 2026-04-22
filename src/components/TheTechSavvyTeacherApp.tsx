@@ -3022,6 +3022,7 @@ function LessonPlanGenerator() {
       const isTxt   = /\.(txt|md|rtf)$/i.test(file.name) || file.type === "text/plain";
       let preview = null;
       let desc = "";
+      let raw  = "";
       if (isImage) {
         const dataUrl = await readFileAsB64(file);
         preview = dataUrl;
@@ -3031,21 +3032,22 @@ function LessonPlanGenerator() {
           [{ type:"image", source:{ type:"base64", media_type:file.type, data:b64 } }, { type:"text", text:ANALYZE_Q }]
         );
       } else if (isPdf) {
-        const txt = await extractPdfText(file);
-        if (!txt) throw new Error("Could not read text from PDF (it may be scanned images). Try the Paste Text tab.");
-        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,8000)}`);
+        raw = await extractPdfText(file);
+        if (!raw) throw new Error("Could not read text from PDF (it may be scanned images). Try the Paste Text tab.");
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${raw.slice(0,8000)}`);
       } else if (isDocx) {
-        const txt = await extractDocxText(file);
-        if (!txt) throw new Error("Could not read text from this Word document. Try the Paste Text tab.");
-        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,8000)}`);
+        raw = await extractDocxText(file);
+        if (!raw) throw new Error("Could not read text from this Word document. Try the Paste Text tab.");
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${raw.slice(0,8000)}`);
       } else if (isTxt) {
-        const txt = await readFileAsText(file);
-        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${txt.slice(0,8000)}`);
+        raw = await readFileAsText(file);
+        desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${raw.slice(0,8000)}`);
       } else {
         desc = `"${file.name}" uploaded but its format isn't supported here. Try uploading a PDF, DOCX, image, or paste the text.`;
       }
       setExemplarFile({ name:file.name, preview });
       setExemplarDesc(desc);
+      setExemplarRaw(raw);
     } catch(e) { setExError(`Could not analyze: ${e.message}. Try the Paste Text tab.`); }
     setAnalyzingEx(false);
   };
@@ -3053,7 +3055,7 @@ function LessonPlanGenerator() {
   const handleUrlAnalyze = async () => {
     const url = exemplarUrl.trim();
     if (!url) return;
-    setExError(""); setExemplarDesc(""); setAnalyzingEx(true);
+    setExError(""); setExemplarDesc(""); setExemplarRaw(""); setAnalyzingEx(true);
     if (/docs\.google\.com/.test(url)) {
       setExemplarDesc("Google Docs: File → Download → Plain Text (.txt) then upload — or Select All, Copy, and use the Paste Text tab.");
       setAnalyzingEx(false); return;
@@ -3062,8 +3064,9 @@ function LessonPlanGenerator() {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
-      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nCONTENT:\n${text.slice(0,4000)}`);
+      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nCONTENT:\n${text.slice(0,8000)}`);
       setExemplarDesc(desc);
+      setExemplarRaw(text);
     } catch(e) { setExError(`Could not load URL: ${e.message}. Try the Paste Text tab.`); }
     setAnalyzingEx(false);
   };
@@ -3072,13 +3075,14 @@ function LessonPlanGenerator() {
     if (!exemplarText.trim()) return;
     setExError(""); setExemplarDesc(""); setAnalyzingEx(true);
     try {
-      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${exemplarText.slice(0,4000)}`);
+      const desc = await callClaude("Analyze lesson plan text briefly.", `${ANALYZE_Q}\n\nPLAN:\n${exemplarText.slice(0,8000)}`);
       setExemplarDesc(desc);
+      setExemplarRaw(exemplarText);
     } catch(e) { setExError(`Analysis failed: ${e.message}`); }
     setAnalyzingEx(false);
   };
 
-  const clearExemplar = () => { setExemplarFile(null); setExemplarUrl(""); setExemplarText(""); setExemplarDesc(""); setExError(""); setAnalyzingEx(false); };
+  const clearExemplar = () => { setExemplarFile(null); setExemplarUrl(""); setExemplarText(""); setExemplarDesc(""); setExemplarRaw(""); setExError(""); setAnalyzingEx(false); };
   const handleDrop = (e) => { e.preventDefault(); setDraggingOver(false); const f = e.dataTransfer.files?.[0]; if (f) { setExMode("file"); handleExemplarFile(f); } };
 
   // ── MAIN GENERATE ─────────────────────────────────────────────────
