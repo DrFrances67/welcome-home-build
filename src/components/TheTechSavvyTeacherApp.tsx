@@ -2926,6 +2926,7 @@ function LessonPlanGenerator() {
   const [exemplarUrl, setExemplarUrl]   = useState("");
   const [exemplarText, setExemplarText] = useState("");
   const [exemplarDesc, setExemplarDesc] = useState("");
+  const [exemplarRaw,  setExemplarRaw]  = useState(""); // full text extracted from file/url/paste
   const [analyzingEx, setAnalyzingEx]   = useState(false);
   const [exError, setExError]           = useState("");
   const dropRef                         = useRef(null);
