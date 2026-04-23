@@ -2791,20 +2791,27 @@ Include a variety of activity types. Make the content directly address the stand
               </div>
             </div>
 
+            {/* Page indicator chip */}
+            {pageCount > 1 && (
+              <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
+                Page {currentPage + 1} of {pageCount}
+              </div>
+            )}
+
             {/* Free-position canvas — elements absolutely positioned, draggable */}
-            {ws.elements.length === 0 ? (
+            {pageElements.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
                 <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
-                <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>Your worksheet is empty</p>
+                <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>{pageCount > 1 ? `Page ${currentPage + 1} is empty` : "Your worksheet is empty"}</p>
                 <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
               </div>
             ) : (
               <div style={{
                 position: "relative",
                 width: "100%",
-                minHeight: Math.max(700, ...ws.elements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
+                minHeight: Math.max(700, ...pageElements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
               }}>
-                {ws.elements.map(el => (
+                {pageElements.map(el => (
                   <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
                     onClick={() => { setSelId(el.id); setRightTab("edit"); }}
                     onResize={handleResizeStart}
@@ -2813,6 +2820,42 @@ Include a variety of activity types. Make the content directly address the stand
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Page navigation strip — beneath the paper */}
+          <div className="no-print" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "5px 8px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", zIndex: 5 }}>
+            {Array.from({ length: pageCount }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setCurrentPage(i); setSelId(null); }}
+                aria-label={`Go to page ${i + 1}`}
+                aria-current={i === currentPage ? "page" : undefined}
+                style={{
+                  minWidth: 28, height: 28, padding: "0 8px", borderRadius: 999,
+                  border: i === currentPage ? `1.5px solid ${gv.color}` : "1.5px solid transparent",
+                  background: i === currentPage ? gv.light : "transparent",
+                  color: i === currentPage ? gv.color : "#6B7280",
+                  fontFamily: F, fontWeight: 700, fontSize: 12, cursor: "pointer",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+                }}
+              >
+                {i + 1}
+                {pageCount > 1 && i === currentPage && (
+                  <span
+                    role="button"
+                    aria-label={`Delete page ${i + 1}`}
+                    onClick={(e) => { e.stopPropagation(); removePage(i); }}
+                    style={{ marginLeft: 2, fontSize: 11, color: "#9CA3AF", cursor: "pointer", lineHeight: 1 }}
+                  >✕</span>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={addPage}
+              aria-label="Add new page"
+              title="Add new page"
+              style={{ width: 28, height: 28, borderRadius: 999, border: "none", background: gv.color, color: "white", fontFamily: F, fontWeight: 800, fontSize: 16, cursor: "pointer", lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+            >+</button>
           </div>
         </main>
 
