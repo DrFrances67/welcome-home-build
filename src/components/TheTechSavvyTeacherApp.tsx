@@ -985,7 +985,10 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   if (el.type === "customShape") {
     const shapes = el.shapes || [];
     const colMap = { "1-col":1, "2-col":2, "3-col":3, "4-col":4, "2x2":2 };
-    const cols = colMap[el.layout] || 2;
+    const requestedCols = colMap[el.layout] || 2;
+    const orientation = el.orientation || "horizontal"; // "horizontal" | "vertical"
+    // Vertical = stack in a single column (one shape per row).
+    const cols = orientation === "vertical" ? 1 : requestedCols;
     const fs = el.fontSizeOverride || gv.fontSize;
     // When the user resizes the customShape wrapper, scale shapes proportionally
     // to fill the new width and height (fixes "shapes don't resize").
