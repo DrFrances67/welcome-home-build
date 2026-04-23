@@ -1788,20 +1788,81 @@ function AIImageGen({ gv, onAddImage }) {
 // AI CHAT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AIChat({ gv, wsTitle, elCount, refDesc }) {
+function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   const [msgs, setMsgs] = useState([
-    { role: "assistant", content: `Hi! 👋 I'm your worksheet assistant!\n\nI can help with any grade level. Try asking:\n• "Write 5 true/false questions about the American Revolution"\n• "Give me a word bank about habitats for ${gv.name}"\n• "Create a short reading passage about fractions"\n• "Simplify this text for ${gv.name}: [paste text]"\n• "Suggest 4 multiple choice questions about volcanoes"` }
+    { role: "assistant", content: `Hi! 👋 I'm your worksheet assistant!\n\nI can build a complete worksheet for you, or help with parts. Try:\n• "Make a worksheet about the water cycle"\n• "Create a 2nd grade worksheet on adding within 20"\n• "Write 5 true/false questions about the American Revolution"\n• "Give me a word bank about habitats for ${gv.name}"\n• "Simplify this text for ${gv.name}: [paste text]"` }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef();
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
+  // Detect "create / build / make / generate / design a worksheet …" intent
+  const looksLikeWorksheetRequest = (txt) => {
+    const t = (txt || "").toLowerCase();
+    if (!t) return false;
+    const verbs = /\b(make|create|build|generate|design|produce|put together|draft|whip up)\b/;
+    const noun  = /\b(worksheet|activity sheet|practice sheet|handout|packet|assignment|quiz|exit ticket|review sheet)\b/;
+    return verbs.test(t) && noun.test(t);
+  };
+
+  // Build a full worksheet (returns an array of element objects) ──────────
+  const buildWorksheet = async (userPrompt) => {
+    const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 1800,
+        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–9 worksheet element objects.
+
+Allowed element shapes (use exactly these keys):
+{"type":"instruction","text":"<directions>"}
+{"type":"text","text":"<passage or content>"}
+{"type":"blank","label":"<prompt>","lines":3}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3","w4","w5"]}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"]}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"]}
+{"type":"truefalse","statements":["s1","s2","s3"]}
+{"type":"shortAnswer","question":"<q>","lines":4}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"Use the word bank."}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+
+Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
+        messages: [{ role: "user", content: userPrompt }]
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message || "AI error");
+    const raw = d.content?.map(b => b.text || "").join("") || "[]";
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
+    const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+    const parsed = JSON.parse(slice);
+    if (!Array.isArray(parsed)) throw new Error("AI did not return an array");
+    return parsed;
+  };
+
   const send = async () => {
     if (!input.trim() || loading) return;
-    const userMsg = { role: "user", content: input };
+    const userText = input;
+    const userMsg = { role: "user", content: userText };
     const next = [...msgs, userMsg];
     setMsgs(next); setInput(""); setLoading(true);
+
+    // ─── Worksheet-build intent: produce real elements ───
+    if (looksLikeWorksheetRequest(userText) && typeof onInsertElements === "function") {
+      try {
+        const els = await buildWorksheet(userText);
+        onInsertElements(els);
+        setMsgs(p => [...p, { role: "assistant", content: `✨ Done! I added ${els.length} element${els.length===1?"":"s"} to your worksheet. Click any block on the page to edit it, or ask me to tweak anything.` }]);
+      } catch (e) {
+        setMsgs(p => [...p, { role: "assistant", content: `I tried to build that worksheet but ran into an error: ${e?.message || e}. You can try rewording, or ask me for parts (e.g. "give me 5 multiple choice questions about ___").` }]);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // ─── Otherwise: normal conversational reply ───
     try {
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -1816,6 +1877,7 @@ Your role:
 - Align suggestions with NY State learning standards when relevant
 - Be warm and practical — provide content the teacher can directly copy
 - Use bullet points and clear formatting for readability
+- IMPORTANT: If the teacher asks you to "make / create / build a worksheet", do NOT respond here — that is handled separately and produces real worksheet blocks.
 
 Grade-level calibration:
 - Pre-K/K: single words, pictures, concrete concepts, very simple vocabulary
@@ -1848,7 +1910,7 @@ Grade-level calibration:
         <div ref={endRef} />
       </div>
       <div style={{ padding: "10px 12px", borderTop: "1px solid #EEE", display: "flex", gap: 8 }}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} spellCheck placeholder="Ask for ideas or help…" style={{ flex: 1, padding: "9px 13px", borderRadius: 18, border: `2px solid ${gv.color}35`, fontSize: 13, fontFamily: F, outline: "none", background: "#FAFAFA" }} />
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} spellCheck placeholder="Ask for ideas or 'make a worksheet about…'" style={{ flex: 1, padding: "9px 13px", borderRadius: 18, border: `2px solid ${gv.color}35`, fontSize: 13, fontFamily: F, outline: "none", background: "#FAFAFA" }} />
         <button onClick={send} disabled={loading} style={{ padding: "9px 14px", borderRadius: 18, border: "none", background: gv.color, color: "white", fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: loading ? 0.6 : 1, fontFamily: F }}>→</button>
       </div>
     </div>
