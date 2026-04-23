@@ -985,7 +985,10 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   if (el.type === "customShape") {
     const shapes = el.shapes || [];
     const colMap = { "1-col":1, "2-col":2, "3-col":3, "4-col":4, "2x2":2 };
-    const cols = colMap[el.layout] || 2;
+    const requestedCols = colMap[el.layout] || 2;
+    const orientation = el.orientation || "horizontal"; // "horizontal" | "vertical"
+    // Vertical = stack in a single column (one shape per row).
+    const cols = orientation === "vertical" ? 1 : requestedCols;
     const fs = el.fontSizeOverride || gv.fontSize;
     // When the user resizes the customShape wrapper, scale shapes proportionally
     // to fill the new width and height (fixes "shapes don't resize").
@@ -1129,8 +1132,21 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       {el.type === "wordBank" && (<>
         <label style={LBL}>Title</label>
         <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Word bank title" />
-        <label style={LBL}>Words (one per line)</label>
-        <textarea value={(el.words || []).join("\n")} spellCheck onChange={e => onChange({ words: e.target.value.split("\n").map(w => w.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 110, marginTop: 4 }} aria-label="Word bank words" />
+        <label style={LBL}>Words (one per line — press Enter for a new word)</label>
+        {/* Preserve raw text (including trailing empty lines) so Enter creates a new line.
+            Only trim/filter when rendering the worksheet preview. */}
+        <textarea
+          value={el._wordsRaw !== undefined ? el._wordsRaw : (el.words || []).join("\n")}
+          spellCheck
+          onChange={e => {
+            const raw = e.target.value;
+            const words = raw.split("\n").map(w => w.trim()).filter(Boolean);
+            onChange({ _wordsRaw: raw, words });
+          }}
+          style={{ ...inp, minHeight: 110, marginTop: 4 }}
+          aria-label="Word bank words"
+          placeholder={"cat\ndog\nfish"}
+        />
       </>)}
 
       {el.type === "matching" && (<>
@@ -1400,6 +1416,22 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
           </button>
         ))}
       </div>
+
+      <label style={LBL}>Orientation</label>
+      <div style={{ display:"flex", gap:6, marginTop:4 }}>
+        {[["horizontal","↔ Horizontal","Arrange shapes across in columns"],["vertical","↕ Vertical","Stack shapes top-to-bottom in one column"]].map(([v,lbl,desc]) => {
+          const active = (el.orientation || "horizontal") === v;
+          return (
+            <button key={v} onClick={() => onChange({ orientation: v })} aria-pressed={active} title={desc}
+              style={{ flex:1, padding:"6px 10px", borderRadius:6, border:`1.5px solid ${active ? gv.color : "#E5E7EB"}`, background:active ? gv.light : "white", color:active ? gv.color : "#6B7280", fontFamily:F, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+              {lbl}
+            </button>
+          );
+        })}
+      </div>
+      <p style={{ fontFamily:F, fontSize:10.5, color:"#9CA3AF", margin:"4px 0 0" }}>
+        {(el.orientation || "horizontal") === "vertical" ? "Shapes stack in a single column (top to bottom)." : "Shapes spread across the selected number of columns."}
+      </p>
 
       {/* Shape tabs */}
       <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F3F4F6" }}>
@@ -1756,20 +1788,81 @@ function AIImageGen({ gv, onAddImage }) {
 // AI CHAT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AIChat({ gv, wsTitle, elCount, refDesc }) {
+function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   const [msgs, setMsgs] = useState([
-    { role: "assistant", content: `Hi! 👋 I'm your worksheet assistant!\n\nI can help with any grade level. Try asking:\n• "Write 5 true/false questions about the American Revolution"\n• "Give me a word bank about habitats for ${gv.name}"\n• "Create a short reading passage about fractions"\n• "Simplify this text for ${gv.name}: [paste text]"\n• "Suggest 4 multiple choice questions about volcanoes"` }
+    { role: "assistant", content: `Hi! 👋 I'm your worksheet assistant!\n\nI can build a complete worksheet for you, or help with parts. Try:\n• "Make a worksheet about the water cycle"\n• "Create a 2nd grade worksheet on adding within 20"\n• "Write 5 true/false questions about the American Revolution"\n• "Give me a word bank about habitats for ${gv.name}"\n• "Simplify this text for ${gv.name}: [paste text]"` }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef();
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
+  // Detect "create / build / make / generate / design a worksheet …" intent
+  const looksLikeWorksheetRequest = (txt) => {
+    const t = (txt || "").toLowerCase();
+    if (!t) return false;
+    const verbs = /\b(make|create|build|generate|design|produce|put together|draft|whip up)\b/;
+    const noun  = /\b(worksheet|activity sheet|practice sheet|handout|packet|assignment|quiz|exit ticket|review sheet)\b/;
+    return verbs.test(t) && noun.test(t);
+  };
+
+  // Build a full worksheet (returns an array of element objects) ──────────
+  const buildWorksheet = async (userPrompt) => {
+    const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 1800,
+        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–9 worksheet element objects.
+
+Allowed element shapes (use exactly these keys):
+{"type":"instruction","text":"<directions>"}
+{"type":"text","text":"<passage or content>"}
+{"type":"blank","label":"<prompt>","lines":3}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3","w4","w5"]}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"]}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"]}
+{"type":"truefalse","statements":["s1","s2","s3"]}
+{"type":"shortAnswer","question":"<q>","lines":4}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"Use the word bank."}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+
+Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
+        messages: [{ role: "user", content: userPrompt }]
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message || "AI error");
+    const raw = d.content?.map(b => b.text || "").join("") || "[]";
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
+    const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+    const parsed = JSON.parse(slice);
+    if (!Array.isArray(parsed)) throw new Error("AI did not return an array");
+    return parsed;
+  };
+
   const send = async () => {
     if (!input.trim() || loading) return;
-    const userMsg = { role: "user", content: input };
+    const userText = input;
+    const userMsg = { role: "user", content: userText };
     const next = [...msgs, userMsg];
     setMsgs(next); setInput(""); setLoading(true);
+
+    // ─── Worksheet-build intent: produce real elements ───
+    if (looksLikeWorksheetRequest(userText) && typeof onInsertElements === "function") {
+      try {
+        const els = await buildWorksheet(userText);
+        onInsertElements(els);
+        setMsgs(p => [...p, { role: "assistant", content: `✨ Done! I added ${els.length} element${els.length===1?"":"s"} to your worksheet. Click any block on the page to edit it, or ask me to tweak anything.` }]);
+      } catch (e) {
+        setMsgs(p => [...p, { role: "assistant", content: `I tried to build that worksheet but ran into an error: ${e?.message || e}. You can try rewording, or ask me for parts (e.g. "give me 5 multiple choice questions about ___").` }]);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // ─── Otherwise: normal conversational reply ───
     try {
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -1784,6 +1877,7 @@ Your role:
 - Align suggestions with NY State learning standards when relevant
 - Be warm and practical — provide content the teacher can directly copy
 - Use bullet points and clear formatting for readability
+- IMPORTANT: If the teacher asks you to "make / create / build a worksheet", do NOT respond here — that is handled separately and produces real worksheet blocks.
 
 Grade-level calibration:
 - Pre-K/K: single words, pictures, concrete concepts, very simple vocabulary
@@ -1816,7 +1910,7 @@ Grade-level calibration:
         <div ref={endRef} />
       </div>
       <div style={{ padding: "10px 12px", borderTop: "1px solid #EEE", display: "flex", gap: 8 }}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} spellCheck placeholder="Ask for ideas or help…" style={{ flex: 1, padding: "9px 13px", borderRadius: 18, border: `2px solid ${gv.color}35`, fontSize: 13, fontFamily: F, outline: "none", background: "#FAFAFA" }} />
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} spellCheck placeholder="Ask for ideas or 'make a worksheet about…'" style={{ flex: 1, padding: "9px 13px", borderRadius: 18, border: `2px solid ${gv.color}35`, fontSize: 13, fontFamily: F, outline: "none", background: "#FAFAFA" }} />
         <button onClick={send} disabled={loading} style={{ padding: "9px 14px", borderRadius: 18, border: "none", background: gv.color, color: "white", fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: loading ? 0.6 : 1, fontFamily: F }}>→</button>
       </div>
     </div>
@@ -2290,7 +2384,8 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [] });
+  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1 });
+  const [currentPage, setCurrentPage] = useState(0);
   const [selId, setSelId] = useState(null);
   const [rightTab, setRightTab] = useState("edit");
   const [showHelp, setShowHelp]       = useState(false);
@@ -2300,18 +2395,26 @@ export function WorksheetBuilder() {
   const [refImg, setRefImg] = useState(null);
   const [refDesc, setRefDesc] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  // Worksheet-file uploader (PDF/CSV) state
+  const [wsFile, setWsFile] = useState(null);          // { name, raw }
+  const [wsFileBusy, setWsFileBusy] = useState(false);
+  const [wsFileMsg, setWsFileMsg] = useState("");
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
 
   const gv = gInfo(ws.gradeId);
+  const pageCount = Math.max(1, ws.pageCount || 1);
+  const pageOf = (el) => Math.min(pageCount - 1, el.page || 0);
+  const pageElements = ws.elements.filter(e => pageOf(e) === currentPage);
   const selEl = ws.elements.find(e => e.id === selId) || null;
 
   const announce = (msg) => { setStatusMsg(msg); setTimeout(() => setStatusMsg(""), 3000); };
 
   const setF = (k, v) => setWs(p => ({ ...p, [k]: v }));
   const addEl = (type) => {
-    const el = mkEl(type, nextSlot(ws.elements.length));
+    const onPage = ws.elements.filter(e => (e.page || 0) === currentPage).length;
+    const el = { ...mkEl(type, nextSlot(onPage)), page: currentPage };
     setWs(p => ({ ...p, elements: [...p.elements, el] }));
     setSelId(el.id); setRightTab("edit");
     announce(`${PALETTE.find(p => p.type === type)?.label || type} element added`);
@@ -2320,6 +2423,36 @@ export function WorksheetBuilder() {
   const delEl = (id) => {
     setWs(p => ({ ...p, elements: p.elements.filter(e => e.id !== id) }));
     setSelId(null); announce("Element deleted");
+  };
+  const addPage = () => {
+    setWs(p => ({ ...p, pageCount: (p.pageCount || 1) + 1 }));
+    setCurrentPage(pageCount); // jump to the new page
+    setSelId(null);
+    announce(`Page ${pageCount + 1} added`);
+  };
+  const removePage = (idx) => {
+    if (pageCount <= 1) return;
+    if (!confirm(`Delete page ${idx + 1} and all its elements?`)) return;
+    setWs(p => {
+      const remaining = p.elements
+        .filter(e => (e.page || 0) !== idx)
+        .map(e => ({ ...e, page: (e.page || 0) > idx ? (e.page || 0) - 1 : (e.page || 0) }));
+      return { ...p, elements: remaining, pageCount: Math.max(1, (p.pageCount || 1) - 1) };
+    });
+    setCurrentPage(c => Math.max(0, Math.min(c, pageCount - 2)));
+    setSelId(null);
+  };
+  // Insert AI-generated worksheet elements onto the current page
+  const insertAiElements = (parsed) => {
+    if (!Array.isArray(parsed) || !parsed.length) return;
+    const onPage = ws.elements.filter(e => (e.page || 0) === currentPage).length;
+    const newEls = parsed.map((el, i) => {
+      const slot = nextSlot(onPage + i);
+      return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride, page: currentPage };
+    });
+    setWs(p => ({ ...p, elements: [...p.elements, ...newEls] }));
+    setRightTab("edit");
+    announce(`${newEls.length} elements added to page ${currentPage + 1}`);
   };
   const movEl = (id, d) => setWs(p => {
     const els = [...p.elements], i = els.findIndex(e => e.id === id);
