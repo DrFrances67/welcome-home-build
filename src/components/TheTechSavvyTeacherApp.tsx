@@ -2225,11 +2225,12 @@ function ExportModal({ gv, ws, onClose }) {
 
   // Build plain-text export
   const toText = () => {
+    const totalPages = Math.max(1, ws.pageCount || 1);
     const lines = [`${ws.title}`, "=".repeat(ws.title.length), ""];
     if (ws.showName) lines.push("Name: _______________________________   ");
     if (ws.showDate) lines.push("Date: _______________________________");
     lines.push("");
-    ws.elements.forEach((el, i) => {
+    const renderEl = (el, i) => {
       if (el.type === "instruction") { lines.push(`[Instructions]`); lines.push(el.text || ""); lines.push(""); }
       else if (el.type === "text") { lines.push(el.text || ""); lines.push(""); }
       else if (el.type === "multipleChoice") {
@@ -2253,7 +2254,13 @@ function ExportModal({ gv, ws, onClose }) {
         lines.push("");
       }
       else if (el.type === "divider") { lines.push("─".repeat(40)); lines.push(""); }
-    });
+    };
+    for (let p = 0; p < totalPages; p++) {
+      if (totalPages > 1) { lines.push(`──── Page ${p + 1} ────`); lines.push(""); }
+      const pageEls = ws.elements.filter(e => Math.min(totalPages - 1, e.page || 0) === p);
+      pageEls.forEach((el, i) => renderEl(el, i));
+      if (p < totalPages - 1) { lines.push("\f"); lines.push(""); }
+    }
     return lines.join("\n");
   };
 
@@ -2277,7 +2284,13 @@ function ExportModal({ gv, ws, onClose }) {
       if (el.type === "table") return `<div style="margin-bottom:18px">${el.title?`<p style="font-size:${Math.max(fs-4,13)}px;font-weight:800;margin:0 0 10px">${el.title}</p>`:""}<table style="width:100%;border-collapse:collapse;font-size:${Math.max(fs-4,12)}px"><thead><tr>${(el.headers||[]).map(h=>`<th style="padding:8px 12px;border:2px solid ${gv2.color};background:${gv2.color};color:white;font-weight:900;text-align:center">${h}</th>`).join("")}</tr></thead><tbody>${(el.rows||[]).map(row=>`<tr>${(row||[]).map(cell=>`<td style="padding:6px 10px;border:1.5px solid #DDD;height:${gv2.lineH}px;vertical-align:top">${cell||""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
       return "";
     };
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title}</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{body{margin:0}}</style></head><body><div style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif;position:relative">${ws.showGrade?`<div style="position:absolute;top:14px;right:18px;background:${gv2.light};border:2px solid ${gv2.color}40;border-radius:20px;padding:3px 13px;font-size:11px;font-weight:900;color:${gv2.color}">${gv2.emoji} ${gv2.name}</div>`:""}<div style="border-bottom:3px solid ${gv2.color}25;padding-bottom:8px;margin-bottom:16px"><h1 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize+6}px;margin:0 0 14px;padding-right:120px">${ws.title}</h1><div style="display:flex;gap:44px">${ws.showName?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Name:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""} ${ws.showDate?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Date:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""}</div></div>${ws.elements.map(renderEl).join("")}</div></body></html>`;
+    const totalPages = Math.max(1, ws.pageCount || 1);
+    const pagesHtml = Array.from({ length: totalPages }).map((_, pIdx) => {
+      const pageEls = ws.elements.filter(e => Math.min(totalPages - 1, e.page || 0) === pIdx);
+      const isLast = pIdx === totalPages - 1;
+      return `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif;position:relative;${isLast ? "" : "page-break-after:always;"}">${ws.showGrade?`<div style="position:absolute;top:14px;right:18px;background:${gv2.light};border:2px solid ${gv2.color}40;border-radius:20px;padding:3px 13px;font-size:11px;font-weight:900;color:${gv2.color}">${gv2.emoji} ${gv2.name}</div>`:""}<div style="border-bottom:3px solid ${gv2.color}25;padding-bottom:8px;margin-bottom:16px"><h1 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize+6}px;margin:0 0 14px;padding-right:120px">${ws.title}${totalPages > 1 ? ` <span style="font-family:'Nunito',sans-serif;font-size:${Math.max(gv2.fontSize-4,12)}px;font-weight:700;color:#9CA3AF">— Page ${pIdx + 1}</span>` : ""}</h1><div style="display:flex;gap:44px">${ws.showName?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Name:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""} ${ws.showDate?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Date:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""}</div></div>${pageEls.map(renderEl).join("")}</div>`;
+    }).join("");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title}</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{body{margin:0}.ws-page{page-break-after:always}.ws-page:last-child{page-break-after:auto}}</style></head><body>${pagesHtml}</body></html>`;
   };
 
   const downloadHTML = () => {
@@ -2649,6 +2662,91 @@ Include a variety of activity types. Make the content directly address the stand
     reader.readAsDataURL(file);
   };
 
+  // ── Worksheet file (PDF/CSV/TXT) → AI re-creates as editable blocks ──
+  const extractPdfTextLocal = async (file) => {
+    const pdfjs: any = await import("pdfjs-dist");
+    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const pages = Math.min(doc.numPages, 10);
+    let text = "";
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
+    }
+    return text.trim();
+  };
+
+  const handleWsFileUpload = async (file: File) => {
+    setWsFileMsg(""); setWsFileBusy(true);
+    try {
+      let raw = "";
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const isText = /\.(csv|txt|md)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
+      if (isPdf) raw = await extractPdfTextLocal(file);
+      else if (isText) raw = await file.text();
+      else throw new Error("Unsupported file type. Use PDF, CSV, or TXT.");
+      raw = (raw || "").slice(0, 8000);
+      if (!raw.trim()) throw new Error("Could not read any text from that file.");
+      setWsFile({ name: file.name, raw });
+      setWsFileMsg("✓ Loaded. Click Recreate to build this worksheet, or Re-imagine for a fresh take.");
+    } catch (e: any) {
+      setWsFileMsg(`⚠ ${e?.message || "Failed to read file."}`);
+      setWsFile(null);
+    }
+    setWsFileBusy(false);
+  };
+
+  const recreateWorksheetFromFile = async (reimagine: boolean) => {
+    if (!wsFile?.raw) return;
+    setWsFileBusy(true); setWsFileMsg(reimagine ? "Re-imagining…" : "Recreating…");
+    try {
+      const g = gInfo(ws.gradeId);
+      const intent = reimagine
+        ? `Re-imagine the worksheet below as a fresh, improved version for ${g.name} students. Keep the same topic and skill focus, but feel free to adjust activity types, vary question styles, and add engagement.`
+        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, and structure as closely as possible.`;
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 2200,
+          system: `You convert a teacher's existing worksheet text into structured worksheet blocks. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
+
+Allowed element shapes (use exactly these keys):
+{"type":"instruction","text":"<directions>"}
+{"type":"text","text":"<passage or content>"}
+{"type":"blank","label":"<prompt>","lines":3}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"]}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"]}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"]}
+{"type":"truefalse","statements":["s1","s2","s3"]}
+{"type":"shortAnswer","question":"<q>","lines":4}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>"}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+
+Output ONLY the JSON array.`,
+          messages: [{ role: "user", content: `${intent}\n\nWORKSHEET TEXT:\n${wsFile.raw}` }]
+        })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
+      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
+      insertAiElements(parsed);
+      setWsFileMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} to page ${currentPage + 1}.`);
+    } catch (e: any) {
+      setWsFileMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
+    }
+    setWsFileBusy(false);
+  };
+
+
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
@@ -2722,9 +2820,9 @@ Include a variety of activity types. Make the content directly address the stand
             </button>
           </div>
 
-          {/* Reference Upload */}
+          {/* Reference Upload — image or PDF preview, AI describes the style */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Reference Worksheet</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Exemplar</p>
             {refImg ? (
               <div style={{ position: "relative" }}>
                 <img src={refImg} alt="Uploaded reference worksheet" style={{ width: "100%", borderRadius: 7, border: "1px solid #E5E7EB", maxHeight: 88, objectFit: "cover" }} />
@@ -2735,13 +2833,50 @@ Include a variety of activity types. Make the content directly address the stand
             ) : (
               <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: gv.light, cursor: "pointer", textAlign: "center" }}>
                 <span style={{ fontSize: 20 }} aria-hidden="true">📎</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Example</span>
-                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image or PDF</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Exemplar</span>
+                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image or PDF · style reference</span>
                 <input type="file" accept="image/*,.pdf" aria-label="Upload reference worksheet" onChange={e => e.target.files[0] && handleRefUpload(e.target.files[0])} style={{ display: "none" }} />
               </label>
             )}
             {refDesc && !analyzing && <p style={{ fontSize: 10, color: "#6B7280", margin: "6px 0 0", lineHeight: 1.45, fontFamily: F }}>{refDesc}</p>}
           </div>
+
+          {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
+          <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Worksheet</p>
+            {wsFile ? (
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 7, padding: 8, position: "relative" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: 0, fontFamily: F, paddingRight: 18, wordBreak: "break-all" }}>📄 {wsFile.name}</p>
+                <button onClick={() => { setWsFile(null); setWsFileMsg(""); }} aria-label="Remove uploaded worksheet"
+                  style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#9CA3AF" }}>✕</button>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <button
+                    disabled={wsFileBusy}
+                    onClick={() => recreateWorksheetFromFile(false)}
+                    style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "none", background: gv.color, color: "white", fontFamily: F, fontWeight: 700, fontSize: 11, cursor: wsFileBusy ? "wait" : "pointer", opacity: wsFileBusy ? 0.6 : 1 }}>
+                    {wsFileBusy ? "Working…" : "Recreate"}
+                  </button>
+                  <button
+                    disabled={wsFileBusy}
+                    onClick={() => recreateWorksheetFromFile(true)}
+                    title="Build a fresh, improved version inspired by this worksheet"
+                    style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: `1.5px solid ${gv.color}`, background: "white", color: gv.color, fontFamily: F, fontWeight: 700, fontSize: 11, cursor: wsFileBusy ? "wait" : "pointer", opacity: wsFileBusy ? 0.6 : 1 }}>
+                    Re-imagine
+                  </button>
+                </div>
+                {wsFileMsg && <p style={{ fontSize: 10, color: wsFileMsg.startsWith("⚠") ? "#B91C1C" : "#6B7280", margin: "6px 0 0", lineHeight: 1.4, fontFamily: F }}>{wsFileMsg}</p>}
+              </div>
+            ) : (
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: "white", cursor: "pointer", textAlign: "center" }}>
+                <span style={{ fontSize: 20 }} aria-hidden="true">📥</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Worksheet</span>
+                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>PDF · CSV · TXT</span>
+                <input type="file" accept=".pdf,.csv,.txt,.md,text/csv,text/plain,application/pdf" aria-label="Upload worksheet file to recreate"
+                  onChange={e => e.target.files[0] && handleWsFileUpload(e.target.files[0])} style={{ display: "none" }} />
+              </label>
+            )}
+          </div>
+
 
           {/* Element palette */}
           <div style={{ padding: "6px 8px 2px" }}>
@@ -2791,20 +2926,27 @@ Include a variety of activity types. Make the content directly address the stand
               </div>
             </div>
 
+            {/* Page indicator chip */}
+            {pageCount > 1 && (
+              <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
+                Page {currentPage + 1} of {pageCount}
+              </div>
+            )}
+
             {/* Free-position canvas — elements absolutely positioned, draggable */}
-            {ws.elements.length === 0 ? (
+            {pageElements.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
                 <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
-                <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>Your worksheet is empty</p>
+                <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>{pageCount > 1 ? `Page ${currentPage + 1} is empty` : "Your worksheet is empty"}</p>
                 <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
               </div>
             ) : (
               <div style={{
                 position: "relative",
                 width: "100%",
-                minHeight: Math.max(700, ...ws.elements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
+                minHeight: Math.max(700, ...pageElements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
               }}>
-                {ws.elements.map(el => (
+                {pageElements.map(el => (
                   <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
                     onClick={() => { setSelId(el.id); setRightTab("edit"); }}
                     onResize={handleResizeStart}
@@ -2813,6 +2955,42 @@ Include a variety of activity types. Make the content directly address the stand
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Page navigation strip — beneath the paper */}
+          <div className="no-print" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "5px 8px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", zIndex: 5 }}>
+            {Array.from({ length: pageCount }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setCurrentPage(i); setSelId(null); }}
+                aria-label={`Go to page ${i + 1}`}
+                aria-current={i === currentPage ? "page" : undefined}
+                style={{
+                  minWidth: 28, height: 28, padding: "0 8px", borderRadius: 999,
+                  border: i === currentPage ? `1.5px solid ${gv.color}` : "1.5px solid transparent",
+                  background: i === currentPage ? gv.light : "transparent",
+                  color: i === currentPage ? gv.color : "#6B7280",
+                  fontFamily: F, fontWeight: 700, fontSize: 12, cursor: "pointer",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+                }}
+              >
+                {i + 1}
+                {pageCount > 1 && i === currentPage && (
+                  <span
+                    role="button"
+                    aria-label={`Delete page ${i + 1}`}
+                    onClick={(e) => { e.stopPropagation(); removePage(i); }}
+                    style={{ marginLeft: 2, fontSize: 11, color: "#9CA3AF", cursor: "pointer", lineHeight: 1 }}
+                  >✕</span>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={addPage}
+              aria-label="Add new page"
+              title="Add new page"
+              style={{ width: 28, height: 28, borderRadius: 999, border: "none", background: gv.color, color: "white", fontFamily: F, fontWeight: 800, fontSize: 16, cursor: "pointer", lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+            >+</button>
           </div>
         </main>
 
@@ -2827,7 +3005,7 @@ Include a variety of activity types. Make the content directly address the stand
           <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }} role="tabpanel">
             {rightTab === "edit"  && <ElEditor el={selEl} gv={gv} onChange={u => selEl && updEl(selEl.id, u)} onDelete={() => selEl && delEl(selEl.id)} onMoveUp={() => selEl && movEl(selEl.id, "up")} onMoveDown={() => selEl && movEl(selEl.id, "down")} />}
             {rightTab === "image" && <AIImageGen gv={gv} onAddImage={addGeneratedImage} />}
-            {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} />}
+            {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} onInsertElements={insertAiElements} />}
           </div>
         </aside>
       </div>
