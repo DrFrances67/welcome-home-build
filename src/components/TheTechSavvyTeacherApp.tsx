@@ -2649,6 +2649,91 @@ Include a variety of activity types. Make the content directly address the stand
     reader.readAsDataURL(file);
   };
 
+  // ── Worksheet file (PDF/CSV/TXT) → AI re-creates as editable blocks ──
+  const extractPdfTextLocal = async (file) => {
+    const pdfjs: any = await import("pdfjs-dist");
+    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const pages = Math.min(doc.numPages, 10);
+    let text = "";
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
+    }
+    return text.trim();
+  };
+
+  const handleWsFileUpload = async (file: File) => {
+    setWsFileMsg(""); setWsFileBusy(true);
+    try {
+      let raw = "";
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const isText = /\.(csv|txt|md)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
+      if (isPdf) raw = await extractPdfTextLocal(file);
+      else if (isText) raw = await file.text();
+      else throw new Error("Unsupported file type. Use PDF, CSV, or TXT.");
+      raw = (raw || "").slice(0, 8000);
+      if (!raw.trim()) throw new Error("Could not read any text from that file.");
+      setWsFile({ name: file.name, raw });
+      setWsFileMsg("✓ Loaded. Click Recreate to build this worksheet, or Re-imagine for a fresh take.");
+    } catch (e: any) {
+      setWsFileMsg(`⚠ ${e?.message || "Failed to read file."}`);
+      setWsFile(null);
+    }
+    setWsFileBusy(false);
+  };
+
+  const recreateWorksheetFromFile = async (reimagine: boolean) => {
+    if (!wsFile?.raw) return;
+    setWsFileBusy(true); setWsFileMsg(reimagine ? "Re-imagining…" : "Recreating…");
+    try {
+      const g = gInfo(ws.gradeId);
+      const intent = reimagine
+        ? `Re-imagine the worksheet below as a fresh, improved version for ${g.name} students. Keep the same topic and skill focus, but feel free to adjust activity types, vary question styles, and add engagement.`
+        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, and structure as closely as possible.`;
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 2200,
+          system: `You convert a teacher's existing worksheet text into structured worksheet blocks. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
+
+Allowed element shapes (use exactly these keys):
+{"type":"instruction","text":"<directions>"}
+{"type":"text","text":"<passage or content>"}
+{"type":"blank","label":"<prompt>","lines":3}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"]}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"]}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"]}
+{"type":"truefalse","statements":["s1","s2","s3"]}
+{"type":"shortAnswer","question":"<q>","lines":4}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>"}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+
+Output ONLY the JSON array.`,
+          messages: [{ role: "user", content: `${intent}\n\nWORKSHEET TEXT:\n${wsFile.raw}` }]
+        })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
+      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
+      insertAiElements(parsed);
+      setWsFileMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} to page ${currentPage + 1}.`);
+    } catch (e: any) {
+      setWsFileMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
+    }
+    setWsFileBusy(false);
+  };
+
+
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
