@@ -1417,6 +1417,22 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
         ))}
       </div>
 
+      <label style={LBL}>Orientation</label>
+      <div style={{ display:"flex", gap:6, marginTop:4 }}>
+        {[["horizontal","↔ Horizontal","Arrange shapes across in columns"],["vertical","↕ Vertical","Stack shapes top-to-bottom in one column"]].map(([v,lbl,desc]) => {
+          const active = (el.orientation || "horizontal") === v;
+          return (
+            <button key={v} onClick={() => onChange({ orientation: v })} aria-pressed={active} title={desc}
+              style={{ flex:1, padding:"6px 10px", borderRadius:6, border:`1.5px solid ${active ? gv.color : "#E5E7EB"}`, background:active ? gv.light : "white", color:active ? gv.color : "#6B7280", fontFamily:F, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+              {lbl}
+            </button>
+          );
+        })}
+      </div>
+      <p style={{ fontFamily:F, fontSize:10.5, color:"#9CA3AF", margin:"4px 0 0" }}>
+        {(el.orientation || "horizontal") === "vertical" ? "Shapes stack in a single column (top to bottom)." : "Shapes spread across the selected number of columns."}
+      </p>
+
       {/* Shape tabs */}
       <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F3F4F6" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
