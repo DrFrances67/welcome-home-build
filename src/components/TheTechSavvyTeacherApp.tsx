@@ -2722,9 +2722,9 @@ Include a variety of activity types. Make the content directly address the stand
             </button>
           </div>
 
-          {/* Reference Upload */}
+          {/* Reference Upload — image or PDF preview, AI describes the style */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Reference Worksheet</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Exemplar</p>
             {refImg ? (
               <div style={{ position: "relative" }}>
                 <img src={refImg} alt="Uploaded reference worksheet" style={{ width: "100%", borderRadius: 7, border: "1px solid #E5E7EB", maxHeight: 88, objectFit: "cover" }} />
@@ -2735,13 +2735,50 @@ Include a variety of activity types. Make the content directly address the stand
             ) : (
               <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: gv.light, cursor: "pointer", textAlign: "center" }}>
                 <span style={{ fontSize: 20 }} aria-hidden="true">📎</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Example</span>
-                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image or PDF</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Exemplar</span>
+                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image or PDF · style reference</span>
                 <input type="file" accept="image/*,.pdf" aria-label="Upload reference worksheet" onChange={e => e.target.files[0] && handleRefUpload(e.target.files[0])} style={{ display: "none" }} />
               </label>
             )}
             {refDesc && !analyzing && <p style={{ fontSize: 10, color: "#6B7280", margin: "6px 0 0", lineHeight: 1.45, fontFamily: F }}>{refDesc}</p>}
           </div>
+
+          {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
+          <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Worksheet</p>
+            {wsFile ? (
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 7, padding: 8, position: "relative" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: 0, fontFamily: F, paddingRight: 18, wordBreak: "break-all" }}>📄 {wsFile.name}</p>
+                <button onClick={() => { setWsFile(null); setWsFileMsg(""); }} aria-label="Remove uploaded worksheet"
+                  style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#9CA3AF" }}>✕</button>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <button
+                    disabled={wsFileBusy}
+                    onClick={() => recreateWorksheetFromFile(false)}
+                    style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "none", background: gv.color, color: "white", fontFamily: F, fontWeight: 700, fontSize: 11, cursor: wsFileBusy ? "wait" : "pointer", opacity: wsFileBusy ? 0.6 : 1 }}>
+                    {wsFileBusy ? "Working…" : "Recreate"}
+                  </button>
+                  <button
+                    disabled={wsFileBusy}
+                    onClick={() => recreateWorksheetFromFile(true)}
+                    title="Build a fresh, improved version inspired by this worksheet"
+                    style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: `1.5px solid ${gv.color}`, background: "white", color: gv.color, fontFamily: F, fontWeight: 700, fontSize: 11, cursor: wsFileBusy ? "wait" : "pointer", opacity: wsFileBusy ? 0.6 : 1 }}>
+                    Re-imagine
+                  </button>
+                </div>
+                {wsFileMsg && <p style={{ fontSize: 10, color: wsFileMsg.startsWith("⚠") ? "#B91C1C" : "#6B7280", margin: "6px 0 0", lineHeight: 1.4, fontFamily: F }}>{wsFileMsg}</p>}
+              </div>
+            ) : (
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: "white", cursor: "pointer", textAlign: "center" }}>
+                <span style={{ fontSize: 20 }} aria-hidden="true">📥</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Worksheet</span>
+                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>PDF · CSV · TXT</span>
+                <input type="file" accept=".pdf,.csv,.txt,.md,text/csv,text/plain,application/pdf" aria-label="Upload worksheet file to recreate"
+                  onChange={e => e.target.files[0] && handleWsFileUpload(e.target.files[0])} style={{ display: "none" }} />
+              </label>
+            )}
+          </div>
+
 
           {/* Element palette */}
           <div style={{ padding: "6px 8px 2px" }}>
