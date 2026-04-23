@@ -2384,7 +2384,8 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [] });
+  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1 });
+  const [currentPage, setCurrentPage] = useState(0);
   const [selId, setSelId] = useState(null);
   const [rightTab, setRightTab] = useState("edit");
   const [showHelp, setShowHelp]       = useState(false);
@@ -2394,18 +2395,26 @@ export function WorksheetBuilder() {
   const [refImg, setRefImg] = useState(null);
   const [refDesc, setRefDesc] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  // Worksheet-file uploader (PDF/CSV) state
+  const [wsFile, setWsFile] = useState(null);          // { name, raw }
+  const [wsFileBusy, setWsFileBusy] = useState(false);
+  const [wsFileMsg, setWsFileMsg] = useState("");
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
 
   const gv = gInfo(ws.gradeId);
+  const pageCount = Math.max(1, ws.pageCount || 1);
+  const pageOf = (el) => Math.min(pageCount - 1, el.page || 0);
+  const pageElements = ws.elements.filter(e => pageOf(e) === currentPage);
   const selEl = ws.elements.find(e => e.id === selId) || null;
 
   const announce = (msg) => { setStatusMsg(msg); setTimeout(() => setStatusMsg(""), 3000); };
 
   const setF = (k, v) => setWs(p => ({ ...p, [k]: v }));
   const addEl = (type) => {
-    const el = mkEl(type, nextSlot(ws.elements.length));
+    const onPage = ws.elements.filter(e => (e.page || 0) === currentPage).length;
+    const el = { ...mkEl(type, nextSlot(onPage)), page: currentPage };
     setWs(p => ({ ...p, elements: [...p.elements, el] }));
     setSelId(el.id); setRightTab("edit");
     announce(`${PALETTE.find(p => p.type === type)?.label || type} element added`);
@@ -2414,6 +2423,36 @@ export function WorksheetBuilder() {
   const delEl = (id) => {
     setWs(p => ({ ...p, elements: p.elements.filter(e => e.id !== id) }));
     setSelId(null); announce("Element deleted");
+  };
+  const addPage = () => {
+    setWs(p => ({ ...p, pageCount: (p.pageCount || 1) + 1 }));
+    setCurrentPage(pageCount); // jump to the new page
+    setSelId(null);
+    announce(`Page ${pageCount + 1} added`);
+  };
+  const removePage = (idx) => {
+    if (pageCount <= 1) return;
+    if (!confirm(`Delete page ${idx + 1} and all its elements?`)) return;
+    setWs(p => {
+      const remaining = p.elements
+        .filter(e => (e.page || 0) !== idx)
+        .map(e => ({ ...e, page: (e.page || 0) > idx ? (e.page || 0) - 1 : (e.page || 0) }));
+      return { ...p, elements: remaining, pageCount: Math.max(1, (p.pageCount || 1) - 1) };
+    });
+    setCurrentPage(c => Math.max(0, Math.min(c, pageCount - 2)));
+    setSelId(null);
+  };
+  // Insert AI-generated worksheet elements onto the current page
+  const insertAiElements = (parsed) => {
+    if (!Array.isArray(parsed) || !parsed.length) return;
+    const onPage = ws.elements.filter(e => (e.page || 0) === currentPage).length;
+    const newEls = parsed.map((el, i) => {
+      const slot = nextSlot(onPage + i);
+      return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride, page: currentPage };
+    });
+    setWs(p => ({ ...p, elements: [...p.elements, ...newEls] }));
+    setRightTab("edit");
+    announce(`${newEls.length} elements added to page ${currentPage + 1}`);
   };
   const movEl = (id, d) => setWs(p => {
     const els = [...p.elements], i = els.findIndex(e => e.id === id);
