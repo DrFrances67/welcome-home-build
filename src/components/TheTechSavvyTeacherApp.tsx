@@ -2225,11 +2225,12 @@ function ExportModal({ gv, ws, onClose }) {
 
   // Build plain-text export
   const toText = () => {
+    const totalPages = Math.max(1, ws.pageCount || 1);
     const lines = [`${ws.title}`, "=".repeat(ws.title.length), ""];
     if (ws.showName) lines.push("Name: _______________________________   ");
     if (ws.showDate) lines.push("Date: _______________________________");
     lines.push("");
-    ws.elements.forEach((el, i) => {
+    const renderEl = (el, i) => {
       if (el.type === "instruction") { lines.push(`[Instructions]`); lines.push(el.text || ""); lines.push(""); }
       else if (el.type === "text") { lines.push(el.text || ""); lines.push(""); }
       else if (el.type === "multipleChoice") {
@@ -2253,7 +2254,13 @@ function ExportModal({ gv, ws, onClose }) {
         lines.push("");
       }
       else if (el.type === "divider") { lines.push("─".repeat(40)); lines.push(""); }
-    });
+    };
+    for (let p = 0; p < totalPages; p++) {
+      if (totalPages > 1) { lines.push(`──── Page ${p + 1} ────`); lines.push(""); }
+      const pageEls = ws.elements.filter(e => Math.min(totalPages - 1, e.page || 0) === p);
+      pageEls.forEach((el, i) => renderEl(el, i));
+      if (p < totalPages - 1) { lines.push("\f"); lines.push(""); }
+    }
     return lines.join("\n");
   };
 
