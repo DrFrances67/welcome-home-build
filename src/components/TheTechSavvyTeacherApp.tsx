@@ -1129,8 +1129,21 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       {el.type === "wordBank" && (<>
         <label style={LBL}>Title</label>
         <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Word bank title" />
-        <label style={LBL}>Words (one per line)</label>
-        <textarea value={(el.words || []).join("\n")} spellCheck onChange={e => onChange({ words: e.target.value.split("\n").map(w => w.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 110, marginTop: 4 }} aria-label="Word bank words" />
+        <label style={LBL}>Words (one per line — press Enter for a new word)</label>
+        {/* Preserve raw text (including trailing empty lines) so Enter creates a new line.
+            Only trim/filter when rendering the worksheet preview. */}
+        <textarea
+          value={el._wordsRaw !== undefined ? el._wordsRaw : (el.words || []).join("\n")}
+          spellCheck
+          onChange={e => {
+            const raw = e.target.value;
+            const words = raw.split("\n").map(w => w.trim()).filter(Boolean);
+            onChange({ _wordsRaw: raw, words });
+          }}
+          style={{ ...inp, minHeight: 110, marginTop: 4 }}
+          aria-label="Word bank words"
+          placeholder={"cat\ndog\nfish"}
+        />
       </>)}
 
       {el.type === "matching" && (<>
