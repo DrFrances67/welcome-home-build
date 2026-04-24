@@ -3308,9 +3308,23 @@ function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
   const [situations, setSituations] = useState(["Responding to a complaint"]);
-  const toggleSituation = (s) => setSituations(prev =>
-    prev.includes(s) ? (prev.length === 1 ? prev : prev.filter(x => x !== s)) : [...prev, s]
-  );
+  const [situationCapNotice, setSituationCapNotice] = useState("");
+  const toggleSituation = (s) => setSituations(prev => {
+    if (prev.includes(s)) {
+      // Removing — always allowed unless it's the last one
+      setSituationCapNotice("");
+      return prev.length === 1 ? prev : prev.filter(x => x !== s);
+    }
+    // Adding — enforce the maximum
+    if (prev.length >= SITUATION_MAX) {
+      setSituationCapNotice(
+        `You can pick up to ${SITUATION_MAX} situations. Deselect one to add "${s}", or try a focused combo like: ${prev.slice(0, SITUATION_MAX - 1).concat(s).join(" + ")}.`
+      );
+      return prev;
+    }
+    setSituationCapNotice("");
+    return [...prev, s];
+  });
   const situation = situations.join(" + ");
   const [gradeLevel, setGradeLevel] = useState("3-5");
   const [complexity, setComplexity] = useState("medium");
