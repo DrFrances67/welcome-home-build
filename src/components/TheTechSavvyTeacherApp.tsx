@@ -2675,35 +2675,54 @@ Include a variety of activity types. Make the content directly address the stand
   };
 
   // ── Worksheet file (PDF/CSV/TXT) → AI re-creates as editable blocks ──
+  // Returns { text, pageImages: [dataUrl, ...] } so the AI can both READ the
+  // text AND SEE images / layout from the original PDF pages.
   const extractPdfTextLocal = async (file) => {
     const pdfjs: any = await import("pdfjs-dist");
     const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
     pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
     const buf = await file.arrayBuffer();
     const doc = await pdfjs.getDocument({ data: buf }).promise;
-    const pages = Math.min(doc.numPages, 10);
+    const pages = Math.min(doc.numPages, 8);
     let text = "";
+    const pageImages: string[] = [];
     for (let p = 1; p <= pages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
-      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
+      text += `\n\n--- PAGE ${p} ---\n` + content.items.map((it: any) => it.str).join(" ");
+      // Render page to small canvas → JPEG data URL for AI vision
+      try {
+        const viewport = page.getViewport({ scale: 1.1 });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.min(900, viewport.width);
+        canvas.height = Math.round((canvas.width / viewport.width) * viewport.height);
+        const ctx = canvas.getContext("2d");
+        const scaledViewport = page.getViewport({ scale: canvas.width / viewport.width });
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+        pageImages.push(canvas.toDataURL("image/jpeg", 0.7));
+      } catch (e) { /* image render is best-effort */ }
     }
-    return text.trim();
+    return { text: text.trim(), pageImages };
   };
 
   const handleWsFileUpload = async (file: File) => {
     setWsFileMsg(""); setWsFileBusy(true);
     try {
       let raw = "";
+      let pageImages: string[] = [];
       const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
       const isText = /\.(csv|txt|md)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
-      if (isPdf) raw = await extractPdfTextLocal(file);
+      if (isPdf) {
+        const r = await extractPdfTextLocal(file);
+        raw = r.text; pageImages = r.pageImages;
+      }
       else if (isText) raw = await file.text();
       else throw new Error("Unsupported file type. Use PDF, CSV, or TXT.");
-      raw = (raw || "").slice(0, 8000);
-      if (!raw.trim()) throw new Error("Could not read any text from that file.");
-      setWsFile({ name: file.name, raw });
-      setWsFileMsg("✓ Loaded. Click Recreate to build this worksheet, or Re-imagine for a fresh take.");
+      raw = (raw || "").slice(0, 16000);
+      if (!raw.trim() && pageImages.length === 0) throw new Error("Could not read any text or images from that file.");
+      setWsFile({ name: file.name, raw, pageImages });
+      const imgNote = pageImages.length ? ` · saw ${pageImages.length} page image${pageImages.length === 1 ? "" : "s"}` : "";
+      setWsFileMsg(`✓ Loaded${imgNote}. Click Recreate to build this worksheet, or Re-imagine for a fresh take.`);
     } catch (e: any) {
       setWsFileMsg(`⚠ ${e?.message || "Failed to read file."}`);
       setWsFile(null);
@@ -2711,35 +2730,106 @@ Include a variety of activity types. Make the content directly address the stand
     setWsFileBusy(false);
   };
 
+  // Generate real images for any element of type "image" with a missing url.
+  // Looks at el.imagePrompt (preferred) or el.caption / el.text for the prompt.
+  const fillImageElements = async (els: any[], styleHint = "cartoon") => {
+    const tasks: Promise<void>[] = [];
+    for (const el of els) {
+      if (el?.type !== "image") continue;
+      if (el.url) continue;
+      const prompt = (el.imagePrompt || el.caption || el.text || "").toString().trim();
+      if (!prompt) continue;
+      tasks.push((async () => {
+        try {
+          const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt, style: styleHint }),
+          });
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d?.url) el.url = d.url;
+        } catch (_) { /* swallow per-image error */ }
+      })());
+      // small stagger to reduce rate-limit collisions
+      await new Promise(r => setTimeout(r, 350));
+    }
+    await Promise.all(tasks);
+  };
+
+  // Insert AI-generated worksheet elements that may target multiple pages.
+  // Each element may carry a `page` index (0-based). Auto-creates new pages
+  // as needed and lays out blocks on each page using nextSlot().
+  const insertAiElementsMultiPage = (parsed: any[]) => {
+    if (!Array.isArray(parsed) || !parsed.length) return;
+    // Normalize page indices
+    let maxPage = 0;
+    parsed.forEach(el => { const p = Math.max(0, parseInt(el.page) || 0); el.__page = p; if (p > maxPage) maxPage = p; });
+
+    // Group by page, lay out each page with nextSlot
+    const startPage = currentPage;
+    const newEls: any[] = [];
+    for (let p = 0; p <= maxPage; p++) {
+      const pageEls = parsed.filter(e => e.__page === p);
+      const targetPage = startPage + p;
+      const existingOnPage = ws.elements.filter(e => (e.page || 0) === targetPage).length;
+      pageEls.forEach((el, i) => {
+        const slot = nextSlot(existingOnPage + i);
+        const { __page, page, ...rest } = el;
+        newEls.push({ ...mkEl(rest.type, slot), ...rest, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride, page: targetPage });
+      });
+    }
+
+    const requiredPageCount = startPage + maxPage + 1;
+    setWs(p => ({
+      ...p,
+      elements: [...p.elements, ...newEls],
+      pageCount: Math.max(p.pageCount || 1, requiredPageCount),
+    }));
+    setRightTab("edit");
+    announce(`${newEls.length} elements added across ${maxPage + 1} page${maxPage === 0 ? "" : "s"}`);
+  };
+
   const recreateWorksheetFromFile = async (reimagine: boolean) => {
-    if (!wsFile?.raw) return;
+    if (!wsFile?.raw && !wsFile?.pageImages?.length) return;
     setWsFileBusy(true); setWsFileMsg(reimagine ? "Re-imagining…" : "Recreating…");
     try {
       const g = gInfo(ws.gradeId);
       const intent = reimagine
         ? `Re-imagine the worksheet below as a fresh, improved version for ${g.name} students. Keep the same topic and skill focus, but feel free to adjust activity types, vary question styles, and add engagement.`
-        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, and structure as closely as possible.`;
+        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, structure, AND any images / illustrations as closely as possible.`;
+
+      // Build multimodal user content: page images first, then text.
+      const userContent: any[] = [];
+      const imgs = (wsFile.pageImages || []).slice(0, 5);
+      imgs.forEach((dataUrl: string, i: number) => {
+        const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+        if (!m) return;
+        userContent.push({ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } });
+      });
+      userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
+
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 2200,
-          system: `You convert a teacher's existing worksheet text into structured worksheet blocks. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
+          model: "claude-sonnet-4-20250514", max_tokens: 3200,
+          system: `You convert a teacher's existing worksheet into structured worksheet blocks for a ${g.name} class. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
 
-Allowed element shapes (use exactly these keys):
-{"type":"instruction","text":"<directions>"}
-{"type":"text","text":"<passage or content>"}
-{"type":"blank","label":"<prompt>","lines":3}
-{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"]}
-{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"]}
-{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"]}
-{"type":"truefalse","statements":["s1","s2","s3"]}
-{"type":"shortAnswer","question":"<q>","lines":4}
-{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>"}
-{"type":"essay","prompt":"<prompt>","points":10,"lines":14}
-{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element to control pagination):
+{"type":"instruction","text":"<directions>","page":0}
+{"type":"text","text":"<passage or content>","page":0}
+{"type":"blank","label":"<prompt>","lines":3,"page":0}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"],"page":0}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"],"page":0}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"],"page":0}
+{"type":"truefalse","statements":["s1","s2","s3"],"page":0}
+{"type":"shortAnswer","question":"<q>","lines":4,"page":0}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>","page":0}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14,"page":0}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]],"page":0}
+{"type":"image","imagePrompt":"<short visual description for an AI image generator>","caption":"<optional caption>","size":"small","align":"center","page":0}
 
 Output ONLY the JSON array.`,
-          messages: [{ role: "user", content: `${intent}\n\nWORKSHEET TEXT:\n${wsFile.raw}` }]
+          messages: [{ role: "user", content: userContent }],
         })
       });
       const d = await r.json();
@@ -2750,8 +2840,14 @@ Output ONLY the JSON array.`,
       const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
       const parsed = JSON.parse(slice);
       if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
-      insertAiElements(parsed);
-      setWsFileMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} to page ${currentPage + 1}.`);
+
+      // Generate real images for any "image" blocks before insertion
+      setWsFileMsg("✓ Got blocks. Generating images…");
+      await fillImageElements(parsed, "cartoon");
+
+      insertAiElementsMultiPage(parsed);
+      const pageSpan = (Math.max(...parsed.map((e: any) => parseInt(e.page) || 0)) + 1) || 1;
+      setWsFileMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} across ${pageSpan} page${pageSpan === 1 ? "" : "s"}.`);
     } catch (e: any) {
       setWsFileMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
     }
