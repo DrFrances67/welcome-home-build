@@ -4650,6 +4650,21 @@ function DanielsonReview() {
   const ratingColor = (s) => s === 4 ? "#16A34A" : s === 3 ? "#2563EB" : s === 2 ? "#D97706" : "#DC2626";
   const ratingLabel = (s) => s === 4 ? "Highly Effective" : s === 3 ? "Effective" : s === 2 ? "Developing" : "Ineffective";
 
+  // Verify if a quote actually appears in the source lesson — tolerant of whitespace/punctuation differences
+  const normalize = (str) => (str || "").toLowerCase().replace(/\s+/g, " ").replace(/[\u2018\u2019\u201C\u201D]/g, "'").trim();
+  const quoteFoundInText = (quote, source) => {
+    if (!quote || !source) return false;
+    const nq = normalize(quote);
+    const ns = normalize(source);
+    if (nq.length < 8) return false;
+    if (ns.includes(nq)) return true;
+    // Fallback: check if at least 80% of the quote's words (≥4 chars) appear consecutively-ish
+    const words = nq.split(" ").filter(w => w.length >= 4);
+    if (words.length < 3) return false;
+    const hits = words.filter(w => ns.includes(w)).length;
+    return hits / words.length >= 0.8;
+  };
+
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px", fontFamily: "'Inter',sans-serif" }}>
       {/* Header */}
