@@ -3570,7 +3570,6 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
               </button>
             );
           })()}
-          </button>
         </div>
       </div>
 
