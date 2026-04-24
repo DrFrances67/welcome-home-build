@@ -3254,9 +3254,18 @@ function EmailAssistant() {
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1000,
+          model:"claude-sonnet-4-20250514", max_tokens:1200,
           system:`You are an expert writing assistant helping a teacher compose professional emails.
 Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
+${recipient === "grant" || /grant/i.test(situation) ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
+- Be professional, respectful, and concise.
+- Open by briefly introducing the teacher, school, grade level, and student population served.
+- Clearly state the specific resources or funding being requested and the approximate amount or quantity if known.
+- Explain WHY these items are a necessity — tie them directly to student learning outcomes, equity, engagement, or a specific instructional gap.
+- Describe the impact on students (how many students benefit, what they will be able to do).
+- Express genuine gratitude and offer to provide updates, photos, or a thank-you from students.
+- Include a clear call to action (next steps, contact info placeholder).
+- Avoid sounding desperate or generic; sound mission-driven.` : ""}
 Rules: maintain respect and professionalism; keep the teacher's core intent; add a subject line; clear structure; not overly wordy.
 Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
           messages:[{role:"user", content:`Polish this into a professional email:\n\n${draft}`}],
