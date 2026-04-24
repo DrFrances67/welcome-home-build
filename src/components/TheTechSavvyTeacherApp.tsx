@@ -3237,7 +3237,11 @@ const STUDENT_COMPLEXITY = [
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
-  const [situation, setSituation] = useState("Responding to a complaint");
+  const [situations, setSituations] = useState(["Responding to a complaint"]);
+  const toggleSituation = (s) => setSituations(prev =>
+    prev.includes(s) ? (prev.length === 1 ? prev : prev.filter(x => x !== s)) : [...prev, s]
+  );
+  const situation = situations.join(" + ");
   const [gradeLevel, setGradeLevel] = useState("3-5");
   const [complexity, setComplexity] = useState("medium");
   const [draft, setDraft]         = useState("");
