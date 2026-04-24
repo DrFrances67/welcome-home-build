@@ -3416,7 +3416,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const LP_DURATIONS = ["30 minutes","45 minutes","60 minutes","75 minutes","90 minutes","2 hours","Block (2.5 hrs)"];
-const LP_MODELS    = ["Direct Instruction","Gradual Release (I Do / We Do / You Do)","Project-Based Learning","Inquiry / Discovery","Flipped Classroom","Cooperative Learning","Workshop Model","Socratic Seminar"];
+const LP_MODELS    = ["Direct Instruction","Gradual Release (I Do / We Do / You Do)","5E Model (Engage, Explore, Explain, Elaborate, Evaluate)","Project-Based Learning","Inquiry / Discovery","Flipped Classroom","Cooperative Learning","Workshop Model","Socratic Seminar"];
 const LP_DIFF      = ["ELL / Language Learners","Students with IEPs","Gifted & Advanced","504 Accommodations","Multiple Learning Styles","Neurodiverse Students (Autism / Multiple Disabilities)"];
 
 function LessonPlanGenerator() {
@@ -3622,6 +3622,7 @@ function LessonPlanGenerator() {
 
     const diffList = form.diff.length ? form.diff.join(", ") : "General education";
     const isGradualRelease = form.model.toLowerCase().includes("gradual");
+    const is5E = form.model.toLowerCase().includes("5e");
     const isNeurodiverse = form.diff.includes("Neurodiverse Students (Autism / Multiple Disabilities)");
 
     // Concise per-need instructions — no bullet points or special chars that bloat JSON responses
@@ -3637,9 +3638,11 @@ function LessonPlanGenerator() {
       ? "Differentiation strategies to embed throughout every lesson section: " + diffNotes.join(" | ")
       : "No specific differentiation required.";
 
-    const sectionNames = isGradualRelease
-      ? "Do Now/Hook, I Do-Modeling, We Do-Guided Practice, You Do-Independent Practice, Closure"
-      : "Do Now/Hook, Direct Instruction, Guided Practice, Independent Work, Closure";
+    const sectionNames = is5E
+      ? "Engage, Explore, Explain, Elaborate, Evaluate (5E Model — sections MUST use these exact 5 names in this order; Engage hooks curiosity, Explore is hands-on inquiry, Explain consolidates concepts/vocabulary, Elaborate applies learning to new contexts, Evaluate measures mastery)"
+      : isGradualRelease
+        ? "Do Now/Hook, I Do-Modeling, We Do-Guided Practice, You Do-Independent Practice, Closure"
+        : "Do Now/Hook, Direct Instruction, Guided Practice, Independent Work, Closure";
 
     const extras = [
       form.objectives ? `Objectives: ${form.objectives}` : "",
@@ -3693,6 +3696,9 @@ REQUIRED for homework and extension:
 - "homework" MUST be a specific, grade-appropriate at-home activity tied to today's objective. For Kindergarten and early grades, suggest a short hands-on family activity (10-15 min) such as drawing, sorting household objects, reading aloud with a caregiver, or a scavenger hunt. NEVER write "N/A" or "None".
 - "extension" MUST be a specific enrichment / challenge activity for students who finish early or need a deeper push. NEVER write "N/A" or "None".
 
+REQUIRED for successCriteria:
+- "successCriteria" MUST be an array of 3-5 specific, observable, student-facing "I can…" statements directly aligned to the learning objectives. Each statement is what a student must be able to do/say/produce by the end of the lesson to demonstrate mastery. Use student-friendly language (e.g. "I can identify the main idea of a paragraph and support it with one detail."). NEVER write "N/A".
+
 Return this JSON (replace all placeholder text with real content, keep values concise):
 {
   "title": "...",
@@ -3700,6 +3706,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
   "duration": "...",
   "standard": "...",
   "objectives": ["...", "...", "..."],
+  "successCriteria": ["I can ...", "I can ...", "I can ..."],
   "materials": ["...", "...", "..."],
   "vocabulary": ["...", "...", "..."],
   "sections": [
@@ -3713,7 +3720,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
 }`;
 
     try {
-      const raw = await callClaude(systemPrompt, userPrompt, 4000);
+      const raw = await callClaude(systemPrompt, userPrompt, 4500);
       if (!raw || !raw.trim()) throw new Error("No response received. Please try again.");
 
       // Strip any accidental fences
@@ -3748,6 +3755,19 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         } catch(_) { /* fall through with whatever we have */ }
       }
 
+      // Ensure successCriteria exists — derive from objectives if AI omitted it
+      if (!Array.isArray(parsed.successCriteria) || parsed.successCriteria.length === 0) {
+        const objs = Array.isArray(parsed.objectives) ? parsed.objectives : [];
+        if (objs.length > 0) {
+          parsed.successCriteria = objs.map(o => {
+            const t = String(o).replace(/^(students will be able to|swbat|tlw|the learner will)\s*/i, "").trim();
+            return `I can ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
+          });
+        } else {
+          parsed.successCriteria = ["I can demonstrate understanding of today's lesson objective."];
+        }
+      }
+
       // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
       // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
       if (!form.standard) {
@@ -3773,6 +3793,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       `${result.gradeSubject} | ${result.duration}`,
       `Standard: ${result.standard}`, "",
       "OBJECTIVES:", ...(result.objectives||[]).map(o=>`  - ${o}`), "",
+      "SUCCESS CRITERIA (Students):", ...(result.successCriteria||[]).map(s=>`  - ${s}`), "",
       "MATERIALS:", ...(result.materials||[]).map(m=>`  - ${m}`), "",
       "KEY VOCABULARY:", (result.vocabulary||[]).join(", "), "",
       ...(result.sections||[]).flatMap(s=>[
@@ -3852,6 +3873,7 @@ ul{padding-left:16px}li{margin-bottom:3px;font-size:12px}
 <div class="meta">${safeHtml(result.gradeSubject)} | ${safeHtml(result.duration)}</div>
 <div class="std"><strong>Standard:</strong> ${safeHtml(result.standard)}</div>
 <h2>Objectives</h2><ul>${(result.objectives||[]).map(o=>`<li>${safeHtml(o)}</li>`).join("")}</ul>
+<h2>Success Criteria</h2><div class="hw" style="background:#f5f3ff;border-color:#ddd6fe">${(result.successCriteria||[]).map(s=>`<div style="margin-bottom:4px">✓ ${safeHtml(s)}</div>`).join("")}</div>
 <div class="g2"><div><h2 style="margin-top:0">Materials</h2><ul>${(result.materials||[]).map(m=>`<li>${safeHtml(m)}</li>`).join("")}</ul></div>
 <div><h2 style="margin-top:0">Key Vocabulary</h2><p style="font-size:12px">${(result.vocabulary||[]).map(v=>safeHtml(v)).join(" · ")}</p></div></div>
 <h2>Lesson Sequence</h2>
@@ -3892,7 +3914,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     setSlidesError(""); setSlidesLoading(true);
     try {
       const lessonContext = buildPlanText().slice(0, 6000);
-      const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 8–14 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure as applicable), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
+      const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
       const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
 
       const raw = await callClaude(sys, userMsg, 3500);
@@ -4380,6 +4402,21 @@ document.addEventListener('keydown',e=>{
                 </div>
               </div>
             </div>
+
+            {/* Success Criteria */}
+            {(result.successCriteria||[]).length > 0 && (
+              <div style={{ marginBottom:20, background:"#F5F3FF", border:"1px solid #DDD6FE", borderRadius:8, padding:"12px 14px" }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6D28D9", margin:"0 0 8px" }}>Success Criteria — Students will know they've succeeded when they can:</p>
+                <ul style={{ margin:0, paddingLeft:0, listStyle:"none" }}>
+                  {(result.successCriteria||[]).map((sc,i) => (
+                    <li key={i} style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#1F2937", lineHeight:1.55, marginBottom:5, display:"flex", gap:8 }}>
+                      <span style={{ color:"#7C3AED", fontWeight:700, flexShrink:0 }}>✓</span>
+                      <span>{sc}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Lesson Sequence */}
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", margin:"0 0 10px", borderBottom:"1px solid #E5E7EB", paddingBottom:8 }}>Lesson Sequence</p>
