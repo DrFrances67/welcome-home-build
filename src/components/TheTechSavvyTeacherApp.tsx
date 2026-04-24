@@ -2397,8 +2397,9 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1 });
+  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [] });
   const [currentPage, setCurrentPage] = useState(0);
+  const [viewMode, setViewMode] = useState("single"); // "single" | "scroll"
   const [selId, setSelId] = useState(null);
   const [rightTab, setRightTab] = useState("edit");
   const [showHelp, setShowHelp]       = useState(false);
