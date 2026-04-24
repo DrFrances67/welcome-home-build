@@ -3220,6 +3220,15 @@ const EMAIL_SITUATIONS = [
   "Following up","Responding to a complaint","Providing an update",
   "Asking for help / resources","Scheduling / logistics","Grant writing","Other",
 ];
+const STUDENT_READING_LEVELS = [
+  { id:"k-2",      label:"K–2",      desc:"Ages 5–8 · very simple words, very short sentences" },
+  { id:"3-5",      label:"Grades 3–5", desc:"Upper elementary · clear & friendly" },
+  { id:"6-8",      label:"Grades 6–8", desc:"Middle school · everyday vocabulary" },
+  { id:"9-12",     label:"Grades 9–12", desc:"High school · clear but more mature" },
+  { id:"simple",   label:"Simple",     desc:"Plain language regardless of grade" },
+  { id:"medium",   label:"Medium",     desc:"Balanced — clear with some richer vocabulary" },
+  { id:"advanced", label:"Advanced",   desc:"Stronger vocabulary while still student-friendly" },
+];
 
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
