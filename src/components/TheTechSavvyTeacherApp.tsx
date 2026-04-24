@@ -5447,6 +5447,7 @@ function TheTechSavvyTeacherAppRoot() {
         @media print { .site-header { display:none !important; } }
         .skip-nav { position:absolute; top:-100px; left:8px; z-index:9999; background:#CF27F5; color:white; padding:8px 16px; border-radius:6px; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; text-decoration:none; transition:top 0.2s; }
         .skip-nav:focus { top:8px; }
+        .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
         .worksheet-paper { background:white; }
         .canvas-area { background:#F1F3F5; }
         .ws-element:hover .el-delete-btn { opacity: 1 !important; }
