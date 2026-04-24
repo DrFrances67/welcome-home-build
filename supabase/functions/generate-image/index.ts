@@ -105,9 +105,27 @@ serve(async (req) => {
       data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!url) {
-      console.error("No image in response", JSON.stringify(data).slice(0, 500));
+      // Check for embedded errors in the response (model can return 429/402 inside the SSE/JSON payload)
+      const embeddedError = data?.choices?.[0]?.error;
+      const embeddedCode = embeddedError?.code;
+      const embeddedType = embeddedError?.metadata?.error_type || embeddedError?.message;
+
+      console.error("No image in response", JSON.stringify(data).slice(0, 800));
+
+      if (embeddedCode === 429 || embeddedType === "rate_limit_exceeded") {
+        return new Response(
+          JSON.stringify({ error: "Image generation rate limit reached. Please wait a few seconds and try again." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (embeddedCode === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Add funds in Lovable Workspace settings." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       return new Response(
-        JSON.stringify({ error: "No image returned by model" }),
+        JSON.stringify({ error: "No image returned by model. Try again in a moment." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
