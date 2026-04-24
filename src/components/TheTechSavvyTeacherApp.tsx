@@ -2451,11 +2451,19 @@ export function WorksheetBuilder() {
       const remaining = p.elements
         .filter(e => (e.page || 0) !== idx)
         .map(e => ({ ...e, page: (e.page || 0) > idx ? (e.page || 0) - 1 : (e.page || 0) }));
-      return { ...p, elements: remaining, pageCount: Math.max(1, (p.pageCount || 1) - 1) };
+      const hidden = (p.pageHeadersHidden || [])
+        .filter(h => h !== idx)
+        .map(h => h > idx ? h - 1 : h);
+      return { ...p, elements: remaining, pageCount: Math.max(1, (p.pageCount || 1) - 1), pageHeadersHidden: hidden };
     });
     setCurrentPage(c => Math.max(0, Math.min(c, pageCount - 2)));
     setSelId(null);
   };
+  const isPageHeaderHidden = (idx) => (ws.pageHeadersHidden || []).includes(idx);
+  const togglePageHeader = (idx) => setWs(p => {
+    const cur = p.pageHeadersHidden || [];
+    return { ...p, pageHeadersHidden: cur.includes(idx) ? cur.filter(x => x !== idx) : [...cur, idx] };
+  });
   // Insert AI-generated worksheet elements onto the current page
   const insertAiElements = (parsed) => {
     if (!Array.isArray(parsed) || !parsed.length) return;
