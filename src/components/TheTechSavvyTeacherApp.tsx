@@ -3278,7 +3278,11 @@ function EmailAssistant() {
     try {
       const isGrant = recipient === "grant" || /grant/i.test(situation);
       const isStudent = recipient === "student";
-      const rlObj = STUDENT_READING_LEVELS.find(r => r.id === readingLevel);
+      const gObj = STUDENT_GRADE_LEVELS.find(g => g.id === gradeLevel);
+      const showComplexity = gObj?.tier === "secondary";
+      const cObj = STUDENT_COMPLEXITY.find(c => c.id === complexity);
+      const readingLabel = showComplexity ? `${gObj?.label} · ${cObj?.label}` : (gObj?.label || "");
+      const readingDesc  = showComplexity ? `${gObj?.desc} — complexity: ${cObj?.desc}` : (gObj?.desc || "");
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
