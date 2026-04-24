@@ -3510,12 +3510,42 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
               );
             })}
           </div>
-          {situations.length > 1 && (
-            <div style={{ fontSize:11, color:BRAND, marginBottom:18, fontStyle:"italic" }}>
-              ✨ Combining {situations.length} situations into one message.
-            </div>
-          )}
-          {situations.length <= 1 && <div style={{ marginBottom:18 }} />}
+          {(() => {
+            const issues = validateSituations(situations);
+            const hasError = issues.some(i => i.level === "error");
+            return (
+              <>
+                {issues.map((issue, idx) => {
+                  const isError = issue.level === "error";
+                  const bg     = isError ? "#FEF2F2" : "#FFFBEB";
+                  const border = isError ? "#FCA5A5" : "#FCD34D";
+                  const fg     = isError ? "#991B1B" : "#92400E";
+                  return (
+                    <div key={idx} style={{ marginTop:8, padding:"10px 12px", background:bg, border:`1.5px solid ${border}`, borderRadius:8 }}>
+                      <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                        <span style={{ fontSize:14, lineHeight:"18px" }}>{isError ? "⚠️" : "💡"}</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:12, fontWeight:600, color:fg, lineHeight:1.45 }}>{issue.message}</div>
+                          {issue.suggestion && issue.suggestion.length > 0 && (
+                            <button type="button" onClick={() => setSituations(issue.suggestion)}
+                              style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:`1.5px solid ${fg}`, background:"white", color:fg, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                              ✨ Use suggested: {issue.suggestion.join(" + ")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {situations.length > 1 && !hasError && (
+                  <div style={{ fontSize:11, color:BRAND, marginTop:8, fontStyle:"italic" }}>
+                    ✨ Combining {situations.length} situations into one message.
+                  </div>
+                )}
+                <div style={{ marginBottom:18 }} />
+              </>
+            );
+          })()}
 
           <span style={lbl}>Your rough draft or key points</span>
           <div style={{ position:"relative" }}>
