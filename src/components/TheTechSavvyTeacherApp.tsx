@@ -3273,6 +3273,7 @@ function EmailAssistant() {
     try {
       const isGrant = recipient === "grant" || /grant/i.test(situation);
       const isStudent = recipient === "student";
+      const rlObj = STUDENT_READING_LEVELS.find(r => r.id === readingLevel);
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
@@ -3290,12 +3291,20 @@ ${isGrant ? `GRANT CONTEXT — This email is a grant / funding request. The teac
 - Avoid sounding desperate or generic; sound mission-driven.` : ""}
 ${isStudent ? `STUDENT CONTEXT — This message is being written DIRECTLY TO A STUDENT. You MUST:
 - Always use student-friendly language that is easy to read and understand.
-- Use short, clear sentences and simple, age-appropriate vocabulary (aim for an upper-elementary / middle-school reading level unless the draft clearly indicates older students).
+- TARGET READING LEVEL: ${rlObj?.label} (${rlObj?.desc}). Calibrate sentence length, vocabulary complexity, and explanations to this level. For K–2, use very short sentences (≤8 words when possible) and only the most common words. For 3–5, keep sentences short and explain any tricky word. For 6–8, use everyday vocabulary and slightly longer sentences. For 9–12, you may use stronger vocabulary but keep things clear and respectful. For "simple"/"medium"/"advanced", calibrate vocabulary richness accordingly while keeping the tone student-friendly.
 - Replace jargon, academic phrasing, and complex words with plain alternatives a student can quickly grasp.
 - Keep a warm, encouraging, respectful tone — never condescending.
 - Be specific and concrete: tell the student exactly what is happening, what they need to do, and by when.
 - Keep the message brief and well-structured (short paragraphs or a short list when helpful).
-- Preserve the teacher's core intent and any important details, just in clearer language.` : ""}
+
+🛡️ SAFETY RULE — PRESERVE FACTUAL CONTENT EXACTLY (do not paraphrase, translate, simplify, or alter):
+  • Names of people (students, teachers, parents, staff, etc.) — keep spelling and form exactly as written.
+  • Dates and times (e.g., "Friday, May 3", "3:15 PM", "next Monday") — keep wording, format, and any specific date/time intact.
+  • Deadlines and due dates — keep the exact deadline phrasing and any specific date.
+  • Action items / things the student must do — keep the actions, quantities, page numbers, assignment names, room numbers, locations, links, and any required materials EXACTLY as in the draft.
+  • Numbers, scores, grades, amounts, page numbers, chapter numbers — keep exact.
+  • Course names, assignment titles, project names — keep exact.
+You may rewrite the SURROUNDING wording, sentence structure, tone, and vocabulary to be student-friendly at the target reading level, but the items above must appear UNCHANGED in the rewritten message. If something is unclear in the draft, keep it as-is rather than guessing.` : ""}
 Rules: maintain respect and professionalism; keep the teacher's core intent; add a subject line; clear structure; not overly wordy.
 Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
           messages:[{role:"user", content:`Polish this into a professional email:\n\n${draft}`}],
