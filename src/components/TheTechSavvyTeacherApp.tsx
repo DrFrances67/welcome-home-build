@@ -2909,7 +2909,7 @@ Output ONLY the JSON array.`,
         </nav>
 
         {/* CENTER: WORKSHEET CANVAS */}
-        <main id="worksheet-canvas" role="main" aria-label="Worksheet canvas" className="canvas-area" style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", padding: "28px 18px", background: "#F1F3F5", position: "relative" }}>
+        <main id="worksheet-canvas" role="main" aria-label="Worksheet canvas" className="canvas-area" style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: viewMode === "scroll" ? "20px 18px 90px" : "28px 18px 90px", background: "#F1F3F5", position: "relative", gap: viewMode === "scroll" ? 22 : 0 }}>
           {/* Generating overlay */}
           {generating && (
             <div role="status" aria-label="Generating worksheet content" style={{ position: "absolute", inset: 0, background: "rgba(241,243,245,0.9)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
@@ -2920,55 +2920,95 @@ Output ONLY the JSON array.`,
               </div>
             </div>
           )}
-          <div className="worksheet-paper" style={{ width: 760, minHeight: 970, background: "white", boxShadow: "0 2px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)", borderRadius: 4, padding: "52px 64px", position: "relative" }}>
 
-            {ws.showGrade && <div aria-label={`Grade level: ${gv.name}`} style={{ position: "absolute", top: 14, right: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>{gv.emoji} {gv.name}</div>}
+          {(() => {
+            const renderPage = (pIdx) => {
+              const els = ws.elements.filter(e => pageOf(e) === pIdx);
+              const hideHeader = isPageHeaderHidden(pIdx);
+              return (
+                <div key={pIdx} className="worksheet-paper" style={{ width: 760, minHeight: 970, background: "white", boxShadow: "0 2px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)", borderRadius: 4, padding: "52px 64px", position: "relative" }}>
 
-            {/* Title + Name/Date header */}
-            <div style={{ marginBottom: 24 }}>
-              <input value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
-                aria-label="Worksheet title on page"
-                style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, border: "none", outline: "none", background: "transparent", borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }} placeholder="Worksheet Title" />
-              <div style={{ display: "flex", gap: 44 }}>
-                {ws.showName && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Name:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
-                {ws.showDate && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Date:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
-              </div>
-            </div>
+                  {ws.showGrade && <div aria-label={`Grade level: ${gv.name}`} style={{ position: "absolute", top: 14, right: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>{gv.emoji} {gv.name}</div>}
 
-            {/* Page indicator chip */}
-            {pageCount > 1 && (
-              <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
-                Page {currentPage + 1} of {pageCount}
-              </div>
-            )}
+                  {/* Per-page header hide toggle */}
+                  <button
+                    className="no-print"
+                    onClick={() => togglePageHeader(pIdx)}
+                    title={hideHeader ? "Show title / name / date on this page" : "Hide title / name / date on this page"}
+                    aria-label={hideHeader ? `Show header on page ${pIdx + 1}` : `Hide header on page ${pIdx + 1}`}
+                    style={{ position: "absolute", top: 14, left: ws.pageCount > 1 ? 110 : 18, background: hideHeader ? "#FEF3C7" : "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "3px 10px", fontSize: 10.5, fontWeight: 700, color: "#6B7280", fontFamily: F, cursor: "pointer" }}
+                  >
+                    {hideHeader ? "👁 Show header" : "🙈 Hide header"}
+                  </button>
 
-            {/* Free-position canvas — elements absolutely positioned, draggable */}
-            {pageElements.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
-                <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
-                <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>{pageCount > 1 ? `Page ${currentPage + 1} is empty` : "Your worksheet is empty"}</p>
-                <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
-              </div>
-            ) : (
-              <div style={{
-                position: "relative",
-                width: "100%",
-                minHeight: Math.max(700, ...pageElements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
-              }}>
-                {pageElements.map(el => (
-                  <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
-                    onClick={() => { setSelId(el.id); setRightTab("edit"); }}
-                    onResize={handleResizeStart}
-                    onDragStart={handleDragStart}
-                    onDelete={(id) => delEl(id)} />
-                ))}
-              </div>
-            )}
-          </div>
+                  {/* Title + Name/Date header */}
+                  {!hideHeader && (
+                    <div style={{ marginBottom: 24 }}>
+                      {pIdx === 0 ? (
+                        <input value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
+                          aria-label="Worksheet title on page"
+                          style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, border: "none", outline: "none", background: "transparent", borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }} placeholder="Worksheet Title" />
+                      ) : (
+                        <h2 style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, margin: 0, borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }}>
+                          {ws.title} <span style={{ fontFamily: F, fontSize: Math.max(gv.fontSize - 4, 12), fontWeight: 700, color: "#9CA3AF" }}>— Page {pIdx + 1}</span>
+                        </h2>
+                      )}
+                      <div style={{ display: "flex", gap: 44 }}>
+                        {ws.showName && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Name:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
+                        {ws.showDate && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Date:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Page indicator chip */}
+                  {pageCount > 1 && (
+                    <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
+                      Page {pIdx + 1} of {pageCount}
+                    </div>
+                  )}
+
+                  {/* Free-position canvas — elements absolutely positioned, draggable */}
+                  {els.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
+                      <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
+                      <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>{pageCount > 1 ? `Page ${pIdx + 1} is empty` : "Your worksheet is empty"}</p>
+                      <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
+                    </div>
+                  ) : (
+                    <div style={{
+                      position: "relative",
+                      width: "100%",
+                      minHeight: Math.max(700, ...els.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
+                    }}>
+                      {els.map(el => (
+                        <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
+                          onClick={() => { setSelId(el.id); setRightTab("edit"); if (viewMode === "scroll") setCurrentPage(pIdx); }}
+                          onResize={handleResizeStart}
+                          onDragStart={handleDragStart}
+                          onDelete={(id) => delEl(id)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            };
+
+            return viewMode === "scroll"
+              ? Array.from({ length: pageCount }).map((_, i) => renderPage(i))
+              : renderPage(currentPage);
+          })()}
 
           {/* Page navigation strip — beneath the paper */}
-          <div className="no-print" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "5px 8px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", zIndex: 5 }}>
-            {Array.from({ length: pageCount }).map((_, i) => (
+          <div className="no-print" style={{ position: "fixed", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "5px 8px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", zIndex: 5 }}>
+            <button
+              onClick={() => setViewMode(viewMode === "single" ? "scroll" : "single")}
+              aria-label={viewMode === "single" ? "Switch to scroll view (all pages)" : "Switch to single-page view"}
+              title={viewMode === "single" ? "Scroll all pages" : "Single page view"}
+              style={{ height: 28, padding: "0 10px", borderRadius: 999, border: "1.5px solid " + gv.color + "55", background: gv.light, color: gv.color, fontFamily: F, fontWeight: 700, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, marginRight: 4 }}
+            >
+              {viewMode === "single" ? "📑 Scroll all" : "📄 Single page"}
+            </button>
+            {viewMode === "single" && Array.from({ length: pageCount }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => { setCurrentPage(i); setSelId(null); }}
@@ -2994,6 +3034,9 @@ Output ONLY the JSON array.`,
                 )}
               </button>
             ))}
+            {viewMode === "scroll" && (
+              <span style={{ fontFamily: F, fontSize: 11, color: "#6B7280", padding: "0 8px" }}>{pageCount} page{pageCount === 1 ? "" : "s"}</span>
+            )}
             <button
               onClick={addPage}
               aria-label="Add new page"
