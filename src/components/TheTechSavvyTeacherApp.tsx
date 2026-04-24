@@ -3372,6 +3372,21 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             ))}
           </div>
 
+          {recipient === "student" && (
+            <div style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
+              <span style={{ ...lbl, color:BRAND, marginBottom:8 }}>🎒 Student reading level</span>
+              <select value={readingLevel} onChange={e => setReadingLevel(e.target.value)}
+                style={{ ...inp, cursor:"pointer", marginBottom:8 }}>
+                {STUDENT_READING_LEVELS.map(r => (
+                  <option key={r.id} value={r.id}>{r.label} — {r.desc}</option>
+                ))}
+              </select>
+              <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>
+                <strong style={{ color:BRAND }}>🛡️ Safety:</strong> Names, dates, deadlines, page numbers, and action items from your draft will be kept exactly as written. Only the surrounding language is rewritten for the student.
+              </div>
+            </div>
+          )}
+
           <span style={lbl}>Tone</span>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:18 }}>
             {EMAIL_TONES.map(t => (
