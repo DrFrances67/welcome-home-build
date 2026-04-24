@@ -2751,29 +2751,38 @@ Include a variety of activity types. Make the content directly address the stand
   };
 
   // Generate real images for any element of type "image" with a missing url.
-  // Looks at el.imagePrompt (preferred) or el.caption / el.text for the prompt.
+  // SEQUENTIAL with retry-on-429 to avoid rate limits from the image gateway.
   const fillImageElements = async (els: any[], styleHint = "cartoon") => {
-    const tasks: Promise<void>[] = [];
-    for (const el of els) {
-      if (el?.type !== "image") continue;
-      if (el.url) continue;
+    const targets = els.filter(el => el?.type === "image" && !el.url &&
+      (el.imagePrompt || el.caption || el.text));
+    let done = 0;
+    for (const el of targets) {
       const prompt = (el.imagePrompt || el.caption || el.text || "").toString().trim();
       if (!prompt) continue;
-      tasks.push((async () => {
+      let attempt = 0;
+      while (attempt < 3) {
         try {
           const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt, style: styleHint }),
           });
-          if (!r.ok) return;
+          if (r.status === 429) {
+            // Rate limited — back off and retry
+            attempt++;
+            await new Promise(res => setTimeout(res, 2500 * attempt));
+            continue;
+          }
+          if (!r.ok) break;
           const d = await r.json();
           if (d?.url) el.url = d.url;
-        } catch (_) { /* swallow per-image error */ }
-      })());
-      // small stagger to reduce rate-limit collisions
-      await new Promise(r => setTimeout(r, 350));
+          break;
+        } catch (_) { break; }
+      }
+      done++;
+      setWsFileMsg(`✓ Got blocks. Generating images… (${done}/${targets.length})`);
+      // Pace requests to stay under the gateway's per-minute limit
+      await new Promise(res => setTimeout(res, 1200));
     }
-    await Promise.all(tasks);
   };
 
   // Insert AI-generated worksheet elements that may target multiple pages.
