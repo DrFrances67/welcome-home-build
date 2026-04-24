@@ -3308,9 +3308,23 @@ function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
   const [situations, setSituations] = useState(["Responding to a complaint"]);
-  const toggleSituation = (s) => setSituations(prev =>
-    prev.includes(s) ? (prev.length === 1 ? prev : prev.filter(x => x !== s)) : [...prev, s]
-  );
+  const [situationCapNotice, setSituationCapNotice] = useState("");
+  const toggleSituation = (s) => setSituations(prev => {
+    if (prev.includes(s)) {
+      // Removing — always allowed unless it's the last one
+      setSituationCapNotice("");
+      return prev.length === 1 ? prev : prev.filter(x => x !== s);
+    }
+    // Adding — enforce the maximum
+    if (prev.length >= SITUATION_MAX) {
+      setSituationCapNotice(
+        `You can pick up to ${SITUATION_MAX} situations. Deselect one to add "${s}", or try a focused combo like: ${prev.slice(0, SITUATION_MAX - 1).concat(s).join(" + ")}.`
+      );
+      return prev;
+    }
+    setSituationCapNotice("");
+    return [...prev, s];
+  });
   const situation = situations.join(" + ");
   const [gradeLevel, setGradeLevel] = useState("3-5");
   const [complexity, setComplexity] = useState("medium");
@@ -3497,7 +3511,18 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             ))}
           </div>
 
-          <span style={lbl}>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
+          <span style={{ ...lbl, display:"flex", alignItems:"center", flexWrap:"wrap", gap:6 }}>
+            <span>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
+            <span style={{
+              padding:"2px 8px", borderRadius:999,
+              background: situations.length >= SITUATION_MAX ? "#FEF3C7" : LIGHT,
+              color: situations.length >= SITUATION_MAX ? "#92400E" : BRAND,
+              fontSize:11, fontWeight:700, letterSpacing:0, textTransform:"none",
+              border:`1px solid ${situations.length >= SITUATION_MAX ? "#FCD34D" : "#E5E7EB"}`
+            }}>
+              {situations.length}/{SITUATION_MAX} selected{situations.length >= SITUATION_MAX ? " · max" : ""}
+            </span>
+          </span>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
             {EMAIL_SITUATIONS.map(s => {
               const active = situations.includes(s);
@@ -3510,6 +3535,20 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
               );
             })}
           </div>
+          {situationCapNotice && (
+            <div style={{ marginTop:8, padding:"10px 12px", background:"#FFFBEB", border:"1.5px solid #FCD34D", borderRadius:8 }}>
+              <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                <span style={{ fontSize:14, lineHeight:"18px" }}>🛑</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:"#92400E", lineHeight:1.45 }}>{situationCapNotice}</div>
+                  <button type="button" onClick={() => setSituationCapNotice("")}
+                    style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:"1.5px solid #92400E", background:"white", color:"#92400E", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {(() => {
             const issues = validateSituations(situations);
             const hasError = issues.some(i => i.level === "error");
