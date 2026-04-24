@@ -3282,9 +3282,28 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
         }),
       });
       const data = await res.json();
+      if (!res.ok || data?.error) {
+        const msg = data?.error?.message || data?.error || `Request failed (${res.status})`;
+        throw new Error(typeof msg === "string" ? msg : "Request failed");
+      }
       const text = data.content?.map(b => b.text||"").join("") || "";
-      setResult(JSON.parse(text.replace(/```json|```/g,"").trim()));
-    } catch { setError("Something went wrong. Please try again."); }
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      let parsed = null;
+      try { parsed = JSON.parse(cleaned); }
+      catch {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch { /* ignore */ } }
+      }
+      if (!parsed || typeof parsed !== "object" || !parsed.email) {
+        // Fallback: treat the whole text as the email body
+        const subjMatch = cleaned.match(/subject[:\-]\s*(.+)/i);
+        parsed = {
+          subject: subjMatch ? subjMatch[1].split("\n")[0].trim().replace(/^["']|["']$/g,"") : "Your email",
+          email: cleaned.replace(/^subject[:\-].+\n/i, "").trim() || "(No content returned — please try again.)",
+        };
+      }
+      setResult(parsed);
+    } catch (e) { setError(e instanceof Error ? e.message : "Something went wrong. Please try again."); }
     setLoading(false);
   };
 
