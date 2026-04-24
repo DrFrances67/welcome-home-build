@@ -5485,14 +5485,37 @@ function TheTechSavvyTeacherAppRoot() {
         </div>
 
         {/* Nav tabs — centered row below title */}
-        <nav role="navigation" aria-label="Tool navigation"
+        <div role="tablist" aria-label="Tool navigation"
+          onKeyDown={(e) => {
+            const ids = TOOLS.map(t => t.id);
+            const idx = ids.indexOf(activeTool);
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              e.preventDefault();
+              const next = e.key === "ArrowRight"
+                ? ids[(idx + 1) % ids.length]
+                : ids[(idx - 1 + ids.length) % ids.length];
+              setActiveTool(next);
+              const btn = document.getElementById(`tool-tab-${next}`);
+              btn?.focus();
+            } else if (e.key === "Home") {
+              e.preventDefault(); setActiveTool(ids[0]);
+              document.getElementById(`tool-tab-${ids[0]}`)?.focus();
+            } else if (e.key === "End") {
+              e.preventDefault(); setActiveTool(ids[ids.length - 1]);
+              document.getElementById(`tool-tab-${ids[ids.length - 1]}`)?.focus();
+            }
+          }}
           style={{ display:"flex", justifyContent:"center", gap:2, marginTop:16, background:"rgba(0,0,0,0.18)" }}>
           {TOOLS.map(t => {
             const isActive = activeTool === t.id;
             return (
-              <button key={t.id} onClick={() => setActiveTool(t.id)}
+              <button key={t.id} id={`tool-tab-${t.id}`} type="button"
+                onClick={() => setActiveTool(t.id)}
                 className="tool-tab"
-                role="tab" aria-selected={isActive} aria-label={t.label}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls="main-content"
+                tabIndex={isActive ? 0 : -1}
                 style={{
                   display:"flex", alignItems:"center", gap:8,
                   padding:"13px 28px",
@@ -5512,12 +5535,15 @@ function TheTechSavvyTeacherAppRoot() {
               </button>
             );
           })}
-        </nav>
+        </div>
       </header>
 
       {/* ━━ MAIN CONTENT ━━ */}
-      <main id="main-content" role="main"
-        style={{ flex:1, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column" }}>
+      <main id="main-content"
+        role="tabpanel"
+        aria-labelledby={`tool-tab-${activeTool}`}
+        tabIndex={-1}
+        style={{ flex:1, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none" }}>
         {activeTool === "worksheet" && (
           <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
             <WorksheetBuilder />
