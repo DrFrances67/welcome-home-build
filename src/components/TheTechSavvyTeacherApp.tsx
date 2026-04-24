@@ -2751,29 +2751,38 @@ Include a variety of activity types. Make the content directly address the stand
   };
 
   // Generate real images for any element of type "image" with a missing url.
-  // Looks at el.imagePrompt (preferred) or el.caption / el.text for the prompt.
+  // SEQUENTIAL with retry-on-429 to avoid rate limits from the image gateway.
   const fillImageElements = async (els: any[], styleHint = "cartoon") => {
-    const tasks: Promise<void>[] = [];
-    for (const el of els) {
-      if (el?.type !== "image") continue;
-      if (el.url) continue;
+    const targets = els.filter(el => el?.type === "image" && !el.url &&
+      (el.imagePrompt || el.caption || el.text));
+    let done = 0;
+    for (const el of targets) {
       const prompt = (el.imagePrompt || el.caption || el.text || "").toString().trim();
       if (!prompt) continue;
-      tasks.push((async () => {
+      let attempt = 0;
+      while (attempt < 3) {
         try {
           const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt, style: styleHint }),
           });
-          if (!r.ok) return;
+          if (r.status === 429) {
+            // Rate limited — back off and retry
+            attempt++;
+            await new Promise(res => setTimeout(res, 2500 * attempt));
+            continue;
+          }
+          if (!r.ok) break;
           const d = await r.json();
           if (d?.url) el.url = d.url;
-        } catch (_) { /* swallow per-image error */ }
-      })());
-      // small stagger to reduce rate-limit collisions
-      await new Promise(r => setTimeout(r, 350));
+          break;
+        } catch (_) { break; }
+      }
+      done++;
+      setWsFileMsg(`✓ Got blocks. Generating images… (${done}/${targets.length})`);
+      // Pace requests to stay under the gateway's per-minute limit
+      await new Promise(res => setTimeout(res, 1200));
     }
-    await Promise.all(tasks);
   };
 
   // Insert AI-generated worksheet elements that may target multiple pages.
@@ -3197,6 +3206,7 @@ const EMAIL_RECIPIENTS = [
   { id:"administrator", label:"Administrator",    icon:"🏫", desc:"Principal, VP, district staff" },
   { id:"colleague",     label:"Colleague",        icon:"👩‍🏫", desc:"Fellow teachers, support staff" },
   { id:"parent",        label:"Parent / Guardian", icon:"👨‍👩‍👧", desc:"Families of students" },
+  { id:"grant",         label:"Grant",            icon:"💰", desc:"Foundations, donors, funders for classroom resources" },
 ];
 const EMAIL_TONES = [
   { id:"formal",           label:"Formal",             desc:"Structured & highly professional" },
@@ -3207,7 +3217,7 @@ const EMAIL_TONES = [
 const EMAIL_SITUATIONS = [
   "Reporting a concern","Sharing good news","Requesting a meeting",
   "Following up","Responding to a complaint","Providing an update",
-  "Asking for help / resources","Scheduling / logistics","Other",
+  "Asking for help / resources","Scheduling / logistics","Grant writing","Other",
 ];
 
 function EmailAssistant() {
@@ -3253,9 +3263,18 @@ function EmailAssistant() {
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1000,
+          model:"claude-sonnet-4-20250514", max_tokens:1200,
           system:`You are an expert writing assistant helping a teacher compose professional emails.
 Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
+${recipient === "grant" || /grant/i.test(situation) ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
+- Be professional, respectful, and concise.
+- Open by briefly introducing the teacher, school, grade level, and student population served.
+- Clearly state the specific resources or funding being requested and the approximate amount or quantity if known.
+- Explain WHY these items are a necessity — tie them directly to student learning outcomes, equity, engagement, or a specific instructional gap.
+- Describe the impact on students (how many students benefit, what they will be able to do).
+- Express genuine gratitude and offer to provide updates, photos, or a thank-you from students.
+- Include a clear call to action (next steps, contact info placeholder).
+- Avoid sounding desperate or generic; sound mission-driven.` : ""}
 Rules: maintain respect and professionalism; keep the teacher's core intent; add a subject line; clear structure; not overly wordy.
 Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
           messages:[{role:"user", content:`Polish this into a professional email:\n\n${draft}`}],
