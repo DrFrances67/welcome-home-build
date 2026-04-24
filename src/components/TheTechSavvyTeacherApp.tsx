@@ -4476,9 +4476,10 @@ document.addEventListener('keydown',e=>{
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const TOOLS = [
-  { id:"lesson",    label:"Lesson Plan Generator", icon:"📋", desc:"Generate complete, differentiated lesson plans instantly" },
-  { id:"worksheet", label:"Worksheet Builder",     icon:"📄", desc:"Build print-ready worksheets aligned to NY Standards" },
-  { id:"email",     label:"Professional Email",    icon:"✉️",  desc:"Transform rough notes into polished professional emails" },
+  { id:"lesson",    label:"Lesson Plan Generator",     icon:"📋", desc:"Generate complete, differentiated lesson plans instantly" },
+  { id:"danielson", label:"Danielson Review",          icon:"🧭", desc:"Score a lesson plan against the Danielson rubric" },
+  { id:"worksheet", label:"Worksheet Builder",         icon:"📄", desc:"Build print-ready worksheets aligned to NY Standards" },
+  { id:"email",     label:"Professional Communication",icon:"✉️", desc:"Transform rough notes into polished professional communication" },
 ];
 
 const SITE_COLOR = "#CF27F5";
@@ -4576,8 +4577,9 @@ function TheTechSavvyTeacherAppRoot() {
             <WorksheetBuilder />
           </div>
         )}
-        {activeTool === "lesson" && <LessonPlanGenerator />}
-        {activeTool === "email"   && <EmailAssistant />}
+        {activeTool === "lesson"    && <LessonPlanGenerator />}
+        {activeTool === "danielson" && <DanielsonReview />}
+        {activeTool === "email"     && <EmailAssistant />}
       </main>
     </div>
   );
