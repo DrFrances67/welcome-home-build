@@ -3456,6 +3456,8 @@ function LessonPlanGenerator() {
   // Slide deck generation state
   const [slidesLoading, setSlidesLoading] = useState(false);
   const [slidesError,   setSlidesError]   = useState("");
+  const [deckData,      setDeckData]      = useState(null); // cached AI-generated deck
+  const [exportingFmt,  setExportingFmt]  = useState("");   // which format is being exported
 
   const setF = (k,v) => setForm(p => ({...p,[k]:v}));
   const toggleDiff = (d) => setF("diff", form.diff.includes(d) ? form.diff.filter(x=>x!==d) : [...form.diff, d]);
@@ -3780,6 +3782,8 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       }
 
       setResult(parsed);
+      setDeckData(null); // invalidate cached deck so next export regenerates from new plan
+      setSlidesError("");
     } catch (e) {
       setError(`Generation failed: ${e.message}`);
     }
@@ -3907,41 +3911,44 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
   };
 
   // ── Slide deck generation ─────────────────────────────────────────
-  // Asks the AI to outline slides from the full lesson plan, then renders
-  // a self-contained HTML deck (arrow-key navigable, printable) in a new tab.
-  const generateSlideDeck = async () => {
-    if (!result) return;
-    setSlidesError(""); setSlidesLoading(true);
-    try {
-      const lessonContext = buildPlanText().slice(0, 6000);
-      const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
-      const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
+  // Generates the deck JSON ONCE (caches in deckData) so all export formats
+  // share the same content. Each export format renders the cached deck.
+  const ensureDeck = async () => {
+    if (deckData) return deckData;
+    const lessonContext = buildPlanText().slice(0, 6000);
+    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
+    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
 
-      const raw = await callClaude(sys, userMsg, 3500);
-      let clean = (raw || "").trim();
-      if (clean.startsWith("```")) clean = clean.replace(/^```json?\s*/i,"").replace(/```\s*$/,"").trim();
-      const s = clean.indexOf("{"), e = clean.lastIndexOf("}");
-      if (s === -1 || e === -1) throw new Error("AI response was not valid JSON.");
-      const deck = JSON.parse(clean.slice(s, e + 1));
-      if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
-        throw new Error("No slides were returned. Try again.");
-      }
+    const raw = await callClaude(sys, userMsg, 3500);
+    let clean = (raw || "").trim();
+    if (clean.startsWith("```")) clean = clean.replace(/^```json?\s*/i,"").replace(/```\s*$/,"").trim();
+    const s = clean.indexOf("{"), e = clean.lastIndexOf("}");
+    if (s === -1 || e === -1) throw new Error("AI response was not valid JSON.");
+    const deck = JSON.parse(clean.slice(s, e + 1));
+    if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
+      throw new Error("No slides were returned. Try again.");
+    }
+    setDeckData(deck);
+    return deck;
+  };
 
-      const safe = v => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      const slidesHtml = deck.slides.map((sl, i) => {
-        const isTitle = sl.kind === "title" || i === 0;
-        const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
-        return `<section class="slide ${isTitle ? "slide-title" : ""}" data-i="${i}">
-          <div class="slide-inner">
-            ${isTitle
-              ? `<div class="title-block"><h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
-              : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}
-            <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
-          </div>
-        </section>`;
-      }).join("");
+  // Build the standalone HTML deck string (used for HTML and PDF exports)
+  const buildDeckHtml = (deck) => {
+    const safe = v => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const slidesHtml = deck.slides.map((sl, i) => {
+      const isTitle = sl.kind === "title" || i === 0;
+      const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
+      return `<section class="slide ${isTitle ? "slide-title" : ""}" data-i="${i}">
+        <div class="slide-inner">
+          ${isTitle
+            ? `<div class="title-block"><h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
+            : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}
+          <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
+        </div>
+      </section>`;
+    }).join("");
 
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result.title)} — Slide Deck</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result.title)} — Slide Deck</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0F0A1A;font-family:'Inter','Segoe UI',sans-serif;color:#1F2937;overflow:hidden}
@@ -3977,7 +3984,7 @@ li::before{content:"●";position:absolute;left:0;color:#CF27F5;font-size:0.9em;
   <button id="prev">◀ Prev</button>
   <span class="pill" id="pos">1 / ${deck.slides.length}</span>
   <button id="next">Next ▶</button>
-  <button id="print">🖨️ Print</button>
+  <button id="print">🖨️ Print / Save as PDF</button>
 </div>
 <script>
 const slides=document.querySelectorAll('.slide');let i=0;
@@ -3993,24 +4000,179 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='End')show(slides.length-1);
 });
 <\/script></body></html>`;
+  };
 
-      // Open in a new tab. If popup blocked, fall back to iframe + offer download.
+  const deckBaseName = (deck) =>
+    (deck?.title || result?.title || "lesson").replace(/[^a-z0-9]+/gi,"_").replace(/^_+|_+$/g,"") || "lesson";
+
+  const triggerDownload = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
+
+  // ── Export: HTML (interactive deck in new tab) ────────────────────
+  const exportSlidesHTML = async () => {
+    if (!result) return;
+    setSlidesError(""); setExportingFmt("html"); setSlidesLoading(true);
+    try {
+      const deck = await ensureDeck();
+      const html = buildDeckHtml(deck);
       const win = window.open("", "_blank");
       if (win) {
         win.document.open(); win.document.write(html); win.document.close();
       } else {
-        // Popup blocked — write to a hidden iframe and trigger a download instead.
-        const blob = new Blob([html], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = `${(deck.title || result.title || "lesson").replace(/[^a-z0-9]+/gi,"_")}_slides.html`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        triggerDownload(new Blob([html], { type: "text/html" }), `${deckBaseName(deck)}_slides.html`);
       }
     } catch (err) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
-    setSlidesLoading(false);
+    setSlidesLoading(false); setExportingFmt("");
+  };
+
+  // ── Export: Plain text outline ────────────────────────────────────
+  const exportSlidesText = async () => {
+    if (!result) return;
+    setSlidesError(""); setExportingFmt("text"); setSlidesLoading(true);
+    try {
+      const deck = await ensureDeck();
+      const lines = [];
+      lines.push(deck.title || result.title);
+      if (deck.subtitle) lines.push(deck.subtitle);
+      lines.push("=".repeat(60), "");
+      deck.slides.forEach((sl, i) => {
+        lines.push(`SLIDE ${i + 1}: ${sl.title || ""}`);
+        lines.push("-".repeat(40));
+        (sl.bullets || []).forEach(b => lines.push(`  • ${b}`));
+        lines.push("");
+      });
+      triggerDownload(new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }), `${deckBaseName(deck)}_slides.txt`);
+    } catch (err) {
+      setSlidesError(`Could not generate slides: ${err.message}`);
+    }
+    setSlidesLoading(false); setExportingFmt("");
+  };
+
+  // ── Export: PDF (open the HTML deck and trigger print) ────────────
+  const exportSlidesPDF = async () => {
+    if (!result) return;
+    setSlidesError(""); setExportingFmt("pdf"); setSlidesLoading(true);
+    try {
+      const deck = await ensureDeck();
+      const html = buildDeckHtml(deck);
+      // Open the deck in a new tab and auto-trigger the print dialog
+      // so the user can pick "Save as PDF". Falls back to HTML download if popup-blocked.
+      const printHtml = html.replace("<\/script></body></html>", "setTimeout(()=>window.print(),500);<\/script></body></html>");
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.open(); win.document.write(printHtml); win.document.close();
+      } else {
+        triggerDownload(new Blob([html], { type: "text/html" }), `${deckBaseName(deck)}_slides.html`);
+        setSlidesError("Popup blocked — downloaded as HTML. Open it and use Print → Save as PDF.");
+      }
+    } catch (err) {
+      setSlidesError(`Could not generate slides: ${err.message}`);
+    }
+    setSlidesLoading(false); setExportingFmt("");
+  };
+
+  // Build a .pptx Blob from a deck (shared by PPTX + Google Slides exports)
+  const buildPptxBlob = async (deck) => {
+    const PptxGenJS = (await import("pptxgenjs")).default;
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inch
+    pptx.title = deck.title || result.title || "Lesson Slides";
+    pptx.author = "The Tech Savvy Teacher";
+
+    const PPTX_BRAND  = "8B0AB0";
+    const PPTX_ACCENT = "CF27F5";
+    const PPTX_DARK   = "1F2937";
+    const PPTX_MUTED  = "9CA3AF";
+
+    deck.slides.forEach((sl, i) => {
+      const isTitle = sl.kind === "title" || i === 0;
+      const slide = pptx.addSlide();
+
+      if (isTitle) {
+        slide.background = { color: PPTX_BRAND };
+        slide.addText(sl.title || deck.title || "Lesson", {
+          x: 0.5, y: 2.4, w: 12.33, h: 1.6,
+          fontSize: 54, bold: true, fontFace: "Calibri",
+          color: "FFFFFF", align: "center", valign: "middle",
+        });
+        if (deck.subtitle) {
+          slide.addText(deck.subtitle, {
+            x: 0.5, y: 4.2, w: 12.33, h: 0.8,
+            fontSize: 22, fontFace: "Calibri", color: "FDE7FF",
+            align: "center", valign: "middle",
+          });
+        }
+      } else {
+        slide.background = { color: "FFFFFF" };
+        slide.addText(sl.title || `Slide ${i + 1}`, {
+          x: 0.6, y: 0.4, w: 12.13, h: 0.9,
+          fontSize: 32, bold: true, fontFace: "Calibri",
+          color: PPTX_BRAND,
+        });
+        slide.addShape("rect", {
+          x: 0.6, y: 1.28, w: 1.6, h: 0.06, fill: { color: PPTX_ACCENT }, line: { color: PPTX_ACCENT },
+        });
+        const bullets = (sl.bullets || []).map(b => ({
+          text: String(b),
+          options: { bullet: { code: "25CF" }, color: PPTX_DARK, fontSize: 20 },
+        }));
+        if (bullets.length) {
+          slide.addText(bullets, {
+            x: 0.7, y: 1.7, w: 12.0, h: 5.2,
+            fontFace: "Calibri", lineSpacingMultiple: 1.3, valign: "top",
+          });
+        }
+      }
+
+      slide.addText(`${i + 1} / ${deck.slides.length}`, {
+        x: 11.5, y: 7.05, w: 1.5, h: 0.35,
+        fontSize: 11, fontFace: "Calibri", color: isTitle ? "FFFFFF" : PPTX_MUTED,
+        align: "right",
+      });
+    });
+
+    // pptxgenjs returns a Blob when output type is "blob"
+    return await pptx.write({ outputType: "blob" });
+  };
+
+  // ── Export: PowerPoint (.pptx) ────────────────────────────────────
+  const exportSlidesPPTX = async () => {
+    if (!result) return;
+    setSlidesError(""); setExportingFmt("pptx"); setSlidesLoading(true);
+    try {
+      const deck = await ensureDeck();
+      const blob = await buildPptxBlob(deck);
+      triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
+    } catch (err) {
+      setSlidesError(`Could not generate slides: ${err.message}`);
+    }
+    setSlidesLoading(false); setExportingFmt("");
+  };
+
+  // ── Export: Google Slides ─────────────────────────────────────────
+  // Frontend-only browsers cannot create Google Slides without OAuth.
+  // Best UX: download a .pptx (Slides imports it natively) and open the
+  // Google Slides import flow in a new tab.
+  const exportSlidesGoogle = async () => {
+    if (!result) return;
+    setSlidesError(""); setExportingFmt("google"); setSlidesLoading(true);
+    try {
+      const deck = await ensureDeck();
+      const blob = await buildPptxBlob(deck);
+      triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
+      window.open("https://docs.google.com/presentation/u/0/?tgif=d", "_blank");
+      setSlidesError("✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.");
+    } catch (err) {
+      setSlidesError(`Could not generate slides: ${err.message}`);
+    }
+    setSlidesLoading(false); setExportingFmt("");
   };
 
   // then link them to docs.new — no blob URLs needed, works in all CSP environments
@@ -4483,17 +4645,46 @@ document.addEventListener('keydown',e=>{
               </div>
             )}
 
-            {/* Generate Slide Deck CTA */}
-            <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10, textAlign:"center" }}>
-              <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px" }}>🎞️ Want a slide deck for this lesson?</p>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280", margin:"0 0 12px", lineHeight:1.5 }}>Generate a presentation-ready slide deck built from every section of this plan.</p>
-              <button onClick={generateSlideDeck} disabled={slidesLoading}
-                style={{ padding:"10px 22px", borderRadius:8, border:"none", background: slidesLoading ? "#D1D5DB" : BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor: slidesLoading ? "wait" : "pointer", boxShadow: slidesLoading ? "none" : "0 4px 12px rgba(207,39,245,0.3)", display:"inline-flex", alignItems:"center", gap:8 }}>
-                {slidesLoading ? (
-                  <><span style={{ width:13, height:13, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /> Building slides…</>
-                ) : "🎬 Generate Slide Deck"}
-              </button>
-              {slidesError && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11.5, color:"#DC2626", margin:"10px 0 0" }}>{slidesError}</p>}
+            {/* Generate Slide Deck CTA — multi-format export */}
+            <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10 }}>
+              <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px", textAlign:"center" }}>🎞️ Build a slide deck for this lesson</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280", margin:"0 0 14px", lineHeight:1.5, textAlign:"center" }}>Pick your format — the deck is built from every section of this plan.</p>
+              {(() => {
+                const exportBtns = [
+                  { id:"html",   label:"🌐 Interactive HTML", desc:"Open in browser",        onClick: exportSlidesHTML },
+                  { id:"text",   label:"📝 Plain Text",       desc:"Outline (.txt)",         onClick: exportSlidesText },
+                  { id:"pdf",    label:"📄 PDF",              desc:"Print-ready",            onClick: exportSlidesPDF },
+                  { id:"google", label:"🟡 Google Slides",    desc:"Upload .pptx to Slides", onClick: exportSlidesGoogle },
+                  { id:"pptx",   label:"🟧 PowerPoint",       desc:"Download .pptx",         onClick: exportSlidesPPTX },
+                ];
+                return (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8 }}>
+                    {exportBtns.map(b => {
+                      const isActive = exportingFmt === b.id;
+                      const isDisabled = slidesLoading;
+                      return (
+                        <button key={b.id} onClick={b.onClick} disabled={isDisabled}
+                          style={{
+                            padding:"10px 12px", borderRadius:8, border:`1.5px solid ${isActive ? BRAND : "#E9D5FF"}`,
+                            background: isDisabled && !isActive ? "#F3F4F6" : (isActive ? BRAND : "white"),
+                            color: isActive ? "white" : (isDisabled ? "#9CA3AF" : BRAND),
+                            fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:12.5,
+                            cursor: isDisabled ? (isActive ? "wait" : "not-allowed") : "pointer",
+                            boxShadow: isActive ? "0 4px 12px rgba(207,39,245,0.3)" : "none",
+                            display:"flex", flexDirection:"column", gap:3, alignItems:"center", lineHeight:1.3,
+                            transition:"all .15s",
+                          }}>
+                          <span>{isActive ? (
+                            <><span style={{ width:11, height:11, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite", verticalAlign:"middle", marginRight:6 }} />Working…</>
+                          ) : b.label}</span>
+                          {!isActive && <span style={{ fontSize:10, fontWeight:500, color: isDisabled ? "#9CA3AF" : "#9CA3AF" }}>{b.desc}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              {slidesError && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11.5, color: slidesError.startsWith("✓") ? "#166534" : "#DC2626", margin:"12px 0 0", lineHeight:1.5, background: slidesError.startsWith("✓") ? "#F0FDF4" : "#FEF2F2", padding:"8px 10px", borderRadius:6, border: `1px solid ${slidesError.startsWith("✓") ? "#BBF7D0" : "#FECACA"}` }}>{slidesError}</p>}
             </div>
           </div>
         ) : (
