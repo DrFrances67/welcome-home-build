@@ -3782,6 +3782,8 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       }
 
       setResult(parsed);
+      setDeckData(null); // invalidate cached deck so next export regenerates from new plan
+      setSlidesError("");
     } catch (e) {
       setError(`Generation failed: ${e.message}`);
     }
