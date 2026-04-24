@@ -4627,11 +4627,11 @@ function DanielsonReview() {
     if (!extractedText) { setError("Please upload a lesson plan first."); return; }
     setAnalyzing(true); setError(""); setResult(null);
     try {
-      const system = `You are an experienced school administrator (assistant principal or principal) conducting a formal observation review using the Danielson 2014-15 Framework for Teaching. You will score a lesson plan against EXACTLY 8 components (1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e). Use the rubric below as your sole authoritative source.\n\n${DANIELSON_RUBRIC_REFERENCE}\n\nCRITICAL INSTRUCTIONS:\n- Score each of the 8 components on a 1-4 scale: 1 (Ineffective), 2 (Developing), 3 (Effective), 4 (Highly Effective).\n- Be honest and rigorous — do NOT inflate scores. Only award 4 (Highly Effective) when the lesson clearly demonstrates the highly effective criteria from the rubric.\n- For each component, cite specific evidence from the lesson plan.\n- For ANY component scored 1, 2, or 3 (anything below Highly Effective), provide concrete, actionable suggestions rooted in the rubric language for how to reach a 4.\n- Return ONLY valid JSON, no preamble.`;
+      const system = `You are an experienced school administrator (assistant principal or principal) conducting a formal observation review using the Danielson 2014-15 Framework for Teaching. You will score a lesson plan against EXACTLY 8 components (1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e). Use the rubric below as your sole authoritative source.\n\n${DANIELSON_RUBRIC_REFERENCE}\n\nCRITICAL INSTRUCTIONS:\n- Score each of the 8 components on a 1-4 scale: 1 (Ineffective), 2 (Developing), 3 (Effective), 4 (Highly Effective).\n- Be honest and rigorous — do NOT inflate scores. Only award 4 (Highly Effective) when the lesson clearly demonstrates the highly effective criteria from the rubric.\n- For each component, you MUST cite "quotes": an array of 1–3 EXACT verbatim text snippets copied character-for-character from the lesson plan that justify your score. Do not paraphrase, summarize, or add words to these quotes — they must appear in the lesson plan exactly as written so they can be highlighted. Keep each quote between 8 and 200 characters. If the lesson plan provides no relevant text for a component (which itself is evidence of a low score), return an empty quotes array.\n- For ANY component scored 1, 2, or 3 (anything below Highly Effective), provide concrete, actionable suggestions rooted in the rubric language for how to reach a 4.\n- Return ONLY valid JSON, no preamble.`;
 
-      const user = `Review the following lesson plan and return JSON in this EXACT shape:\n\n{\n  "summary": "2-3 sentence overall observation summary",\n  "scores": [\n    { "id": "1a", "score": 1-4, "rating": "Ineffective|Developing|Effective|Highly Effective", "evidence": "specific evidence from the lesson plan", "suggestions": "if score<4, concrete steps to reach Highly Effective; if score=4, brief note of what made it strong" },\n    ... (one entry for each of 1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e in this order)\n  ]\n}\n\nLESSON PLAN:\n${extractedText.slice(0, 12000)}`;
+      const user = `Review the following lesson plan and return JSON in this EXACT shape:\n\n{\n  "summary": "2-3 sentence overall observation summary",\n  "scores": [\n    { "id": "1a", "score": 1-4, "rating": "Ineffective|Developing|Effective|Highly Effective", "evidence": "1-2 sentence reasoning that explains why these quotes earn this score", "quotes": ["exact verbatim snippet from the lesson plan", "another exact snippet"], "suggestions": "if score<4, concrete steps to reach Highly Effective; if score=4, brief note of what made it strong" },\n    ... (one entry for each of 1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e in this order)\n  ]\n}\n\nLESSON PLAN:\n${extractedText.slice(0, 12000)}`;
 
-      const raw = await callClaude(system, user, 3500);
+      const raw = await callClaude(system, user, 5000);
       const match = raw.match(/\{[\s\S]*\}/);
       if (!match) throw new Error("AI response was not valid JSON. Please try again.");
       const parsed = JSON.parse(match[0]);
@@ -4649,6 +4649,21 @@ function DanielsonReview() {
 
   const ratingColor = (s) => s === 4 ? "#16A34A" : s === 3 ? "#2563EB" : s === 2 ? "#D97706" : "#DC2626";
   const ratingLabel = (s) => s === 4 ? "Highly Effective" : s === 3 ? "Effective" : s === 2 ? "Developing" : "Ineffective";
+
+  // Verify if a quote actually appears in the source lesson — tolerant of whitespace/punctuation differences
+  const normalize = (str) => (str || "").toLowerCase().replace(/\s+/g, " ").replace(/[\u2018\u2019\u201C\u201D]/g, "'").trim();
+  const quoteFoundInText = (quote, source) => {
+    if (!quote || !source) return false;
+    const nq = normalize(quote);
+    const ns = normalize(source);
+    if (nq.length < 8) return false;
+    if (ns.includes(nq)) return true;
+    // Fallback: check if at least 80% of the quote's words (≥4 chars) appear consecutively-ish
+    const words = nq.split(" ").filter(w => w.length >= 4);
+    if (words.length < 3) return false;
+    const hits = words.filter(w => ns.includes(w)).length;
+    return hits / words.length >= 0.8;
+  };
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px", fontFamily: "'Inter',sans-serif" }}>
@@ -4828,8 +4843,38 @@ function DanielsonReview() {
                     </span>
                   </div>
                   <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Evidence from lesson</div>
-                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55 }}>{s.evidence}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Evidence from lesson</div>
+                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55, marginBottom: 8 }}>{s.evidence}</div>
+                    {Array.isArray(s.quotes) && s.quotes.length > 0 ? (
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {s.quotes.map((q, qi) => {
+                          const verified = quoteFoundInText(q, extractedText);
+                          return (
+                            <div
+                              key={qi}
+                              title={verified ? "Verified verbatim from your lesson" : "Close paraphrase — could not be located verbatim in the lesson"}
+                              style={{
+                                background: verified ? "#FEF9C3" : "#F3F4F6",
+                                borderLeft: `3px solid ${verified ? "#EAB308" : "#9CA3AF"}`,
+                                padding: "8px 12px",
+                                borderRadius: 4,
+                                fontSize: 13,
+                                color: "#1F2937",
+                                fontStyle: "italic",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              <span style={{ fontStyle: "normal", fontSize: 10, color: verified ? "#854D0E" : "#6B7280", fontWeight: 700, marginRight: 6 }}>
+                                {verified ? "✓ HIGHLIGHTED" : "≈ PARAPHRASED"}
+                              </span>
+                              "{q}"
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>No specific quote available — score reflects absence of evidence in this area.</div>
+                    )}
                   </div>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: isHighest ? "#16A34A" : BRAND, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
