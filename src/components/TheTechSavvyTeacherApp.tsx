@@ -3197,6 +3197,7 @@ const EMAIL_RECIPIENTS = [
   { id:"administrator", label:"Administrator",    icon:"🏫", desc:"Principal, VP, district staff" },
   { id:"colleague",     label:"Colleague",        icon:"👩‍🏫", desc:"Fellow teachers, support staff" },
   { id:"parent",        label:"Parent / Guardian", icon:"👨‍👩‍👧", desc:"Families of students" },
+  { id:"grant",         label:"Grant",            icon:"💰", desc:"Foundations, donors, funders for classroom resources" },
 ];
 const EMAIL_TONES = [
   { id:"formal",           label:"Formal",             desc:"Structured & highly professional" },
@@ -3207,7 +3208,7 @@ const EMAIL_TONES = [
 const EMAIL_SITUATIONS = [
   "Reporting a concern","Sharing good news","Requesting a meeting",
   "Following up","Responding to a complaint","Providing an update",
-  "Asking for help / resources","Scheduling / logistics","Other",
+  "Asking for help / resources","Scheduling / logistics","Grant writing","Other",
 ];
 
 function EmailAssistant() {
