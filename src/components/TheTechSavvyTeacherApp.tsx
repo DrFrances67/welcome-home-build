@@ -4403,6 +4403,21 @@ document.addEventListener('keydown',e=>{
               </div>
             </div>
 
+            {/* Success Criteria */}
+            {(result.successCriteria||[]).length > 0 && (
+              <div style={{ marginBottom:20, background:"#F5F3FF", border:"1px solid #DDD6FE", borderRadius:8, padding:"12px 14px" }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6D28D9", margin:"0 0 8px" }}>Success Criteria — Students will know they've succeeded when they can:</p>
+                <ul style={{ margin:0, paddingLeft:0, listStyle:"none" }}>
+                  {(result.successCriteria||[]).map((sc,i) => (
+                    <li key={i} style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#1F2937", lineHeight:1.55, marginBottom:5, display:"flex", gap:8 }}>
+                      <span style={{ color:"#7C3AED", fontWeight:700, flexShrink:0 }}>✓</span>
+                      <span>{sc}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Lesson Sequence */}
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", margin:"0 0 10px", borderBottom:"1px solid #E5E7EB", paddingBottom:8 }}>Lesson Sequence</p>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
