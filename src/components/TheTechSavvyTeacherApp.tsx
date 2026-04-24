@@ -3237,7 +3237,11 @@ const STUDENT_COMPLEXITY = [
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
-  const [situation, setSituation] = useState("Responding to a complaint");
+  const [situations, setSituations] = useState(["Responding to a complaint"]);
+  const toggleSituation = (s) => setSituations(prev =>
+    prev.includes(s) ? (prev.length === 1 ? prev : prev.filter(x => x !== s)) : [...prev, s]
+  );
+  const situation = situations.join(" + ");
   const [gradeLevel, setGradeLevel] = useState("3-5");
   const [complexity, setComplexity] = useState("medium");
   const [draft, setDraft]         = useState("");
@@ -3288,7 +3292,8 @@ function EmailAssistant() {
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional communication.
-Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
+Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation(s): ${situations.join(", ")}.
+${situations.length > 1 ? `MULTI-SITUATION CONTEXT — The teacher has selected multiple situations: ${situations.map(s => `"${s}"`).join(", ")}. You MUST address ALL of them in ONE cohesive message. Do not write separate emails. Combine the requirements naturally — for example, if "Request for tutoring" and "Classwork / homework support" are both selected, the message should cover both tutoring availability/scheduling AND specific classwork/homework support in a unified, well-organized email. Use clear paragraph breaks (or a short list) to keep each topic readable, but maintain ONE subject line, ONE greeting, and ONE closing.` : ""}
 ${isGrant ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
 - Be professional, respectful, and concise.
 - Open by briefly introducing the teacher, school, grade level, and student population served.
@@ -3422,10 +3427,25 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             ))}
           </div>
 
-          <span style={lbl}>Situation</span>
-          <select value={situation} onChange={e => setSituation(e.target.value)} style={{ ...inp, marginBottom:18, cursor:"pointer" }}>
-            {EMAIL_SITUATIONS.map(s => <option key={s}>{s}</option>)}
-          </select>
+          <span style={lbl}>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
+            {EMAIL_SITUATIONS.map(s => {
+              const active = situations.includes(s);
+              return (
+                <button key={s} type="button" onClick={() => toggleSituation(s)}
+                  style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 11px", borderRadius:8, border:`1.5px solid ${active ? BRAND : "#E5E7EB"}`, background: active ? LIGHT : "white", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}>
+                  <span style={{ width:16, height:16, borderRadius:4, border:`1.5px solid ${active ? BRAND : "#D1D5DB"}`, background: active ? BRAND : "white", color:"white", fontSize:11, lineHeight:"13px", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{active ? "✓" : ""}</span>
+                  <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:600, fontSize:12, color: active ? BRAND : "#111827" }}>{s}</span>
+                </button>
+              );
+            })}
+          </div>
+          {situations.length > 1 && (
+            <div style={{ fontSize:11, color:BRAND, marginBottom:18, fontStyle:"italic" }}>
+              ✨ Combining {situations.length} situations into one message.
+            </div>
+          )}
+          {situations.length <= 1 && <div style={{ marginBottom:18 }} />}
 
           <span style={lbl}>Your rough draft or key points</span>
           <div style={{ position:"relative" }}>
