@@ -3373,7 +3373,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 
           <button onClick={polish} disabled={loading || !draft.trim()}
             style={{ width:"100%", marginTop:14, padding:"12px", borderRadius:8, border:"none", background: !draft.trim()||loading ? "#E5E7EB" : BRAND, color: !draft.trim()||loading ? "#9CA3AF" : "white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:14, cursor: !draft.trim()||loading ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, letterSpacing:0.3 }}>
-            {loading ? <><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} />Polishing…</> : "✦  Polish My Email"}
+            {loading ? <><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} />Polishing…</> : "✦  Polish My Communication"}
           </button>
         </div>
       </div>
@@ -3402,7 +3402,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
           ) : (
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center", color:"#9CA3AF" }}>
               <div style={{ fontSize:44, opacity:0.35 }}>📝</div>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.7 }}>Fill in your details and rough draft,<br/>then click <strong style={{ color:"#6B7280" }}>Polish My Email</strong> to see<br/>your professional version here.</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.7 }}>Fill in your details and rough draft,<br/>then click <strong style={{ color:"#6B7280" }}>Polish My Communication</strong> to see<br/>your professional version here.</p>
             </div>
           )}
         </div>
