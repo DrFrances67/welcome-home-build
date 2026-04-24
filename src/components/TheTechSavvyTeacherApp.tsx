@@ -3538,6 +3538,17 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         } catch(_) { /* fall through with whatever we have */ }
       }
 
+      // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
+      // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
+      if (!form.standard) {
+        const stdStr = String(parsed.standard || "");
+        const looksLikeCcls = /CCSS|CCLS|Common\s*Core|ELA-Literacy|Math\.Content/i.test(stdStr);
+        const matchesAllowed = candidateStds.some(c => stdStr && c.toLowerCase().startsWith(stdStr.toLowerCase().slice(0, 6)));
+        if (looksLikeCcls || (!matchesAllowed && candidateStds.length)) {
+          parsed.standard = candidateStds[0];
+        }
+      }
+
       setResult(parsed);
     } catch (e) {
       setError(`Generation failed: ${e.message}`);
