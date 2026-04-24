@@ -3535,6 +3535,20 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
               );
             })}
           </div>
+          {situationCapNotice && (
+            <div style={{ marginTop:8, padding:"10px 12px", background:"#FFFBEB", border:"1.5px solid #FCD34D", borderRadius:8 }}>
+              <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                <span style={{ fontSize:14, lineHeight:"18px" }}>🛑</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:"#92400E", lineHeight:1.45 }}>{situationCapNotice}</div>
+                  <button type="button" onClick={() => setSituationCapNotice("")}
+                    style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:"1.5px solid #92400E", background:"white", color:"#92400E", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {(() => {
             const issues = validateSituations(situations);
             const hasError = issues.some(i => i.level === "error");
