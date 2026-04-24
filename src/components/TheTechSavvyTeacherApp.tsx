@@ -3410,8 +3410,6 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
               </div>
             );
           })()}
-            </div>
-          )}
 
           <span style={lbl}>Tone</span>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:18 }}>
