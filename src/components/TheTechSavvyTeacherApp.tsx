@@ -3292,7 +3292,8 @@ function EmailAssistant() {
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional communication.
-Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
+Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation(s): ${situations.join(", ")}.
+${situations.length > 1 ? `MULTI-SITUATION CONTEXT — The teacher has selected multiple situations: ${situations.map(s => `"${s}"`).join(", ")}. You MUST address ALL of them in ONE cohesive message. Do not write separate emails. Combine the requirements naturally — for example, if "Request for tutoring" and "Classwork / homework support" are both selected, the message should cover both tutoring availability/scheduling AND specific classwork/homework support in a unified, well-organized email. Use clear paragraph breaks (or a short list) to keep each topic readable, but maintain ONE subject line, ONE greeting, and ONE closing.` : ""}
 ${isGrant ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
 - Be professional, respectful, and concise.
 - Open by briefly introducing the teacher, school, grade level, and student population served.
