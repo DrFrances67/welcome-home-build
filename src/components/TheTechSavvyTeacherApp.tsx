@@ -3511,7 +3511,18 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             ))}
           </div>
 
-          <span style={lbl}>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
+          <span style={{ ...lbl, display:"flex", alignItems:"center", flexWrap:"wrap", gap:6 }}>
+            <span>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
+            <span style={{
+              padding:"2px 8px", borderRadius:999,
+              background: situations.length >= SITUATION_MAX ? "#FEF3C7" : LIGHT,
+              color: situations.length >= SITUATION_MAX ? "#92400E" : BRAND,
+              fontSize:11, fontWeight:700, letterSpacing:0, textTransform:"none",
+              border:`1px solid ${situations.length >= SITUATION_MAX ? "#FCD34D" : "#E5E7EB"}`
+            }}>
+              {situations.length}/{SITUATION_MAX} selected{situations.length >= SITUATION_MAX ? " · max" : ""}
+            </span>
+          </span>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
             {EMAIL_SITUATIONS.map(s => {
               const active = situations.includes(s);
