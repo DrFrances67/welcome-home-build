@@ -1812,7 +1812,7 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514", max_tokens: 1800,
-        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–9 worksheet element objects.
+        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–10 worksheet element objects.
 
 Allowed element shapes (use exactly these keys):
 {"type":"instruction","text":"<directions>"}
@@ -1826,6 +1826,9 @@ Allowed element shapes (use exactly these keys):
 {"type":"fillBlank","text":"The ______ is a ______.","note":"Use the word bank."}
 {"type":"essay","prompt":"<prompt>","points":10,"lines":14}
 {"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+{"type":"image","imagePrompt":"<short visual description for an AI image generator, e.g. 'a friendly cartoon brown dog sitting'>","caption":"<optional short caption>","size":"small","align":"center"}
+
+CRITICAL: Whenever the worksheet would benefit from a picture (e.g. matching pictures to words, label-the-picture, picture-prompt writing, vocabulary with visuals), include {"type":"image", ...} blocks with a clear "imagePrompt". NEVER output text like "(picture of a cat)" or "[image: dog]" — emit a real image block instead so we can generate the picture.
 
 Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
         messages: [{ role: "user", content: userPrompt }]
@@ -1853,8 +1856,25 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
     if (looksLikeWorksheetRequest(userText) && typeof onInsertElements === "function") {
       try {
         const els = await buildWorksheet(userText);
+        // Generate real images for any "image" blocks (in parallel, capped)
+        const imgEls = els.filter((e: any) => e?.type === "image" && !e.url);
+        if (imgEls.length) {
+          setMsgs(p => [...p, { role: "assistant", content: `🎨 Generating ${imgEls.length} image${imgEls.length === 1 ? "" : "s"}…` }]);
+          for (const el of imgEls) {
+            const prompt = (el.imagePrompt || el.caption || "").toString().trim();
+            if (!prompt) continue;
+            try {
+              const ir = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt, style: "cartoon" }),
+              });
+              if (ir.ok) { const d = await ir.json(); if (d?.url) el.url = d.url; }
+            } catch (_) {}
+            await new Promise(r => setTimeout(r, 350));
+          }
+        }
         onInsertElements(els);
-        setMsgs(p => [...p, { role: "assistant", content: `✨ Done! I added ${els.length} element${els.length===1?"":"s"} to your worksheet. Click any block on the page to edit it, or ask me to tweak anything.` }]);
+        setMsgs(p => [...p, { role: "assistant", content: `✨ Done! I added ${els.length} element${els.length===1?"":"s"} to your worksheet${imgEls.length ? ` (including ${imgEls.length} generated image${imgEls.length === 1 ? "" : "s"})` : ""}. Click any block to edit it.` }]);
       } catch (e) {
         setMsgs(p => [...p, { role: "assistant", content: `I tried to build that worksheet but ran into an error: ${e?.message || e}. You can try rewording, or ask me for parts (e.g. "give me 5 multiple choice questions about ___").` }]);
       }
@@ -2285,10 +2305,13 @@ function ExportModal({ gv, ws, onClose }) {
       return "";
     };
     const totalPages = Math.max(1, ws.pageCount || 1);
+    const hidden = new Set(ws.pageHeadersHidden || []);
     const pagesHtml = Array.from({ length: totalPages }).map((_, pIdx) => {
       const pageEls = ws.elements.filter(e => Math.min(totalPages - 1, e.page || 0) === pIdx);
       const isLast = pIdx === totalPages - 1;
-      return `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif;position:relative;${isLast ? "" : "page-break-after:always;"}">${ws.showGrade?`<div style="position:absolute;top:14px;right:18px;background:${gv2.light};border:2px solid ${gv2.color}40;border-radius:20px;padding:3px 13px;font-size:11px;font-weight:900;color:${gv2.color}">${gv2.emoji} ${gv2.name}</div>`:""}<div style="border-bottom:3px solid ${gv2.color}25;padding-bottom:8px;margin-bottom:16px"><h1 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize+6}px;margin:0 0 14px;padding-right:120px">${ws.title}${totalPages > 1 ? ` <span style="font-family:'Nunito',sans-serif;font-size:${Math.max(gv2.fontSize-4,12)}px;font-weight:700;color:#9CA3AF">— Page ${pIdx + 1}</span>` : ""}</h1><div style="display:flex;gap:44px">${ws.showName?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Name:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""} ${ws.showDate?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Date:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""}</div></div>${pageEls.map(renderEl).join("")}</div>`;
+      const hideHeader = hidden.has(pIdx);
+      const headerHtml = hideHeader ? "" : `<div style="border-bottom:3px solid ${gv2.color}25;padding-bottom:8px;margin-bottom:16px"><h1 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize+6}px;margin:0 0 14px;padding-right:120px">${ws.title}${totalPages > 1 ? ` <span style="font-family:'Nunito',sans-serif;font-size:${Math.max(gv2.fontSize-4,12)}px;font-weight:700;color:#9CA3AF">— Page ${pIdx + 1}</span>` : ""}</h1><div style="display:flex;gap:44px">${ws.showName?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Name:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""} ${ws.showDate?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Date:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""}</div></div>`;
+      return `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif;position:relative;${isLast ? "" : "page-break-after:always;"}">${ws.showGrade?`<div style="position:absolute;top:14px;right:18px;background:${gv2.light};border:2px solid ${gv2.color}40;border-radius:20px;padding:3px 13px;font-size:11px;font-weight:900;color:${gv2.color}">${gv2.emoji} ${gv2.name}</div>`:""}${headerHtml}${pageEls.map(renderEl).join("")}</div>`;
     }).join("");
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title}</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{body{margin:0}.ws-page{page-break-after:always}.ws-page:last-child{page-break-after:auto}}</style></head><body>${pagesHtml}</body></html>`;
   };
@@ -2397,8 +2420,9 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1 });
+  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [] });
   const [currentPage, setCurrentPage] = useState(0);
+  const [viewMode, setViewMode] = useState("single"); // "single" | "scroll"
   const [selId, setSelId] = useState(null);
   const [rightTab, setRightTab] = useState("edit");
   const [showHelp, setShowHelp]       = useState(false);
@@ -2450,11 +2474,19 @@ export function WorksheetBuilder() {
       const remaining = p.elements
         .filter(e => (e.page || 0) !== idx)
         .map(e => ({ ...e, page: (e.page || 0) > idx ? (e.page || 0) - 1 : (e.page || 0) }));
-      return { ...p, elements: remaining, pageCount: Math.max(1, (p.pageCount || 1) - 1) };
+      const hidden = (p.pageHeadersHidden || [])
+        .filter(h => h !== idx)
+        .map(h => h > idx ? h - 1 : h);
+      return { ...p, elements: remaining, pageCount: Math.max(1, (p.pageCount || 1) - 1), pageHeadersHidden: hidden };
     });
     setCurrentPage(c => Math.max(0, Math.min(c, pageCount - 2)));
     setSelId(null);
   };
+  const isPageHeaderHidden = (idx) => (ws.pageHeadersHidden || []).includes(idx);
+  const togglePageHeader = (idx) => setWs(p => {
+    const cur = p.pageHeadersHidden || [];
+    return { ...p, pageHeadersHidden: cur.includes(idx) ? cur.filter(x => x !== idx) : [...cur, idx] };
+  });
   // Insert AI-generated worksheet elements onto the current page
   const insertAiElements = (parsed) => {
     if (!Array.isArray(parsed) || !parsed.length) return;
@@ -2663,35 +2695,54 @@ Include a variety of activity types. Make the content directly address the stand
   };
 
   // ── Worksheet file (PDF/CSV/TXT) → AI re-creates as editable blocks ──
+  // Returns { text, pageImages: [dataUrl, ...] } so the AI can both READ the
+  // text AND SEE images / layout from the original PDF pages.
   const extractPdfTextLocal = async (file) => {
     const pdfjs: any = await import("pdfjs-dist");
     const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
     pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
     const buf = await file.arrayBuffer();
     const doc = await pdfjs.getDocument({ data: buf }).promise;
-    const pages = Math.min(doc.numPages, 10);
+    const pages = Math.min(doc.numPages, 8);
     let text = "";
+    const pageImages: string[] = [];
     for (let p = 1; p <= pages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
-      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
+      text += `\n\n--- PAGE ${p} ---\n` + content.items.map((it: any) => it.str).join(" ");
+      // Render page to small canvas → JPEG data URL for AI vision
+      try {
+        const viewport = page.getViewport({ scale: 1.1 });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.min(900, viewport.width);
+        canvas.height = Math.round((canvas.width / viewport.width) * viewport.height);
+        const ctx = canvas.getContext("2d");
+        const scaledViewport = page.getViewport({ scale: canvas.width / viewport.width });
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+        pageImages.push(canvas.toDataURL("image/jpeg", 0.7));
+      } catch (e) { /* image render is best-effort */ }
     }
-    return text.trim();
+    return { text: text.trim(), pageImages };
   };
 
   const handleWsFileUpload = async (file: File) => {
     setWsFileMsg(""); setWsFileBusy(true);
     try {
       let raw = "";
+      let pageImages: string[] = [];
       const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
       const isText = /\.(csv|txt|md)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
-      if (isPdf) raw = await extractPdfTextLocal(file);
+      if (isPdf) {
+        const r = await extractPdfTextLocal(file);
+        raw = r.text; pageImages = r.pageImages;
+      }
       else if (isText) raw = await file.text();
       else throw new Error("Unsupported file type. Use PDF, CSV, or TXT.");
-      raw = (raw || "").slice(0, 8000);
-      if (!raw.trim()) throw new Error("Could not read any text from that file.");
-      setWsFile({ name: file.name, raw });
-      setWsFileMsg("✓ Loaded. Click Recreate to build this worksheet, or Re-imagine for a fresh take.");
+      raw = (raw || "").slice(0, 16000);
+      if (!raw.trim() && pageImages.length === 0) throw new Error("Could not read any text or images from that file.");
+      setWsFile({ name: file.name, raw, pageImages });
+      const imgNote = pageImages.length ? ` · saw ${pageImages.length} page image${pageImages.length === 1 ? "" : "s"}` : "";
+      setWsFileMsg(`✓ Loaded${imgNote}. Click Recreate to build this worksheet, or Re-imagine for a fresh take.`);
     } catch (e: any) {
       setWsFileMsg(`⚠ ${e?.message || "Failed to read file."}`);
       setWsFile(null);
@@ -2699,35 +2750,106 @@ Include a variety of activity types. Make the content directly address the stand
     setWsFileBusy(false);
   };
 
+  // Generate real images for any element of type "image" with a missing url.
+  // Looks at el.imagePrompt (preferred) or el.caption / el.text for the prompt.
+  const fillImageElements = async (els: any[], styleHint = "cartoon") => {
+    const tasks: Promise<void>[] = [];
+    for (const el of els) {
+      if (el?.type !== "image") continue;
+      if (el.url) continue;
+      const prompt = (el.imagePrompt || el.caption || el.text || "").toString().trim();
+      if (!prompt) continue;
+      tasks.push((async () => {
+        try {
+          const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt, style: styleHint }),
+          });
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d?.url) el.url = d.url;
+        } catch (_) { /* swallow per-image error */ }
+      })());
+      // small stagger to reduce rate-limit collisions
+      await new Promise(r => setTimeout(r, 350));
+    }
+    await Promise.all(tasks);
+  };
+
+  // Insert AI-generated worksheet elements that may target multiple pages.
+  // Each element may carry a `page` index (0-based). Auto-creates new pages
+  // as needed and lays out blocks on each page using nextSlot().
+  const insertAiElementsMultiPage = (parsed: any[]) => {
+    if (!Array.isArray(parsed) || !parsed.length) return;
+    // Normalize page indices
+    let maxPage = 0;
+    parsed.forEach(el => { const p = Math.max(0, parseInt(el.page) || 0); el.__page = p; if (p > maxPage) maxPage = p; });
+
+    // Group by page, lay out each page with nextSlot
+    const startPage = currentPage;
+    const newEls: any[] = [];
+    for (let p = 0; p <= maxPage; p++) {
+      const pageEls = parsed.filter(e => e.__page === p);
+      const targetPage = startPage + p;
+      const existingOnPage = ws.elements.filter(e => (e.page || 0) === targetPage).length;
+      pageEls.forEach((el, i) => {
+        const slot = nextSlot(existingOnPage + i);
+        const { __page, page, ...rest } = el;
+        newEls.push({ ...mkEl(rest.type, slot), ...rest, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride, page: targetPage });
+      });
+    }
+
+    const requiredPageCount = startPage + maxPage + 1;
+    setWs(p => ({
+      ...p,
+      elements: [...p.elements, ...newEls],
+      pageCount: Math.max(p.pageCount || 1, requiredPageCount),
+    }));
+    setRightTab("edit");
+    announce(`${newEls.length} elements added across ${maxPage + 1} page${maxPage === 0 ? "" : "s"}`);
+  };
+
   const recreateWorksheetFromFile = async (reimagine: boolean) => {
-    if (!wsFile?.raw) return;
+    if (!wsFile?.raw && !wsFile?.pageImages?.length) return;
     setWsFileBusy(true); setWsFileMsg(reimagine ? "Re-imagining…" : "Recreating…");
     try {
       const g = gInfo(ws.gradeId);
       const intent = reimagine
         ? `Re-imagine the worksheet below as a fresh, improved version for ${g.name} students. Keep the same topic and skill focus, but feel free to adjust activity types, vary question styles, and add engagement.`
-        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, and structure as closely as possible.`;
+        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, structure, AND any images / illustrations as closely as possible.`;
+
+      // Build multimodal user content: page images first, then text.
+      const userContent: any[] = [];
+      const imgs = (wsFile.pageImages || []).slice(0, 5);
+      imgs.forEach((dataUrl: string, i: number) => {
+        const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+        if (!m) return;
+        userContent.push({ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } });
+      });
+      userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
+
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 2200,
-          system: `You convert a teacher's existing worksheet text into structured worksheet blocks. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
+          model: "claude-sonnet-4-20250514", max_tokens: 3200,
+          system: `You convert a teacher's existing worksheet into structured worksheet blocks for a ${g.name} class. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
 
-Allowed element shapes (use exactly these keys):
-{"type":"instruction","text":"<directions>"}
-{"type":"text","text":"<passage or content>"}
-{"type":"blank","label":"<prompt>","lines":3}
-{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"]}
-{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"]}
-{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"]}
-{"type":"truefalse","statements":["s1","s2","s3"]}
-{"type":"shortAnswer","question":"<q>","lines":4}
-{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>"}
-{"type":"essay","prompt":"<prompt>","points":10,"lines":14}
-{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element to control pagination):
+{"type":"instruction","text":"<directions>","page":0}
+{"type":"text","text":"<passage or content>","page":0}
+{"type":"blank","label":"<prompt>","lines":3,"page":0}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"],"page":0}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"],"page":0}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"],"page":0}
+{"type":"truefalse","statements":["s1","s2","s3"],"page":0}
+{"type":"shortAnswer","question":"<q>","lines":4,"page":0}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>","page":0}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14,"page":0}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]],"page":0}
+{"type":"image","imagePrompt":"<short visual description for an AI image generator>","caption":"<optional caption>","size":"small","align":"center","page":0}
 
 Output ONLY the JSON array.`,
-          messages: [{ role: "user", content: `${intent}\n\nWORKSHEET TEXT:\n${wsFile.raw}` }]
+          messages: [{ role: "user", content: userContent }],
         })
       });
       const d = await r.json();
@@ -2738,8 +2860,14 @@ Output ONLY the JSON array.`,
       const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
       const parsed = JSON.parse(slice);
       if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
-      insertAiElements(parsed);
-      setWsFileMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} to page ${currentPage + 1}.`);
+
+      // Generate real images for any "image" blocks before insertion
+      setWsFileMsg("✓ Got blocks. Generating images…");
+      await fillImageElements(parsed, "cartoon");
+
+      insertAiElementsMultiPage(parsed);
+      const pageSpan = (Math.max(...parsed.map((e: any) => parseInt(e.page) || 0)) + 1) || 1;
+      setWsFileMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} across ${pageSpan} page${pageSpan === 1 ? "" : "s"}.`);
     } catch (e: any) {
       setWsFileMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
     }
@@ -2900,7 +3028,7 @@ Output ONLY the JSON array.`,
         </nav>
 
         {/* CENTER: WORKSHEET CANVAS */}
-        <main id="worksheet-canvas" role="main" aria-label="Worksheet canvas" className="canvas-area" style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", padding: "28px 18px", background: "#F1F3F5", position: "relative" }}>
+        <main id="worksheet-canvas" role="main" aria-label="Worksheet canvas" className="canvas-area" style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: viewMode === "scroll" ? "20px 18px 90px" : "28px 18px 90px", background: "#F1F3F5", position: "relative", gap: viewMode === "scroll" ? 22 : 0 }}>
           {/* Generating overlay */}
           {generating && (
             <div role="status" aria-label="Generating worksheet content" style={{ position: "absolute", inset: 0, background: "rgba(241,243,245,0.9)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
@@ -2911,55 +3039,95 @@ Output ONLY the JSON array.`,
               </div>
             </div>
           )}
-          <div className="worksheet-paper" style={{ width: 760, minHeight: 970, background: "white", boxShadow: "0 2px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)", borderRadius: 4, padding: "52px 64px", position: "relative" }}>
 
-            {ws.showGrade && <div aria-label={`Grade level: ${gv.name}`} style={{ position: "absolute", top: 14, right: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>{gv.emoji} {gv.name}</div>}
+          {(() => {
+            const renderPage = (pIdx) => {
+              const els = ws.elements.filter(e => pageOf(e) === pIdx);
+              const hideHeader = isPageHeaderHidden(pIdx);
+              return (
+                <div key={pIdx} className="worksheet-paper" style={{ width: 760, minHeight: 970, background: "white", boxShadow: "0 2px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)", borderRadius: 4, padding: "52px 64px", position: "relative" }}>
 
-            {/* Title + Name/Date header */}
-            <div style={{ marginBottom: 24 }}>
-              <input value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
-                aria-label="Worksheet title on page"
-                style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, border: "none", outline: "none", background: "transparent", borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }} placeholder="Worksheet Title" />
-              <div style={{ display: "flex", gap: 44 }}>
-                {ws.showName && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Name:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
-                {ws.showDate && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Date:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
-              </div>
-            </div>
+                  {ws.showGrade && <div aria-label={`Grade level: ${gv.name}`} style={{ position: "absolute", top: 14, right: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>{gv.emoji} {gv.name}</div>}
 
-            {/* Page indicator chip */}
-            {pageCount > 1 && (
-              <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
-                Page {currentPage + 1} of {pageCount}
-              </div>
-            )}
+                  {/* Per-page header hide toggle */}
+                  <button
+                    className="no-print"
+                    onClick={() => togglePageHeader(pIdx)}
+                    title={hideHeader ? "Show title / name / date on this page" : "Hide title / name / date on this page"}
+                    aria-label={hideHeader ? `Show header on page ${pIdx + 1}` : `Hide header on page ${pIdx + 1}`}
+                    style={{ position: "absolute", top: 14, left: ws.pageCount > 1 ? 110 : 18, background: hideHeader ? "#FEF3C7" : "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "3px 10px", fontSize: 10.5, fontWeight: 700, color: "#6B7280", fontFamily: F, cursor: "pointer" }}
+                  >
+                    {hideHeader ? "👁 Show header" : "🙈 Hide header"}
+                  </button>
 
-            {/* Free-position canvas — elements absolutely positioned, draggable */}
-            {pageElements.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
-                <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
-                <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>{pageCount > 1 ? `Page ${currentPage + 1} is empty` : "Your worksheet is empty"}</p>
-                <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
-              </div>
-            ) : (
-              <div style={{
-                position: "relative",
-                width: "100%",
-                minHeight: Math.max(700, ...pageElements.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
-              }}>
-                {pageElements.map(el => (
-                  <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
-                    onClick={() => { setSelId(el.id); setRightTab("edit"); }}
-                    onResize={handleResizeStart}
-                    onDragStart={handleDragStart}
-                    onDelete={(id) => delEl(id)} />
-                ))}
-              </div>
-            )}
-          </div>
+                  {/* Title + Name/Date header */}
+                  {!hideHeader && (
+                    <div style={{ marginBottom: 24 }}>
+                      {pIdx === 0 ? (
+                        <input value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
+                          aria-label="Worksheet title on page"
+                          style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, border: "none", outline: "none", background: "transparent", borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }} placeholder="Worksheet Title" />
+                      ) : (
+                        <h2 style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, margin: 0, borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }}>
+                          {ws.title} <span style={{ fontFamily: F, fontSize: Math.max(gv.fontSize - 4, 12), fontWeight: 700, color: "#9CA3AF" }}>— Page {pIdx + 1}</span>
+                        </h2>
+                      )}
+                      <div style={{ display: "flex", gap: 44 }}>
+                        {ws.showName && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Name:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
+                        {ws.showDate && (<div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1 }}><span style={{ fontSize: Math.max(gv.fontSize - 10, 11), fontWeight: 600, fontFamily: F, color: "#374151", whiteSpace: "nowrap" }}>Date:</span><div style={{ flex: 1, borderBottom: "1.5px solid #D1D5DB", height: 22 }} aria-hidden="true" /></div>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Page indicator chip */}
+                  {pageCount > 1 && (
+                    <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
+                      Page {pIdx + 1} of {pageCount}
+                    </div>
+                  )}
+
+                  {/* Free-position canvas — elements absolutely positioned, draggable */}
+                  {els.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "80px 30px" }} role="status">
+                      <div style={{ width: 64, height: 64, borderRadius: 16, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }} aria-hidden="true">📝</div>
+                      <p style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: "#9CA3AF", margin: "0 0 8px" }}>{pageCount > 1 ? `Page ${pIdx + 1} is empty` : "Your worksheet is empty"}</p>
+                      <p style={{ fontFamily: F, fontSize: 13, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>Add elements from the left panel · Drag blocks anywhere · Up to 3 across</p>
+                    </div>
+                  ) : (
+                    <div style={{
+                      position: "relative",
+                      width: "100%",
+                      minHeight: Math.max(700, ...els.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
+                    }}>
+                      {els.map(el => (
+                        <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
+                          onClick={() => { setSelId(el.id); setRightTab("edit"); if (viewMode === "scroll") setCurrentPage(pIdx); }}
+                          onResize={handleResizeStart}
+                          onDragStart={handleDragStart}
+                          onDelete={(id) => delEl(id)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            };
+
+            return viewMode === "scroll"
+              ? Array.from({ length: pageCount }).map((_, i) => renderPage(i))
+              : renderPage(currentPage);
+          })()}
 
           {/* Page navigation strip — beneath the paper */}
-          <div className="no-print" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "5px 8px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", zIndex: 5 }}>
-            {Array.from({ length: pageCount }).map((_, i) => (
+          <div className="no-print" style={{ position: "fixed", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 6, background: "white", border: "1px solid #E5E7EB", borderRadius: 999, padding: "5px 8px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", zIndex: 5 }}>
+            <button
+              onClick={() => setViewMode(viewMode === "single" ? "scroll" : "single")}
+              aria-label={viewMode === "single" ? "Switch to scroll view (all pages)" : "Switch to single-page view"}
+              title={viewMode === "single" ? "Scroll all pages" : "Single page view"}
+              style={{ height: 28, padding: "0 10px", borderRadius: 999, border: "1.5px solid " + gv.color + "55", background: gv.light, color: gv.color, fontFamily: F, fontWeight: 700, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, marginRight: 4 }}
+            >
+              {viewMode === "single" ? "📑 Scroll all" : "📄 Single page"}
+            </button>
+            {viewMode === "single" && Array.from({ length: pageCount }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => { setCurrentPage(i); setSelId(null); }}
@@ -2985,6 +3153,9 @@ Output ONLY the JSON array.`,
                 )}
               </button>
             ))}
+            {viewMode === "scroll" && (
+              <span style={{ fontFamily: F, fontSize: 11, color: "#6B7280", padding: "0 8px" }}>{pageCount} page{pageCount === 1 ? "" : "s"}</span>
+            )}
             <button
               onClick={addPage}
               aria-label="Add new page"
@@ -3439,12 +3610,41 @@ function LessonPlanGenerator() {
       exemplarRaw  ? `Exemplar lesson plan to mimic in structure, tone, and section detail (replicate this format closely):\n${exemplarRaw.slice(0, 4000)}` : "",
     ].filter(Boolean).join("\n");
 
-    const systemPrompt = `You are an expert NY State curriculum designer. Respond with ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
+    // Build the candidate NYS standards list to constrain the AI.
+    // CRITICAL: We only allow standards from our NY_STANDARDS dataset (NYS Next Gen).
+    // Never let the model invent CCLS / Common Core codes when no standard is picked.
+    const gradeNameMap: Record<string,string> = { pk:"Pre-Kindergarten", k:"Kindergarten", "1":"Grade 1","2":"Grade 2","3":"Grade 3","4":"Grade 4","5":"Grade 5","6":"Grade 6","7":"Grade 7","8":"Grade 8","9":"Grade 9","10":"Grade 10","11":"Grade 11","12":"Grade 12" };
+    const gradeBandKey = gradeNameMap[form.grade] || form.grade;
+    const collectStandards = () => {
+      const out: string[] = [];
+      const subjGuess = (form.subject || "").toLowerCase();
+      const subjects = Object.keys(NY_STANDARDS);
+      const matchSubj = subjects.find(s => s.toLowerCase() === subjGuess) ||
+        subjects.find(s => subjGuess.includes(s.toLowerCase()) || s.toLowerCase().includes(subjGuess));
+      const subjList = matchSubj ? [matchSubj] : subjects;
+      for (const s of subjList) {
+        const bands = NY_STANDARDS[s] || {};
+        // Try exact grade-band first, fall back to all bands of subject
+        const bandKeys = Object.keys(bands);
+        const exact = bandKeys.find(b => b === gradeBandKey);
+        const useBands = exact ? [exact] : bandKeys;
+        for (const b of useBands) {
+          for (const std of (bands[b] || [])) out.push(`${std.code} (${s} · ${b}): ${std.desc}`);
+        }
+      }
+      return out.slice(0, 60);
+    };
+    const candidateStds = collectStandards();
+    const standardsBlock = form.standard
+      ? `Standard chosen by the teacher (use exactly): ${form.standard}`
+      : `No standard was selected. You MUST pick the single best-fit standard from this approved NYS Next Generation Learning Standards list (do NOT invent codes, do NOT use CCLS / Common Core codes — only use entries from this list). Copy the chosen entry verbatim into the "standard" field:\n${candidateStds.join("\n")}`;
+
+    const systemPrompt = `You are an expert New York State curriculum designer. You ONLY align lessons to NYS Next Generation Learning Standards (the codes contained in the user prompt). You NEVER reference, cite, or invent Common Core / CCLS codes (e.g. CCSS.ELA-Literacy.RL.K.1, CCLS, CCSS, etc.). If the teacher did not pick a standard, you MUST select one from the provided NYS list and copy it verbatim into the "standard" field. Respond with ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
 
     const userPrompt = `Create a lesson plan for:
 Grade: ${form.grade} | Subject: ${form.subject} | Topic: ${form.topic}
 Duration: ${form.duration} | Model: ${form.model}
-Standard: ${form.standard || "Select the most relevant NYS standard"}
+${standardsBlock}
 Differentiation: ${diffList}
 ${diffSection}
 Sections: ${sectionNames}
@@ -3507,6 +3707,17 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
             if (!isEmpty(fixObj.extension)) parsed.extension = fixObj.extension;
           }
         } catch(_) { /* fall through with whatever we have */ }
+      }
+
+      // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
+      // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
+      if (!form.standard) {
+        const stdStr = String(parsed.standard || "");
+        const looksLikeCcls = /CCSS|CCLS|Common\s*Core|ELA-Literacy|Math\.Content/i.test(stdStr);
+        const matchesAllowed = candidateStds.some(c => stdStr && c.toLowerCase().startsWith(stdStr.toLowerCase().slice(0, 6)));
+        if (looksLikeCcls || (!matchesAllowed && candidateStds.length)) {
+          parsed.standard = candidateStds[0];
+        }
       }
 
       setResult(parsed);
