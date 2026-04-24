@@ -4631,7 +4631,7 @@ function DanielsonReview() {
 
       const user = `Review the following lesson plan and return JSON in this EXACT shape:\n\n{\n  "summary": "2-3 sentence overall observation summary",\n  "scores": [\n    { "id": "1a", "score": 1-4, "rating": "Ineffective|Developing|Effective|Highly Effective", "evidence": "1-2 sentence reasoning that explains why these quotes earn this score", "quotes": ["exact verbatim snippet from the lesson plan", "another exact snippet"], "suggestions": "if score<4, concrete steps to reach Highly Effective; if score=4, brief note of what made it strong" },\n    ... (one entry for each of 1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e in this order)\n  ]\n}\n\nLESSON PLAN:\n${extractedText.slice(0, 12000)}`;
 
-      const raw = await callClaude(system, user, 3500);
+      const raw = await callClaude(system, user, 5000);
       const match = raw.match(/\{[\s\S]*\}/);
       if (!match) throw new Error("AI response was not valid JSON. Please try again.");
       const parsed = JSON.parse(match[0]);
@@ -4828,8 +4828,38 @@ function DanielsonReview() {
                     </span>
                   </div>
                   <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Evidence from lesson</div>
-                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55 }}>{s.evidence}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Evidence from lesson</div>
+                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55, marginBottom: 8 }}>{s.evidence}</div>
+                    {Array.isArray(s.quotes) && s.quotes.length > 0 ? (
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {s.quotes.map((q, qi) => {
+                          const verified = quoteFoundInText(q, extractedText);
+                          return (
+                            <div
+                              key={qi}
+                              title={verified ? "Verified verbatim from your lesson" : "Close paraphrase — could not be located verbatim in the lesson"}
+                              style={{
+                                background: verified ? "#FEF9C3" : "#F3F4F6",
+                                borderLeft: `3px solid ${verified ? "#EAB308" : "#9CA3AF"}`,
+                                padding: "8px 12px",
+                                borderRadius: 4,
+                                fontSize: 13,
+                                color: "#1F2937",
+                                fontStyle: "italic",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              <span style={{ fontStyle: "normal", fontSize: 10, color: verified ? "#854D0E" : "#6B7280", fontWeight: 700, marginRight: 6 }}>
+                                {verified ? "✓ HIGHLIGHTED" : "≈ PARAPHRASED"}
+                              </span>
+                              "{q}"
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>No specific quote available — score reflects absence of evidence in this area.</div>
+                    )}
                   </div>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: isHighest ? "#16A34A" : BRAND, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
