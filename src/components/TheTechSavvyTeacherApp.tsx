@@ -3218,23 +3218,28 @@ const EMAIL_TONES = [
 const EMAIL_SITUATIONS = [
   "Reporting a concern","Sharing good news","Requesting a meeting",
   "Following up","Responding to a complaint","Providing an update",
-  "Asking for help / resources","Scheduling / logistics","Grant writing","Other",
+  "Asking for help / resources","Scheduling / logistics",
+  "Request for grades","Request for tutoring","Classwork / homework support",
+  "Grant writing","Other",
 ];
-const STUDENT_READING_LEVELS = [
-  { id:"k-2",      label:"K–2",      desc:"Ages 5–8 · very simple words, very short sentences" },
-  { id:"3-5",      label:"Grades 3–5", desc:"Upper elementary · clear & friendly" },
-  { id:"6-8",      label:"Grades 6–8", desc:"Middle school · everyday vocabulary" },
-  { id:"9-12",     label:"Grades 9–12", desc:"High school · clear but more mature" },
-  { id:"simple",   label:"Simple",     desc:"Plain language regardless of grade" },
-  { id:"medium",   label:"Medium",     desc:"Balanced — clear with some richer vocabulary" },
-  { id:"advanced", label:"Advanced",   desc:"Stronger vocabulary while still student-friendly" },
+const STUDENT_GRADE_LEVELS = [
+  { id:"k-2",  label:"K–2",        desc:"Ages 5–8 · very simple words, very short sentences", tier:"elementary" },
+  { id:"3-5",  label:"Grades 3–5", desc:"Upper elementary · clear & friendly",                tier:"elementary" },
+  { id:"6-8",  label:"Grades 6–8", desc:"Middle school · everyday vocabulary",                tier:"secondary" },
+  { id:"9-12", label:"Grades 9–12",desc:"High school · clear but more mature",                tier:"secondary" },
+];
+const STUDENT_COMPLEXITY = [
+  { id:"simple",   label:"Simple",   desc:"Plain language, shorter sentences" },
+  { id:"medium",   label:"Medium",   desc:"Balanced — clear with some richer vocabulary" },
+  { id:"advanced", label:"Advanced", desc:"Stronger vocabulary while still student-friendly" },
 ];
 
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
   const [situation, setSituation] = useState("Responding to a complaint");
-  const [readingLevel, setReadingLevel] = useState("3-5");
+  const [gradeLevel, setGradeLevel] = useState("3-5");
+  const [complexity, setComplexity] = useState("medium");
   const [draft, setDraft]         = useState("");
   const [result, setResult]       = useState(null);
   const [loading, setLoading]     = useState(false);
@@ -3273,7 +3278,11 @@ function EmailAssistant() {
     try {
       const isGrant = recipient === "grant" || /grant/i.test(situation);
       const isStudent = recipient === "student";
-      const rlObj = STUDENT_READING_LEVELS.find(r => r.id === readingLevel);
+      const gObj = STUDENT_GRADE_LEVELS.find(g => g.id === gradeLevel);
+      const showComplexity = gObj?.tier === "secondary";
+      const cObj = STUDENT_COMPLEXITY.find(c => c.id === complexity);
+      const readingLabel = showComplexity ? `${gObj?.label} · ${cObj?.label}` : (gObj?.label || "");
+      const readingDesc  = showComplexity ? `${gObj?.desc} — complexity: ${cObj?.desc}` : (gObj?.desc || "");
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
@@ -3291,7 +3300,7 @@ ${isGrant ? `GRANT CONTEXT — This email is a grant / funding request. The teac
 - Avoid sounding desperate or generic; sound mission-driven.` : ""}
 ${isStudent ? `STUDENT CONTEXT — This message is being written DIRECTLY TO A STUDENT. You MUST:
 - Always use student-friendly language that is easy to read and understand.
-- TARGET READING LEVEL: ${rlObj?.label} (${rlObj?.desc}). Calibrate sentence length, vocabulary complexity, and explanations to this level. For K–2, use very short sentences (≤8 words when possible) and only the most common words. For 3–5, keep sentences short and explain any tricky word. For 6–8, use everyday vocabulary and slightly longer sentences. For 9–12, you may use stronger vocabulary but keep things clear and respectful. For "simple"/"medium"/"advanced", calibrate vocabulary richness accordingly while keeping the tone student-friendly.
+- TARGET READING LEVEL: ${readingLabel} (${readingDesc}). Calibrate sentence length, vocabulary complexity, and explanations to this level. For K–2, use very short sentences (≤8 words when possible) and only the most common words. For 3–5, keep sentences short and explain any tricky word. For 6–8 and 9–12, follow the chosen complexity tier (Simple = plain & short, Medium = balanced, Advanced = richer vocabulary while still respectful and clear).
 - Replace jargon, academic phrasing, and complex words with plain alternatives a student can quickly grasp.
 - Keep a warm, encouraging, respectful tone — never condescending.
 - Be specific and concrete: tell the student exactly what is happening, what they need to do, and by when.
@@ -3372,20 +3381,35 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             ))}
           </div>
 
-          {recipient === "student" && (
-            <div style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
-              <span style={{ ...lbl, color:BRAND, marginBottom:8 }}>🎒 Student reading level</span>
-              <select value={readingLevel} onChange={e => setReadingLevel(e.target.value)}
-                style={{ ...inp, cursor:"pointer", marginBottom:8 }}>
-                {STUDENT_READING_LEVELS.map(r => (
-                  <option key={r.id} value={r.id}>{r.label} — {r.desc}</option>
-                ))}
-              </select>
-              <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>
-                <strong style={{ color:BRAND }}>🛡️ Safety:</strong> Names, dates, deadlines, page numbers, and action items from your draft will be kept exactly as written. Only the surrounding language is rewritten for the student.
+          {recipient === "student" && (() => {
+            const gObj = STUDENT_GRADE_LEVELS.find(g => g.id === gradeLevel);
+            const showComplexity = gObj?.tier === "secondary";
+            return (
+              <div style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
+                <span style={{ ...lbl, color:BRAND, marginBottom:8 }}>🎒 Grade level</span>
+                <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
+                  style={{ ...inp, cursor:"pointer", marginBottom: showComplexity ? 10 : 8 }}>
+                  {STUDENT_GRADE_LEVELS.map(g => (
+                    <option key={g.id} value={g.id}>{g.label} — {g.desc}</option>
+                  ))}
+                </select>
+                {showComplexity && (
+                  <>
+                    <span style={{ ...lbl, color:BRAND, marginBottom:6 }}>📚 Vocabulary complexity</span>
+                    <select value={complexity} onChange={e => setComplexity(e.target.value)}
+                      style={{ ...inp, cursor:"pointer", marginBottom:8 }}>
+                      {STUDENT_COMPLEXITY.map(c => (
+                        <option key={c.id} value={c.id}>{c.label} — {c.desc}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>
+                  <strong style={{ color:BRAND }}>🛡️ Safety:</strong> Names, dates, deadlines, page numbers, and action items from your draft will be kept exactly as written. Only the surrounding language is rewritten for the student.
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <span style={lbl}>Tone</span>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:18 }}>
