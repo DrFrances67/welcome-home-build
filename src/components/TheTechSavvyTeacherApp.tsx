@@ -1856,8 +1856,25 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
     if (looksLikeWorksheetRequest(userText) && typeof onInsertElements === "function") {
       try {
         const els = await buildWorksheet(userText);
+        // Generate real images for any "image" blocks (in parallel, capped)
+        const imgEls = els.filter((e: any) => e?.type === "image" && !e.url);
+        if (imgEls.length) {
+          setMsgs(p => [...p, { role: "assistant", content: `🎨 Generating ${imgEls.length} image${imgEls.length === 1 ? "" : "s"}…` }]);
+          for (const el of imgEls) {
+            const prompt = (el.imagePrompt || el.caption || "").toString().trim();
+            if (!prompt) continue;
+            try {
+              const ir = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt, style: "cartoon" }),
+              });
+              if (ir.ok) { const d = await ir.json(); if (d?.url) el.url = d.url; }
+            } catch (_) {}
+            await new Promise(r => setTimeout(r, 350));
+          }
+        }
         onInsertElements(els);
-        setMsgs(p => [...p, { role: "assistant", content: `✨ Done! I added ${els.length} element${els.length===1?"":"s"} to your worksheet. Click any block on the page to edit it, or ask me to tweak anything.` }]);
+        setMsgs(p => [...p, { role: "assistant", content: `✨ Done! I added ${els.length} element${els.length===1?"":"s"} to your worksheet${imgEls.length ? ` (including ${imgEls.length} generated image${imgEls.length === 1 ? "" : "s"})` : ""}. Click any block to edit it.` }]);
       } catch (e) {
         setMsgs(p => [...p, { role: "assistant", content: `I tried to build that worksheet but ran into an error: ${e?.message || e}. You can try rewording, or ask me for parts (e.g. "give me 5 multiple choice questions about ___").` }]);
       }
