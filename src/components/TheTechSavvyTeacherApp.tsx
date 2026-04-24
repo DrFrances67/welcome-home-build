@@ -3509,48 +3509,77 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             );
           })()}
 
-          <span style={lbl}>Tone</span>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:18 }}>
-            {EMAIL_TONES.map(t => (
-              <button key={t.id} onClick={() => setTone(t.id)}
-                style={{ padding:"9px 12px", borderRadius:8, border:`1.5px solid ${tone===t.id ? BRAND : "#E5E7EB"}`, background: tone===t.id ? LIGHT : "white", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}>
-                <div style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:12, color: tone===t.id ? BRAND : "#111827" }}>{t.label}</div>
-                <div style={{ fontSize:10.5, color:"#9CA3AF", marginTop:2 }}>{t.desc}</div>
-              </button>
-            ))}
+          <span id="tone-label" style={lbl}>Tone</span>
+          <div role="radiogroup" aria-labelledby="tone-label"
+            style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:18 }}>
+            {EMAIL_TONES.map(t => {
+              const selected = tone === t.id;
+              return (
+                <button key={t.id} type="button" onClick={() => setTone(t.id)}
+                  role="radio" aria-checked={selected}
+                  aria-label={`${t.label} tone. ${t.desc}${selected ? ". Currently selected" : ""}`}
+                  style={{ padding:"9px 12px", borderRadius:8, border:`1.5px solid ${selected ? BRAND : "#E5E7EB"}`, background: selected ? LIGHT : "white", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}>
+                  <div style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:12, color: selected ? BRAND : "#111827" }}>{t.label}</div>
+                  <div style={{ fontSize:10.5, color:"#9CA3AF", marginTop:2 }}>{t.desc}</div>
+                </button>
+              );
+            })}
           </div>
 
-          <span style={{ ...lbl, display:"flex", alignItems:"center", flexWrap:"wrap", gap:6 }}>
-            <span>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
-            <span style={{
-              padding:"2px 8px", borderRadius:999,
-              background: situations.length >= SITUATION_MAX ? "#FEF3C7" : LIGHT,
-              color: situations.length >= SITUATION_MAX ? "#92400E" : BRAND,
-              fontSize:11, fontWeight:700, letterSpacing:0, textTransform:"none",
-              border:`1px solid ${situations.length >= SITUATION_MAX ? "#FCD34D" : "#E5E7EB"}`
-            }}>
-              {situations.length}/{SITUATION_MAX} selected{situations.length >= SITUATION_MAX ? " · max" : ""}
-            </span>
-          </span>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
+          {(() => {
+            const atMax = situations.length >= SITUATION_MAX;
+            const counterText = `${situations.length} of ${SITUATION_MAX} situations selected${atMax ? ". Maximum reached." : ""}`;
+            return (
+              <span id="situation-label" style={{ ...lbl, display:"flex", alignItems:"center", flexWrap:"wrap", gap:6 }}>
+                <span>Situation <span style={{ textTransform:"none", fontWeight:500, color:"#9CA3AF", letterSpacing:0 }}>· tap to select one or more</span></span>
+                <span
+                  id="situation-counter"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label={counterText}
+                  style={{
+                    padding:"2px 8px", borderRadius:999,
+                    background: atMax ? "#FEF3C7" : LIGHT,
+                    color: atMax ? "#92400E" : BRAND,
+                    fontSize:11, fontWeight:700, letterSpacing:0, textTransform:"none",
+                    border:`1px solid ${atMax ? "#FCD34D" : "#E5E7EB"}`
+                  }}>
+                  <span aria-hidden="true">{situations.length}/{SITUATION_MAX} selected{atMax ? " · max" : ""}</span>
+                </span>
+              </span>
+            );
+          })()}
+          <div role="group" aria-labelledby="situation-label" aria-describedby="situation-counter situation-help"
+            style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
             {EMAIL_SITUATIONS.map(s => {
               const active = situations.includes(s);
+              const atMax = situations.length >= SITUATION_MAX;
+              const wouldBlock = !active && atMax;
               return (
                 <button key={s} type="button" onClick={() => toggleSituation(s)}
+                  aria-pressed={active}
+                  aria-label={`${s}. ${active ? "Selected. Press to remove." : wouldBlock ? `Not selected. Maximum of ${SITUATION_MAX} reached — deselect another to add this.` : "Not selected. Press to add."}`}
                   style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 11px", borderRadius:8, border:`1.5px solid ${active ? BRAND : "#E5E7EB"}`, background: active ? LIGHT : "white", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}>
-                  <span style={{ width:16, height:16, borderRadius:4, border:`1.5px solid ${active ? BRAND : "#D1D5DB"}`, background: active ? BRAND : "white", color:"white", fontSize:11, lineHeight:"13px", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{active ? "✓" : ""}</span>
+                  <span aria-hidden="true" style={{ width:16, height:16, borderRadius:4, border:`1.5px solid ${active ? BRAND : "#D1D5DB"}`, background: active ? BRAND : "white", color:"white", fontSize:11, lineHeight:"13px", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{active ? "✓" : ""}</span>
                   <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:600, fontSize:12, color: active ? BRAND : "#111827" }}>{s}</span>
                 </button>
               );
             })}
           </div>
+          <span id="situation-help" className="sr-only">
+            Choose up to {SITUATION_MAX} situations. The AI will combine selected situations into a single, cohesive message.
+          </span>
           {situationCapNotice && (
-            <div style={{ marginTop:8, padding:"10px 12px", background:"#FFFBEB", border:"1.5px solid #FCD34D", borderRadius:8 }}>
+            <div role="alert" aria-live="assertive"
+              style={{ marginTop:8, padding:"10px 12px", background:"#FFFBEB", border:"1.5px solid #FCD34D", borderRadius:8 }}>
               <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
-                <span style={{ fontSize:14, lineHeight:"18px" }}>🛑</span>
+                <span aria-hidden="true" style={{ fontSize:14, lineHeight:"18px" }}>🛑</span>
                 <div style={{ flex:1 }}>
+                  <span className="sr-only">Selection limit reached. </span>
                   <div style={{ fontSize:12, fontWeight:600, color:"#92400E", lineHeight:1.45 }}>{situationCapNotice}</div>
                   <button type="button" onClick={() => setSituationCapNotice("")}
+                    aria-label="Dismiss selection limit warning"
                     style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:"1.5px solid #92400E", background:"white", color:"#92400E", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
                     Got it
                   </button>
@@ -3563,30 +3592,37 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             const hasError = issues.some(i => i.level === "error");
             return (
               <>
-                {issues.map((issue, idx) => {
-                  const isError = issue.level === "error";
-                  const bg     = isError ? "#FEF2F2" : "#FFFBEB";
-                  const border = isError ? "#FCA5A5" : "#FCD34D";
-                  const fg     = isError ? "#991B1B" : "#92400E";
-                  return (
-                    <div key={idx} style={{ marginTop:8, padding:"10px 12px", background:bg, border:`1.5px solid ${border}`, borderRadius:8 }}>
-                      <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
-                        <span style={{ fontSize:14, lineHeight:"18px" }}>{isError ? "⚠️" : "💡"}</span>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:12, fontWeight:600, color:fg, lineHeight:1.45 }}>{issue.message}</div>
-                          {issue.suggestion && issue.suggestion.length > 0 && (
-                            <button type="button" onClick={() => setSituations(issue.suggestion)}
-                              style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:`1.5px solid ${fg}`, background:"white", color:fg, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
-                              ✨ Use suggested: {issue.suggestion.join(" + ")}
-                            </button>
-                          )}
+                <div aria-live="polite" aria-atomic="false">
+                  {issues.map((issue, idx) => {
+                    const isError = issue.level === "error";
+                    const bg     = isError ? "#FEF2F2" : "#FFFBEB";
+                    const border = isError ? "#FCA5A5" : "#FCD34D";
+                    const fg     = isError ? "#991B1B" : "#92400E";
+                    const role   = isError ? "alert" : "status";
+                    return (
+                      <div key={idx} role={role}
+                        style={{ marginTop:8, padding:"10px 12px", background:bg, border:`1.5px solid ${border}`, borderRadius:8 }}>
+                        <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                          <span aria-hidden="true" style={{ fontSize:14, lineHeight:"18px" }}>{isError ? "⚠️" : "💡"}</span>
+                          <div style={{ flex:1 }}>
+                            <span className="sr-only">{isError ? "Error: " : "Suggestion: "}</span>
+                            <div style={{ fontSize:12, fontWeight:600, color:fg, lineHeight:1.45 }}>{issue.message}</div>
+                            {issue.suggestion && issue.suggestion.length > 0 && (
+                              <button type="button" onClick={() => setSituations(issue.suggestion)}
+                                aria-label={`Apply suggested situation combination: ${issue.suggestion.join(", ")}`}
+                                style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:`1.5px solid ${fg}`, background:"white", color:fg, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                                ✨ Use suggested: {issue.suggestion.join(" + ")}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
                 {situations.length > 1 && !hasError && (
-                  <div style={{ fontSize:11, color:BRAND, marginTop:8, fontStyle:"italic" }}>
+                  <div role="status" aria-live="polite"
+                    style={{ fontSize:11, color:BRAND, marginTop:8, fontStyle:"italic" }}>
                     ✨ Combining {situations.length} situations into one message.
                   </div>
                 )}
@@ -3595,26 +3631,35 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             );
           })()}
 
-          <span style={lbl}>Your rough draft or key points</span>
+          <label htmlFor="email-draft" style={lbl}>Your rough draft or key points</label>
           <div style={{ position:"relative" }}>
-            <textarea value={draft} onChange={e => setDraft(e.target.value)} spellCheck placeholder="Write your rough draft, key points, or anything you want to say. Don't worry about being polished — that's our job!" 
+            <textarea id="email-draft" value={draft} onChange={e => setDraft(e.target.value)} spellCheck
+              placeholder="Write your rough draft, key points, or anything you want to say. Don't worry about being polished — that's our job!"
+              aria-label="Rough draft or key points for your email"
               style={{ ...inp, minHeight:160, resize:"vertical", lineHeight:1.6, paddingRight:46, background:"#FAFAFA" }} />
-            <button onClick={toggleVoice} title={listening ? "Stop recording" : "Speak your draft"}
+            <button type="button" onClick={toggleVoice}
+              aria-label={listening ? "Stop voice dictation" : "Start voice dictation for draft"}
+              aria-pressed={listening}
+              title={listening ? "Stop recording" : "Speak your draft"}
               style={{ position:"absolute", top:10, right:10, width:32, height:32, border: listening ? `2px solid #DC2626` : "1.5px solid #D1D5DB", borderRadius:"50%", background: listening ? "#DC2626" : "white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow: listening ? "0 0 0 4px rgba(220,38,38,0.15)" : "none", transition:"all 0.2s" }}>
-              {listening ? <span style={{ fontSize:12 }}>⏹</span> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={listening?"#fff":"#374151"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>}
+              {listening ? <span aria-hidden="true" style={{ fontSize:12 }}>⏹</span> : <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={listening?"#fff":"#374151"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>}
             </button>
           </div>
 
-          {error && <div style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:7, padding:"10px 14px", color:"#DC2626", fontSize:13, marginTop:10, marginBottom:4 }}>{error}</div>}
+          {error && <div role="alert" aria-live="assertive"
+            style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:7, padding:"10px 14px", color:"#DC2626", fontSize:13, marginTop:10, marginBottom:4 }}>{error}</div>}
 
           {(() => {
             const hasError = validateSituations(situations).some(i => i.level === "error");
             const blocked = loading || !draft.trim() || hasError;
+            const reason = loading ? "Polishing in progress" : !draft.trim() ? "Enter a draft to enable" : hasError ? "Resolve the situation conflict above to continue" : "";
             return (
-              <button onClick={polish} disabled={blocked}
+              <button type="button" onClick={polish} disabled={blocked}
+                aria-disabled={blocked}
+                aria-label={blocked ? `Polish my communication. Disabled: ${reason}` : "Polish my communication"}
                 title={hasError ? "Resolve the situation conflict above to continue." : ""}
                 style={{ width:"100%", marginTop:14, padding:"12px", borderRadius:8, border:"none", background: blocked ? "#E5E7EB" : BRAND, color: blocked ? "#9CA3AF" : "white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:14, cursor: blocked ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, letterSpacing:0.3 }}>
-                {loading ? <><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} />Polishing…</> : hasError ? "⚠️  Fix situation conflict above" : "✦  Polish My Communication"}
+                {loading ? <><span aria-hidden="true" style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /><span>Polishing…</span><span className="sr-only">, please wait</span></> : hasError ? <span><span aria-hidden="true">⚠️ </span>Fix situation conflict above</span> : <span><span aria-hidden="true">✦ </span>Polish My Communication</span>}
               </button>
             );
           })()}
