@@ -3480,9 +3480,11 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             const gObj = STUDENT_GRADE_LEVELS.find(g => g.id === gradeLevel);
             const showComplexity = gObj?.tier === "secondary";
             return (
-              <div style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
-                <span style={{ ...lbl, color:BRAND, marginBottom:8 }}>🎒 Grade level</span>
-                <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
+              <div role="group" aria-label="Student writing settings"
+                style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
+                <label htmlFor="student-grade-level" style={{ ...lbl, color:BRAND, marginBottom:8, display:"block" }}>🎒 Grade level</label>
+                <select id="student-grade-level" value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
+                  aria-label="Student grade level"
                   style={{ ...inp, cursor:"pointer", marginBottom: showComplexity ? 10 : 8 }}>
                   {STUDENT_GRADE_LEVELS.map(g => (
                     <option key={g.id} value={g.id}>{g.label} — {g.desc}</option>
@@ -3490,8 +3492,9 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
                 </select>
                 {showComplexity && (
                   <>
-                    <span style={{ ...lbl, color:BRAND, marginBottom:6 }}>📚 Vocabulary complexity</span>
-                    <select value={complexity} onChange={e => setComplexity(e.target.value)}
+                    <label htmlFor="student-complexity" style={{ ...lbl, color:BRAND, marginBottom:6, display:"block" }}>📚 Vocabulary complexity</label>
+                    <select id="student-complexity" value={complexity} onChange={e => setComplexity(e.target.value)}
+                      aria-label="Vocabulary complexity"
                       style={{ ...inp, cursor:"pointer", marginBottom:8 }}>
                       {STUDENT_COMPLEXITY.map(c => (
                         <option key={c.id} value={c.id}>{c.label} — {c.desc}</option>
