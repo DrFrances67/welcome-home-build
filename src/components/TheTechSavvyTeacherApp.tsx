@@ -4472,6 +4472,390 @@ document.addEventListener('keydown',e=>{
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DANIELSON REVIEW — Score lesson plans against the Danielson rubric
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const DANIELSON_COMPONENTS = [
+  { id: "1a", domain: "1. Planning & Preparation",   title: "Demonstrating Knowledge of Content and Pedagogy" },
+  { id: "1e", domain: "1. Planning & Preparation",   title: "Designing Coherent Instruction" },
+  { id: "2a", domain: "2. Classroom Environment",    title: "Creating an Environment of Respect and Rapport" },
+  { id: "2d", domain: "2. Classroom Environment",    title: "Managing Student Behavior" },
+  { id: "3b", domain: "3. Instruction",              title: "Using Questioning and Discussion Techniques" },
+  { id: "3c", domain: "3. Instruction",              title: "Engaging Students in Learning" },
+  { id: "3d", domain: "3. Instruction",              title: "Using Assessment in Instruction" },
+  { id: "4e", domain: "4. Professional Responsibilities", title: "Growing and Developing Professionally" },
+];
+
+const DANIELSON_RUBRIC_REFERENCE = `
+DANIELSON 2014-15 RUBRIC — Use this exact rubric to score lesson plans. Score each component on a 1-4 scale:
+1 = Ineffective | 2 = Developing | 3 = Effective | 4 = Highly Effective
+
+COMPONENT 1a — Demonstrating Knowledge of Content and Pedagogy
+- Ineffective: Content errors; little understanding of prerequisite knowledge; limited pedagogical approaches.
+- Developing: Familiar with concepts but lacks awareness of how they relate; rudimentary understanding; limited strategies.
+- Effective: Solid knowledge; accurate prerequisite relationships; wide range of effective pedagogical approaches.
+- Highly Effective: Extensive knowledge with intra/inter-disciplinary connections; anticipates student misconceptions; reflects current pedagogy.
+
+COMPONENT 1e — Designing Coherent Instruction
+- Ineffective: Activities poorly aligned to outcomes; no organized progression; unrealistic time allocations; groups offer no variety.
+- Developing: Some alignment with moderate cognitive challenge; no differentiation; uneven structure; partial group support.
+- Effective: Most activities aligned; organized progression; reasonable time allocations; significant cognitive challenge with some differentiation; varied groups.
+- Highly Effective: Coherent sequence; high-level cognitive activity; differentiated for individual learners; varied groups with student choice.
+
+COMPONENT 2a — Creating an Environment of Respect and Rapport
+- Ineffective: Disrespectful interactions; teacher does not respond to disrespect; sarcasm/put-downs.
+- Developing: Generally appropriate but inconsistent interactions; superficial knowledge of students; attempts to respond to disrespect with mixed results.
+- Effective: Polite/respectful interactions reflecting warmth and caring; demonstrates knowledge/interest in students' lives; students respect each other.
+- Highly Effective: Highly respectful interactions; teacher demonstrates passion for subject and students; students respectfully ensure peers feel welcome; turn to each other for support.
+
+COMPONENT 2d — Managing Student Behavior
+- Ineffective: No standards of conduct; teacher unaware of behavior or response is repressive/disrespectful.
+- Developing: Attempts to maintain conduct but inconsistent; teacher tries to prevent misbehavior with uneven success.
+- Effective: Standards established and clear to students; teacher monitors and responds to misbehavior appropriately and respectfully.
+- Highly Effective: Standards established and student-monitored; teacher's monitoring is subtle/preventive; responses are sensitive to individual student needs.
+
+COMPONENT 3b — Using Questioning and Discussion Techniques
+- Ineffective: Low-level/single correct response questions; few students participate.
+- Developing: Mix of questions; some invite thoughtful response but with uneven results; teacher attempts true discussion with limited success.
+- Effective: Most questions are high-level and open-ended; adequate response time; teacher facilitates true discussion; most students participate.
+- Highly Effective: Questions reflect high expectations and cultural/developmental knowledge; students formulate questions and ensure all voices are heard.
+
+COMPONENT 3c — Engaging Students in Learning
+- Ineffective: Activities/materials inappropriate; passive/rote intellectual engagement; poor pacing/grouping.
+- Developing: Partial engagement; some activities suitable; uneven pacing; some students intellectually engaged.
+- Effective: Activities/materials require thinking and align to outcomes; suitable pacing; most students intellectually engaged.
+- Highly Effective: Virtually all students highly engaged; students take initiative to modify activities/materials; suitable pacing with reflection; students contribute to materials/discussion.
+
+COMPONENT 3d — Using Assessment in Instruction
+- Ineffective: Assessment not used; no feedback; no monitoring; no use of formative assessment.
+- Developing: Assessment used sporadically; feedback global/not specific; teacher attempts monitoring but with mixed results.
+- Effective: Assessment regularly used to monitor progress; feedback specific/timely; teacher elicits evidence of understanding; students aware of criteria.
+- Highly Effective: Assessment used in sophisticated ways; high-quality feedback from teacher AND students; students self-assess and monitor; instructional adjustments are precise.
+
+COMPONENT 4e — Growing and Developing Professionally
+- Ineffective: No evidence of professional development; resists feedback; no contribution to profession.
+- Developing: Engages minimally in PD when required; accepts feedback with reluctance; minimal contribution.
+- Effective: Seeks PD opportunities; welcomes feedback; participates in school events/projects.
+- Highly Effective: Seeks rich PD opportunities; initiates feedback; takes leadership role with colleagues; contributes to profession through publications/presentations.
+`.trim();
+
+function DanielsonReview() {
+  const BRAND = "#CF27F5";
+  const LIGHT = "#FDF4FF";
+
+  const [file, setFile]           = useState(null);
+  const [extractedText, setExtractedText] = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [error, setError]         = useState("");
+  const [result, setResult]       = useState(null); // { scores: [{id,score,evidence,suggestions}], summary }
+  const [draggingOver, setDraggingOver] = useState(false);
+
+  const readFileAsText = (f) => new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsText(f);
+  });
+
+  const extractPdfText = async (f) => {
+    const pdfjs = await import("pdfjs-dist");
+    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    const buf = await f.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const pages = Math.min(doc.numPages, 25);
+    let text = "";
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it) => it.str).join(" ") + "\n\n";
+    }
+    return text.trim();
+  };
+
+  const extractDocxText = async (f) => {
+    const mammoth = await import("mammoth/mammoth.browser.js");
+    const buf = await f.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return (result.value || "").trim();
+  };
+
+  const handleFile = async (f) => {
+    if (!f) return;
+    setError(""); setResult(null); setExtractedText(""); setFile(null);
+    setLoading(true);
+    try {
+      const isPdf  = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      const isDocx = /\.docx$/i.test(f.name) || f.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      const isTxt  = /\.(txt|md|rtf)$/i.test(f.name) || f.type === "text/plain";
+      let text = "";
+      if (isPdf)       text = await extractPdfText(f);
+      else if (isDocx) text = await extractDocxText(f);
+      else if (isTxt)  text = await readFileAsText(f);
+      else throw new Error("Unsupported file type. Please upload a PDF, Word document (.docx), or text file (.txt).");
+      if (!text || text.length < 30) throw new Error("Could not extract enough text from the file. If it's a scanned PDF, please try a text-based PDF or paste the lesson plan as a .txt file.");
+      setExtractedText(text);
+      setFile({ name: f.name, size: f.size });
+    } catch (e) {
+      setError(e.message || "Could not read file.");
+    }
+    setLoading(false);
+  };
+
+  const callClaude = async (system, userContent, maxTokens = 3000) => {
+    const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: maxTokens,
+        system,
+        messages: [{ role: "user", content: userContent }],
+      }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e?.error?.message || `API error ${res.status}`);
+    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content?.map(b => b.text || "").join("") || "";
+  };
+
+  const analyze = async () => {
+    if (!extractedText) { setError("Please upload a lesson plan first."); return; }
+    setAnalyzing(true); setError(""); setResult(null);
+    try {
+      const system = `You are an experienced school administrator (assistant principal or principal) conducting a formal observation review using the Danielson 2014-15 Framework for Teaching. You will score a lesson plan against EXACTLY 8 components (1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e). Use the rubric below as your sole authoritative source.\n\n${DANIELSON_RUBRIC_REFERENCE}\n\nCRITICAL INSTRUCTIONS:\n- Score each of the 8 components on a 1-4 scale: 1 (Ineffective), 2 (Developing), 3 (Effective), 4 (Highly Effective).\n- Be honest and rigorous — do NOT inflate scores. Only award 4 (Highly Effective) when the lesson clearly demonstrates the highly effective criteria from the rubric.\n- For each component, cite specific evidence from the lesson plan.\n- For ANY component scored 1, 2, or 3 (anything below Highly Effective), provide concrete, actionable suggestions rooted in the rubric language for how to reach a 4.\n- Return ONLY valid JSON, no preamble.`;
+
+      const user = `Review the following lesson plan and return JSON in this EXACT shape:\n\n{\n  "summary": "2-3 sentence overall observation summary",\n  "scores": [\n    { "id": "1a", "score": 1-4, "rating": "Ineffective|Developing|Effective|Highly Effective", "evidence": "specific evidence from the lesson plan", "suggestions": "if score<4, concrete steps to reach Highly Effective; if score=4, brief note of what made it strong" },\n    ... (one entry for each of 1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e in this order)\n  ]\n}\n\nLESSON PLAN:\n${extractedText.slice(0, 12000)}`;
+
+      const raw = await callClaude(system, user, 3500);
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("AI response was not valid JSON. Please try again.");
+      const parsed = JSON.parse(match[0]);
+      if (!Array.isArray(parsed.scores) || parsed.scores.length !== 8) {
+        throw new Error("AI did not return all 8 component scores. Please try again.");
+      }
+      setResult(parsed);
+    } catch (e) {
+      setError(e.message || "Analysis failed.");
+    }
+    setAnalyzing(false);
+  };
+
+  const reset = () => { setFile(null); setExtractedText(""); setResult(null); setError(""); };
+
+  const ratingColor = (s) => s === 4 ? "#16A34A" : s === 3 ? "#2563EB" : s === 2 ? "#D97706" : "#DC2626";
+  const ratingLabel = (s) => s === 4 ? "Highly Effective" : s === 3 ? "Effective" : s === 2 ? "Developing" : "Ineffective";
+
+  return (
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px 48px", fontFamily: "'Inter',sans-serif" }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 800, color: "#1F2937", margin: "0 0 6px" }}>
+          🧭 Danielson Review
+        </h2>
+        <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>
+          Upload your lesson plan and get a rubric-based score on the 8 key Danielson components.
+        </p>
+      </div>
+
+      {/* Upload card */}
+      {!file && (
+        <div
+          onDragOver={e => { e.preventDefault(); setDraggingOver(true); }}
+          onDragLeave={() => setDraggingOver(false)}
+          onDrop={e => { e.preventDefault(); setDraggingOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
+          style={{
+            background: draggingOver ? LIGHT : "white",
+            border: `2px dashed ${draggingOver ? BRAND : "#D1D5DB"}`,
+            borderRadius: 14,
+            padding: "44px 24px",
+            textAlign: "center",
+            transition: "all 0.15s",
+          }}
+        >
+          <div style={{ fontSize: 48, marginBottom: 12 }} aria-hidden="true">📄</div>
+          <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: "#1F2937", margin: "0 0 6px" }}>Upload your lesson plan</h3>
+          <p style={{ color: "#6B7280", fontSize: 13, margin: "0 0 18px" }}>PDF, Word (.docx), or plain text (.txt) — drag & drop or click below.</p>
+          <label style={{
+            display: "inline-block",
+            background: BRAND,
+            color: "white",
+            padding: "11px 24px",
+            borderRadius: 8,
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(207,39,245,0.3)",
+          }}>
+            {loading ? "Reading file…" : "Choose file"}
+            <input
+              type="file"
+              accept=".pdf,.docx,.txt,.md,.rtf,application/pdf,text/plain"
+              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+              style={{ display: "none" }}
+              disabled={loading}
+            />
+          </label>
+        </div>
+      )}
+
+      {/* File loaded — show analyze button */}
+      {file && !result && (
+        <div style={{ background: "white", border: "1px solid #E5E7EB", borderRadius: 14, padding: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 700, color: "#1F2937", fontSize: 15 }}>📎 {file.name}</div>
+              <div style={{ color: "#6B7280", fontSize: 12, marginTop: 4 }}>
+                {(extractedText.length / 1000).toFixed(1)}k characters extracted • Ready for review
+              </div>
+            </div>
+            <button onClick={reset} style={{ background: "none", border: "1px solid #D1D5DB", color: "#6B7280", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Choose different file</button>
+          </div>
+
+          <button
+            onClick={analyze}
+            disabled={analyzing}
+            style={{
+              width: "100%",
+              background: analyzing ? "#9CA3AF" : `linear-gradient(135deg, ${BRAND}, #8B0AB0)`,
+              color: "white",
+              padding: "13px 24px",
+              border: "none",
+              borderRadius: 10,
+              fontWeight: 700,
+              fontSize: 15,
+              cursor: analyzing ? "wait" : "pointer",
+              boxShadow: analyzing ? "none" : "0 3px 10px rgba(207,39,245,0.35)",
+            }}
+          >
+            {analyzing ? "🔍 Reviewing against Danielson rubric…" : "🧭 Run Danielson Review"}
+          </button>
+          {analyzing && (
+            <p style={{ textAlign: "center", color: "#6B7280", fontSize: 12, marginTop: 12, fontStyle: "italic" }}>
+              The AI is scoring all 8 components. This usually takes 20–40 seconds.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div style={{ marginTop: 14, background: "#FEE2E2", border: "1px solid #FCA5A5", color: "#991B1B", padding: 12, borderRadius: 8, fontSize: 13 }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Results */}
+      {result && (
+        <div style={{ marginTop: 8 }}>
+          {/* Summary card */}
+          <div style={{ background: `linear-gradient(135deg, ${LIGHT}, white)`, border: `1px solid ${BRAND}40`, borderRadius: 14, padding: 22, marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: BRAND, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Administrator Summary</div>
+                <p style={{ margin: 0, color: "#1F2937", fontSize: 14, lineHeight: 1.6 }}>{result.summary}</p>
+              </div>
+              <div style={{ textAlign: "center", background: "white", padding: "12px 20px", borderRadius: 10, border: "1px solid #E5E7EB", minWidth: 120 }}>
+                <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, marginBottom: 4 }}>AVERAGE</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: BRAND, lineHeight: 1 }}>
+                  {(result.scores.reduce((s, x) => s + (x.score || 0), 0) / result.scores.length).toFixed(2)}
+                </div>
+                <div style={{ fontSize: 10, color: "#6B7280", marginTop: 4 }}>of 4.00</div>
+              </div>
+            </div>
+            <button
+              onClick={reset}
+              style={{ marginTop: 14, background: "none", border: "1px solid #D1D5DB", color: "#6B7280", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+            >
+              Review another lesson
+            </button>
+          </div>
+
+          {/* Score chart */}
+          <div style={{ background: "white", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden", marginBottom: 18 }}>
+            <div style={{ background: "#F9FAFB", padding: "12px 18px", borderBottom: "1px solid #E5E7EB" }}>
+              <h3 style={{ margin: 0, fontFamily: "'Playfair Display',serif", fontSize: 17, color: "#1F2937" }}>📊 Component Scores</h3>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560, fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "#F3F4F6", textAlign: "left" }}>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, color: "#374151" }}>Component</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, color: "#374151" }}>Description</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, color: "#374151", textAlign: "center" }}>Score</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, color: "#374151" }}>Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.scores.map((s) => {
+                    const meta = DANIELSON_COMPONENTS.find(c => c.id === s.id);
+                    const color = ratingColor(s.score);
+                    return (
+                      <tr key={s.id} style={{ borderTop: "1px solid #E5E7EB" }}>
+                        <td style={{ padding: "12px 14px", fontWeight: 700, color: "#1F2937" }}>{s.id}</td>
+                        <td style={{ padding: "12px 14px", color: "#4B5563" }}>{meta?.title || ""}</td>
+                        <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                          <span style={{ display: "inline-block", minWidth: 30, padding: "4px 10px", background: color, color: "white", borderRadius: 6, fontWeight: 800 }}>{s.score}</span>
+                        </td>
+                        <td style={{ padding: "12px 14px", color, fontWeight: 700 }}>{s.rating || ratingLabel(s.score)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Detailed evidence + suggestions */}
+          <div style={{ display: "grid", gap: 14 }}>
+            {result.scores.map((s) => {
+              const meta = DANIELSON_COMPONENTS.find(c => c.id === s.id);
+              const color = ratingColor(s.score);
+              const isHighest = s.score === 4;
+              return (
+                <div key={s.id} style={{ background: "white", border: "1px solid #E5E7EB", borderLeft: `4px solid ${color}`, borderRadius: 10, padding: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 600 }}>{meta?.domain}</div>
+                      <div style={{ fontWeight: 700, color: "#1F2937", fontSize: 15 }}>{s.id} — {meta?.title}</div>
+                    </div>
+                    <span style={{ background: color, color: "white", padding: "4px 12px", borderRadius: 6, fontWeight: 700, fontSize: 13 }}>
+                      {s.score} • {s.rating || ratingLabel(s.score)}
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Evidence from lesson</div>
+                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55 }}>{s.evidence}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: isHighest ? "#16A34A" : BRAND, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+                      {isHighest ? "✓ What makes this Highly Effective" : "💡 How to reach Highly Effective"}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{s.suggestions}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Disclaimer — always visible at bottom */}
+      <div style={{ marginTop: 28, background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 10, padding: "14px 18px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#92400E", marginBottom: 4, letterSpacing: 0.4, textTransform: "uppercase" }}>⚠️ Please note</div>
+        <p style={{ margin: 0, fontSize: 13, color: "#78350F", lineHeight: 1.55 }}>
+          Scores are subjective and remain at the discretion of administrative review. This tool does <strong>not</strong> guarantee a Highly Effective rating, but supports the user in working toward Highly Effective according to the Danielson rubric.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SITE SHELL — The Tech Savvy Teacher
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
