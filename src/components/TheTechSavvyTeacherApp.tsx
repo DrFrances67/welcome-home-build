@@ -3206,6 +3206,7 @@ const EMAIL_RECIPIENTS = [
   { id:"administrator", label:"Administrator",    icon:"🏫", desc:"Principal, VP, district staff" },
   { id:"colleague",     label:"Colleague",        icon:"👩‍🏫", desc:"Fellow teachers, support staff" },
   { id:"parent",        label:"Parent / Guardian", icon:"👨‍👩‍👧", desc:"Families of students" },
+  { id:"student",       label:"Student",          icon:"🎒", desc:"Direct messages to students — always student-friendly language" },
   { id:"grant",         label:"Grant",            icon:"💰", desc:"Foundations, donors, funders for classroom resources" },
 ];
 const EMAIL_TONES = [
@@ -3261,13 +3262,14 @@ function EmailAssistant() {
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
     try {
       const isGrant = recipient === "grant" || /grant/i.test(situation);
+      const isStudent = recipient === "student";
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
-          system:`You are an expert writing assistant helping a teacher compose professional emails.
+          system:`You are an expert writing assistant helping a teacher compose professional communication.
 Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
-${recipient === "grant" || /grant/i.test(situation) ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
+${isGrant ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
 - Be professional, respectful, and concise.
 - Open by briefly introducing the teacher, school, grade level, and student population served.
 - Clearly state the specific resources or funding being requested and the approximate amount or quantity if known.
@@ -3276,6 +3278,14 @@ ${recipient === "grant" || /grant/i.test(situation) ? `GRANT CONTEXT — This em
 - Express genuine gratitude and offer to provide updates, photos, or a thank-you from students.
 - Include a clear call to action (next steps, contact info placeholder).
 - Avoid sounding desperate or generic; sound mission-driven.` : ""}
+${isStudent ? `STUDENT CONTEXT — This message is being written DIRECTLY TO A STUDENT. You MUST:
+- Always use student-friendly language that is easy to read and understand.
+- Use short, clear sentences and simple, age-appropriate vocabulary (aim for an upper-elementary / middle-school reading level unless the draft clearly indicates older students).
+- Replace jargon, academic phrasing, and complex words with plain alternatives a student can quickly grasp.
+- Keep a warm, encouraging, respectful tone — never condescending.
+- Be specific and concrete: tell the student exactly what is happening, what they need to do, and by when.
+- Keep the message brief and well-structured (short paragraphs or a short list when helpful).
+- Preserve the teacher's core intent and any important details, just in clearer language.` : ""}
 Rules: maintain respect and professionalism; keep the teacher's core intent; add a subject line; clear structure; not overly wordy.
 Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
           messages:[{role:"user", content:`Polish this into a professional email:\n\n${draft}`}],
