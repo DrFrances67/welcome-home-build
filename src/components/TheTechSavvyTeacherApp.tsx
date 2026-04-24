@@ -4078,74 +4078,78 @@ document.addEventListener('keydown',e=>{
     setSlidesLoading(false); setExportingFmt("");
   };
 
-  // ── Export: PowerPoint (.pptx via pptxgenjs) ──────────────────────
+  // Build a .pptx Blob from a deck (shared by PPTX + Google Slides exports)
+  const buildPptxBlob = async (deck) => {
+    const PptxGenJS = (await import("pptxgenjs")).default;
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inch
+    pptx.title = deck.title || result.title || "Lesson Slides";
+    pptx.author = "The Tech Savvy Teacher";
+
+    const PPTX_BRAND  = "8B0AB0";
+    const PPTX_ACCENT = "CF27F5";
+    const PPTX_DARK   = "1F2937";
+    const PPTX_MUTED  = "9CA3AF";
+
+    deck.slides.forEach((sl, i) => {
+      const isTitle = sl.kind === "title" || i === 0;
+      const slide = pptx.addSlide();
+
+      if (isTitle) {
+        slide.background = { color: PPTX_BRAND };
+        slide.addText(sl.title || deck.title || "Lesson", {
+          x: 0.5, y: 2.4, w: 12.33, h: 1.6,
+          fontSize: 54, bold: true, fontFace: "Calibri",
+          color: "FFFFFF", align: "center", valign: "middle",
+        });
+        if (deck.subtitle) {
+          slide.addText(deck.subtitle, {
+            x: 0.5, y: 4.2, w: 12.33, h: 0.8,
+            fontSize: 22, fontFace: "Calibri", color: "FDE7FF",
+            align: "center", valign: "middle",
+          });
+        }
+      } else {
+        slide.background = { color: "FFFFFF" };
+        slide.addText(sl.title || `Slide ${i + 1}`, {
+          x: 0.6, y: 0.4, w: 12.13, h: 0.9,
+          fontSize: 32, bold: true, fontFace: "Calibri",
+          color: PPTX_BRAND,
+        });
+        slide.addShape("rect", {
+          x: 0.6, y: 1.28, w: 1.6, h: 0.06, fill: { color: PPTX_ACCENT }, line: { color: PPTX_ACCENT },
+        });
+        const bullets = (sl.bullets || []).map(b => ({
+          text: String(b),
+          options: { bullet: { code: "25CF" }, color: PPTX_DARK, fontSize: 20 },
+        }));
+        if (bullets.length) {
+          slide.addText(bullets, {
+            x: 0.7, y: 1.7, w: 12.0, h: 5.2,
+            fontFace: "Calibri", lineSpacingMultiple: 1.3, valign: "top",
+          });
+        }
+      }
+
+      slide.addText(`${i + 1} / ${deck.slides.length}`, {
+        x: 11.5, y: 7.05, w: 1.5, h: 0.35,
+        fontSize: 11, fontFace: "Calibri", color: isTitle ? "FFFFFF" : PPTX_MUTED,
+        align: "right",
+      });
+    });
+
+    // pptxgenjs returns a Blob when output type is "blob"
+    return await pptx.write({ outputType: "blob" });
+  };
+
+  // ── Export: PowerPoint (.pptx) ────────────────────────────────────
   const exportSlidesPPTX = async () => {
     if (!result) return;
     setSlidesError(""); setExportingFmt("pptx"); setSlidesLoading(true);
     try {
       const deck = await ensureDeck();
-      const PptxGenJS = (await import("pptxgenjs")).default;
-      const pptx = new PptxGenJS();
-      pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inch
-      pptx.title = deck.title || result.title || "Lesson Slides";
-      pptx.author = "The Tech Savvy Teacher";
-
-      const BRAND = "8B0AB0";
-      const ACCENT = "CF27F5";
-      const LIGHT_BG = "FDF4FF";
-      const DARK = "1F2937";
-      const MUTED = "9CA3AF";
-
-      deck.slides.forEach((sl, i) => {
-        const isTitle = sl.kind === "title" || i === 0;
-        const slide = pptx.addSlide();
-
-        if (isTitle) {
-          // Brand-colored title slide
-          slide.background = { color: BRAND };
-          slide.addText(sl.title || deck.title || "Lesson", {
-            x: 0.5, y: 2.4, w: 12.33, h: 1.6,
-            fontSize: 54, bold: true, fontFace: "Calibri",
-            color: "FFFFFF", align: "center", valign: "middle",
-          });
-          if (deck.subtitle) {
-            slide.addText(deck.subtitle, {
-              x: 0.5, y: 4.2, w: 12.33, h: 0.8,
-              fontSize: 22, fontFace: "Calibri", color: "FDE7FF",
-              align: "center", valign: "middle",
-            });
-          }
-        } else {
-          slide.background = { color: "FFFFFF" };
-          // Title
-          slide.addText(sl.title || `Slide ${i + 1}`, {
-            x: 0.6, y: 0.4, w: 12.13, h: 0.9,
-            fontSize: 32, bold: true, fontFace: "Calibri",
-            color: BRAND,
-          });
-          // Underline accent
-          slide.addShape("rect", {
-            x: 0.6, y: 1.28, w: 1.6, h: 0.06, fill: { color: ACCENT }, line: { color: ACCENT },
-          });
-          // Bullets
-          const bullets = (sl.bullets || []).map(b => ({ text: String(b), options: { bullet: { code: "25CF" }, color: DARK, fontSize: 20 } }));
-          if (bullets.length) {
-            slide.addText(bullets, {
-              x: 0.7, y: 1.7, w: 12.0, h: 5.2,
-              fontFace: "Calibri", lineSpacingMultiple: 1.3, valign: "top",
-            });
-          }
-        }
-
-        // Page number
-        slide.addText(`${i + 1} / ${deck.slides.length}`, {
-          x: 11.5, y: 7.05, w: 1.5, h: 0.35,
-          fontSize: 11, fontFace: "Calibri", color: isTitle ? "FFFFFF" : MUTED,
-          align: "right",
-        });
-      });
-
-      await pptx.writeFile({ fileName: `${deckBaseName(deck)}_slides.pptx` });
+      const blob = await buildPptxBlob(deck);
+      triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
     } catch (err) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
@@ -4153,19 +4157,18 @@ document.addEventListener('keydown',e=>{
   };
 
   // ── Export: Google Slides ─────────────────────────────────────────
-  // Browser frontends cannot create Google Slides without OAuth. Best UX:
-  // download a .pptx, open Google Slides, and instruct the teacher to
-  // upload it (Slides imports .pptx natively). Also opens slides.google.com.
+  // Frontend-only browsers cannot create Google Slides without OAuth.
+  // Best UX: download a .pptx (Slides imports it natively) and open the
+  // Google Slides import flow in a new tab.
   const exportSlidesGoogle = async () => {
     if (!result) return;
     setSlidesError(""); setExportingFmt("google"); setSlidesLoading(true);
     try {
-      await exportSlidesPPTX();
-      // exportSlidesPPTX clears these — re-set so the helper note shows
-      setExportingFmt("google");
-      // Open Google Slides import flow
+      const deck = await ensureDeck();
+      const blob = await buildPptxBlob(deck);
+      triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
       window.open("https://docs.google.com/presentation/u/0/?tgif=d", "_blank");
-      setSlidesError("✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the file you just downloaded.");
+      setSlidesError("✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.");
     } catch (err) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
