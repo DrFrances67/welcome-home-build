@@ -3439,12 +3439,41 @@ function LessonPlanGenerator() {
       exemplarRaw  ? `Exemplar lesson plan to mimic in structure, tone, and section detail (replicate this format closely):\n${exemplarRaw.slice(0, 4000)}` : "",
     ].filter(Boolean).join("\n");
 
-    const systemPrompt = `You are an expert NY State curriculum designer. Respond with ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
+    // Build the candidate NYS standards list to constrain the AI.
+    // CRITICAL: We only allow standards from our NY_STANDARDS dataset (NYS Next Gen).
+    // Never let the model invent CCLS / Common Core codes when no standard is picked.
+    const gradeNameMap: Record<string,string> = { pk:"Pre-Kindergarten", k:"Kindergarten", "1":"Grade 1","2":"Grade 2","3":"Grade 3","4":"Grade 4","5":"Grade 5","6":"Grade 6","7":"Grade 7","8":"Grade 8","9":"Grade 9","10":"Grade 10","11":"Grade 11","12":"Grade 12" };
+    const gradeBandKey = gradeNameMap[form.grade] || form.grade;
+    const collectStandards = () => {
+      const out: string[] = [];
+      const subjGuess = (form.subject || "").toLowerCase();
+      const subjects = Object.keys(NY_STANDARDS);
+      const matchSubj = subjects.find(s => s.toLowerCase() === subjGuess) ||
+        subjects.find(s => subjGuess.includes(s.toLowerCase()) || s.toLowerCase().includes(subjGuess));
+      const subjList = matchSubj ? [matchSubj] : subjects;
+      for (const s of subjList) {
+        const bands = NY_STANDARDS[s] || {};
+        // Try exact grade-band first, fall back to all bands of subject
+        const bandKeys = Object.keys(bands);
+        const exact = bandKeys.find(b => b === gradeBandKey);
+        const useBands = exact ? [exact] : bandKeys;
+        for (const b of useBands) {
+          for (const std of (bands[b] || [])) out.push(`${std.code} (${s} · ${b}): ${std.desc}`);
+        }
+      }
+      return out.slice(0, 60);
+    };
+    const candidateStds = collectStandards();
+    const standardsBlock = form.standard
+      ? `Standard chosen by the teacher (use exactly): ${form.standard}`
+      : `No standard was selected. You MUST pick the single best-fit standard from this approved NYS Next Generation Learning Standards list (do NOT invent codes, do NOT use CCLS / Common Core codes — only use entries from this list). Copy the chosen entry verbatim into the "standard" field:\n${candidateStds.join("\n")}`;
+
+    const systemPrompt = `You are an expert New York State curriculum designer. You ONLY align lessons to NYS Next Generation Learning Standards (the codes contained in the user prompt). You NEVER reference, cite, or invent Common Core / CCLS codes (e.g. CCSS.ELA-Literacy.RL.K.1, CCLS, CCSS, etc.). If the teacher did not pick a standard, you MUST select one from the provided NYS list and copy it verbatim into the "standard" field. Respond with ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
 
     const userPrompt = `Create a lesson plan for:
 Grade: ${form.grade} | Subject: ${form.subject} | Topic: ${form.topic}
 Duration: ${form.duration} | Model: ${form.model}
-Standard: ${form.standard || "Select the most relevant NYS standard"}
+${standardsBlock}
 Differentiation: ${diffList}
 ${diffSection}
 Sections: ${sectionNames}
