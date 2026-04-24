@@ -3260,10 +3260,11 @@ function EmailAssistant() {
     const rLabel = EMAIL_RECIPIENTS.find(r => r.id === recipient)?.label;
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
     try {
+      const isGrant = recipient === "grant" || /grant/i.test(situation);
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1200,
+          model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional emails.
 Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
 ${recipient === "grant" || /grant/i.test(situation) ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
@@ -3281,9 +3282,28 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
         }),
       });
       const data = await res.json();
+      if (!res.ok || data?.error) {
+        const msg = data?.error?.message || data?.error || `Request failed (${res.status})`;
+        throw new Error(typeof msg === "string" ? msg : "Request failed");
+      }
       const text = data.content?.map(b => b.text||"").join("") || "";
-      setResult(JSON.parse(text.replace(/```json|```/g,"").trim()));
-    } catch { setError("Something went wrong. Please try again."); }
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      let parsed = null;
+      try { parsed = JSON.parse(cleaned); }
+      catch {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch { /* ignore */ } }
+      }
+      if (!parsed || typeof parsed !== "object" || !parsed.email) {
+        // Fallback: treat the whole text as the email body
+        const subjMatch = cleaned.match(/subject[:\-]\s*(.+)/i);
+        parsed = {
+          subject: subjMatch ? subjMatch[1].split("\n")[0].trim().replace(/^["']|["']$/g,"") : "Your email",
+          email: cleaned.replace(/^subject[:\-].+\n/i, "").trim() || "(No content returned — please try again.)",
+        };
+      }
+      setResult(parsed);
+    } catch (e) { setError(e instanceof Error ? e.message : "Something went wrong. Please try again."); }
     setLoading(false);
   };
 
