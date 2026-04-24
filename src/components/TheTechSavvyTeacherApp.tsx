@@ -3234,6 +3234,76 @@ const STUDENT_COMPLEXITY = [
   { id:"advanced", label:"Advanced", desc:"Stronger vocabulary while still student-friendly" },
 ];
 
+// Situation compatibility rules. Each rule flags a combination that tends to
+// produce a confused or contradictory email and offers a cleaner alternative.
+const SITUATION_MAX = 3;
+const SITUATION_CONFLICTS = [
+  {
+    when: ["Sharing good news", "Reporting a concern"],
+    reason: "Good news and a concern in one email muddles the message — recipients often miss the concern.",
+    suggest: ["Reporting a concern"],
+  },
+  {
+    when: ["Sharing good news", "Responding to a complaint"],
+    reason: "Celebratory tone clashes with addressing a complaint.",
+    suggest: ["Responding to a complaint"],
+  },
+  {
+    when: ["Responding to a complaint", "Grant writing"],
+    reason: "A grant request should never be paired with a complaint response — they need different audiences and tones.",
+    suggest: ["Grant writing"],
+  },
+  {
+    when: ["Grant writing", "Reporting a concern"],
+    reason: "Grant asks should stay focused on funding impact, not classroom concerns.",
+    suggest: ["Grant writing"],
+  },
+  {
+    when: ["Grant writing", "Scheduling / logistics"],
+    reason: "Logistics distract from a grant pitch — send scheduling separately.",
+    suggest: ["Grant writing"],
+  },
+  {
+    when: ["Request for grades", "Request for tutoring"],
+    // not a conflict — these pair well; example of an explicitly allowed combo
+    allowed: true,
+  },
+  {
+    when: ["Other", "Other"], // placeholder so "Other" with anything else is gently flagged
+    soft: true,
+  },
+];
+
+function validateSituations(selected) {
+  const issues = [];
+  if (selected.length > SITUATION_MAX) {
+    issues.push({
+      level: "error",
+      message: `You've selected ${selected.length} situations. Pick ${SITUATION_MAX} or fewer so the AI can address each one clearly.`,
+      suggestion: selected.slice(0, SITUATION_MAX),
+    });
+  }
+  if (selected.includes("Other") && selected.length > 1) {
+    issues.push({
+      level: "warning",
+      message: `"Other" is a catch-all — pairing it with specific situations confuses the AI's focus.`,
+      suggestion: selected.filter(s => s !== "Other"),
+    });
+  }
+  for (const rule of SITUATION_CONFLICTS) {
+    if (rule.allowed || rule.soft) continue;
+    const [a, b] = rule.when;
+    if (selected.includes(a) && selected.includes(b)) {
+      issues.push({
+        level: "error",
+        message: `"${a}" + "${b}" — ${rule.reason}`,
+        suggestion: rule.suggest,
+      });
+    }
+  }
+  return issues;
+}
+
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
