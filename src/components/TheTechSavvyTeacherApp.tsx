@@ -4642,17 +4642,46 @@ document.addEventListener('keydown',e=>{
               </div>
             )}
 
-            {/* Generate Slide Deck CTA */}
-            <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10, textAlign:"center" }}>
-              <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px" }}>🎞️ Want a slide deck for this lesson?</p>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280", margin:"0 0 12px", lineHeight:1.5 }}>Generate a presentation-ready slide deck built from every section of this plan.</p>
-              <button onClick={generateSlideDeck} disabled={slidesLoading}
-                style={{ padding:"10px 22px", borderRadius:8, border:"none", background: slidesLoading ? "#D1D5DB" : BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor: slidesLoading ? "wait" : "pointer", boxShadow: slidesLoading ? "none" : "0 4px 12px rgba(207,39,245,0.3)", display:"inline-flex", alignItems:"center", gap:8 }}>
-                {slidesLoading ? (
-                  <><span style={{ width:13, height:13, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /> Building slides…</>
-                ) : "🎬 Generate Slide Deck"}
-              </button>
-              {slidesError && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11.5, color:"#DC2626", margin:"10px 0 0" }}>{slidesError}</p>}
+            {/* Generate Slide Deck CTA — multi-format export */}
+            <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10 }}>
+              <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px", textAlign:"center" }}>🎞️ Build a slide deck for this lesson</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280", margin:"0 0 14px", lineHeight:1.5, textAlign:"center" }}>Pick your format — the deck is built from every section of this plan.</p>
+              {(() => {
+                const exportBtns = [
+                  { id:"html",   label:"🌐 Interactive HTML", desc:"Open in browser",        onClick: exportSlidesHTML },
+                  { id:"text",   label:"📝 Plain Text",       desc:"Outline (.txt)",         onClick: exportSlidesText },
+                  { id:"pdf",    label:"📄 PDF",              desc:"Print-ready",            onClick: exportSlidesPDF },
+                  { id:"google", label:"🟡 Google Slides",    desc:"Upload .pptx to Slides", onClick: exportSlidesGoogle },
+                  { id:"pptx",   label:"🟧 PowerPoint",       desc:"Download .pptx",         onClick: exportSlidesPPTX },
+                ];
+                return (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8 }}>
+                    {exportBtns.map(b => {
+                      const isActive = exportingFmt === b.id;
+                      const isDisabled = slidesLoading;
+                      return (
+                        <button key={b.id} onClick={b.onClick} disabled={isDisabled}
+                          style={{
+                            padding:"10px 12px", borderRadius:8, border:`1.5px solid ${isActive ? BRAND : "#E9D5FF"}`,
+                            background: isDisabled && !isActive ? "#F3F4F6" : (isActive ? BRAND : "white"),
+                            color: isActive ? "white" : (isDisabled ? "#9CA3AF" : BRAND),
+                            fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:12.5,
+                            cursor: isDisabled ? (isActive ? "wait" : "not-allowed") : "pointer",
+                            boxShadow: isActive ? "0 4px 12px rgba(207,39,245,0.3)" : "none",
+                            display:"flex", flexDirection:"column", gap:3, alignItems:"center", lineHeight:1.3,
+                            transition:"all .15s",
+                          }}>
+                          <span>{isActive ? (
+                            <><span style={{ width:11, height:11, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite", verticalAlign:"middle", marginRight:6 }} />Working…</>
+                          ) : b.label}</span>
+                          {!isActive && <span style={{ fontSize:10, fontWeight:500, color: isDisabled ? "#9CA3AF" : "#9CA3AF" }}>{b.desc}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              {slidesError && <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11.5, color: slidesError.startsWith("✓") ? "#166534" : "#DC2626", margin:"12px 0 0", lineHeight:1.5, background: slidesError.startsWith("✓") ? "#F0FDF4" : "#FEF2F2", padding:"8px 10px", borderRadius:6, border: `1px solid ${slidesError.startsWith("✓") ? "#BBF7D0" : "#FECACA"}` }}>{slidesError}</p>}
             </div>
           </div>
         ) : (
