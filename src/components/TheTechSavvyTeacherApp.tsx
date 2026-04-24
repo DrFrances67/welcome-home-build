@@ -3402,7 +3402,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
           ) : (
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center", color:"#9CA3AF" }}>
               <div style={{ fontSize:44, opacity:0.35 }}>📝</div>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.7 }}>Fill in your details and rough draft,<br/>then click <strong style={{ color:"#6B7280" }}>Polish My Email</strong> to see<br/>your professional version here.</p>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.7 }}>Fill in your details and rough draft,<br/>then click <strong style={{ color:"#6B7280" }}>Polish My Communication</strong> to see<br/>your professional version here.</p>
             </div>
           )}
         </div>
