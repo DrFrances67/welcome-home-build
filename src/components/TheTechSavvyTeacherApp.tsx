@@ -3381,18 +3381,35 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             ))}
           </div>
 
-          {recipient === "student" && (
-            <div style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
-              <span style={{ ...lbl, color:BRAND, marginBottom:8 }}>🎒 Student reading level</span>
-              <select value={readingLevel} onChange={e => setReadingLevel(e.target.value)}
-                style={{ ...inp, cursor:"pointer", marginBottom:8 }}>
-                {STUDENT_READING_LEVELS.map(r => (
-                  <option key={r.id} value={r.id}>{r.label} — {r.desc}</option>
-                ))}
-              </select>
-              <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>
-                <strong style={{ color:BRAND }}>🛡️ Safety:</strong> Names, dates, deadlines, page numbers, and action items from your draft will be kept exactly as written. Only the surrounding language is rewritten for the student.
+          {recipient === "student" && (() => {
+            const gObj = STUDENT_GRADE_LEVELS.find(g => g.id === gradeLevel);
+            const showComplexity = gObj?.tier === "secondary";
+            return (
+              <div style={{ marginBottom:18, padding:"12px 14px", background:LIGHT, border:`1.5px solid ${BRAND}`, borderRadius:8 }}>
+                <span style={{ ...lbl, color:BRAND, marginBottom:8 }}>🎒 Grade level</span>
+                <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)}
+                  style={{ ...inp, cursor:"pointer", marginBottom: showComplexity ? 10 : 8 }}>
+                  {STUDENT_GRADE_LEVELS.map(g => (
+                    <option key={g.id} value={g.id}>{g.label} — {g.desc}</option>
+                  ))}
+                </select>
+                {showComplexity && (
+                  <>
+                    <span style={{ ...lbl, color:BRAND, marginBottom:6 }}>📚 Vocabulary complexity</span>
+                    <select value={complexity} onChange={e => setComplexity(e.target.value)}
+                      style={{ ...inp, cursor:"pointer", marginBottom:8 }}>
+                      {STUDENT_COMPLEXITY.map(c => (
+                        <option key={c.id} value={c.id}>{c.label} — {c.desc}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                <div style={{ fontSize:11, color:"#6B7280", lineHeight:1.5 }}>
+                  <strong style={{ color:BRAND }}>🛡️ Safety:</strong> Names, dates, deadlines, page numbers, and action items from your draft will be kept exactly as written. Only the surrounding language is rewritten for the student.
+                </div>
               </div>
+            );
+          })()}
             </div>
           )}
 
