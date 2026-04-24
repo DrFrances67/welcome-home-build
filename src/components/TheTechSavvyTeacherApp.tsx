@@ -3696,6 +3696,9 @@ REQUIRED for homework and extension:
 - "homework" MUST be a specific, grade-appropriate at-home activity tied to today's objective. For Kindergarten and early grades, suggest a short hands-on family activity (10-15 min) such as drawing, sorting household objects, reading aloud with a caregiver, or a scavenger hunt. NEVER write "N/A" or "None".
 - "extension" MUST be a specific enrichment / challenge activity for students who finish early or need a deeper push. NEVER write "N/A" or "None".
 
+REQUIRED for successCriteria:
+- "successCriteria" MUST be an array of 3-5 specific, observable, student-facing "I can…" statements directly aligned to the learning objectives. Each statement is what a student must be able to do/say/produce by the end of the lesson to demonstrate mastery. Use student-friendly language (e.g. "I can identify the main idea of a paragraph and support it with one detail."). NEVER write "N/A".
+
 Return this JSON (replace all placeholder text with real content, keep values concise):
 {
   "title": "...",
@@ -3703,6 +3706,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
   "duration": "...",
   "standard": "...",
   "objectives": ["...", "...", "..."],
+  "successCriteria": ["I can ...", "I can ...", "I can ..."],
   "materials": ["...", "...", "..."],
   "vocabulary": ["...", "...", "..."],
   "sections": [
