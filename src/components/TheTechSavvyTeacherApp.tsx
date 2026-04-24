@@ -3755,6 +3755,19 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         } catch(_) { /* fall through with whatever we have */ }
       }
 
+      // Ensure successCriteria exists — derive from objectives if AI omitted it
+      if (!Array.isArray(parsed.successCriteria) || parsed.successCriteria.length === 0) {
+        const objs = Array.isArray(parsed.objectives) ? parsed.objectives : [];
+        if (objs.length > 0) {
+          parsed.successCriteria = objs.map(o => {
+            const t = String(o).replace(/^(students will be able to|swbat|tlw|the learner will)\s*/i, "").trim();
+            return `I can ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
+          });
+        } else {
+          parsed.successCriteria = ["I can demonstrate understanding of today's lesson objective."];
+        }
+      }
+
       // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
       // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
       if (!form.standard) {
