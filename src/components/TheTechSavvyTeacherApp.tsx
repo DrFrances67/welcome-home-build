@@ -3234,6 +3234,7 @@ function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
   const [situation, setSituation] = useState("Responding to a complaint");
+  const [readingLevel, setReadingLevel] = useState("3-5");
   const [draft, setDraft]         = useState("");
   const [result, setResult]       = useState(null);
   const [loading, setLoading]     = useState(false);
