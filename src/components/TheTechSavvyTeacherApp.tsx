@@ -1812,7 +1812,7 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514", max_tokens: 1800,
-        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–9 worksheet element objects.
+        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–10 worksheet element objects.
 
 Allowed element shapes (use exactly these keys):
 {"type":"instruction","text":"<directions>"}
@@ -1826,6 +1826,9 @@ Allowed element shapes (use exactly these keys):
 {"type":"fillBlank","text":"The ______ is a ______.","note":"Use the word bank."}
 {"type":"essay","prompt":"<prompt>","points":10,"lines":14}
 {"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
+{"type":"image","imagePrompt":"<short visual description for an AI image generator, e.g. 'a friendly cartoon brown dog sitting'>","caption":"<optional short caption>","size":"small","align":"center"}
+
+CRITICAL: Whenever the worksheet would benefit from a picture (e.g. matching pictures to words, label-the-picture, picture-prompt writing, vocabulary with visuals), include {"type":"image", ...} blocks with a clear "imagePrompt". NEVER output text like "(picture of a cat)" or "[image: dog]" — emit a real image block instead so we can generate the picture.
 
 Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
         messages: [{ role: "user", content: userPrompt }]
