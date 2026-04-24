@@ -3873,6 +3873,7 @@ ul{padding-left:16px}li{margin-bottom:3px;font-size:12px}
 <div class="meta">${safeHtml(result.gradeSubject)} | ${safeHtml(result.duration)}</div>
 <div class="std"><strong>Standard:</strong> ${safeHtml(result.standard)}</div>
 <h2>Objectives</h2><ul>${(result.objectives||[]).map(o=>`<li>${safeHtml(o)}</li>`).join("")}</ul>
+<h2>Success Criteria</h2><div class="hw" style="background:#f5f3ff;border-color:#ddd6fe">${(result.successCriteria||[]).map(s=>`<div style="margin-bottom:4px">✓ ${safeHtml(s)}</div>`).join("")}</div>
 <div class="g2"><div><h2 style="margin-top:0">Materials</h2><ul>${(result.materials||[]).map(m=>`<li>${safeHtml(m)}</li>`).join("")}</ul></div>
 <div><h2 style="margin-top:0">Key Vocabulary</h2><p style="font-size:12px">${(result.vocabulary||[]).map(v=>safeHtml(v)).join(" · ")}</p></div></div>
 <h2>Lesson Sequence</h2>
