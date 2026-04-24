@@ -3234,6 +3234,76 @@ const STUDENT_COMPLEXITY = [
   { id:"advanced", label:"Advanced", desc:"Stronger vocabulary while still student-friendly" },
 ];
 
+// Situation compatibility rules. Each rule flags a combination that tends to
+// produce a confused or contradictory email and offers a cleaner alternative.
+const SITUATION_MAX = 3;
+const SITUATION_CONFLICTS = [
+  {
+    when: ["Sharing good news", "Reporting a concern"],
+    reason: "Good news and a concern in one email muddles the message — recipients often miss the concern.",
+    suggest: ["Reporting a concern"],
+  },
+  {
+    when: ["Sharing good news", "Responding to a complaint"],
+    reason: "Celebratory tone clashes with addressing a complaint.",
+    suggest: ["Responding to a complaint"],
+  },
+  {
+    when: ["Responding to a complaint", "Grant writing"],
+    reason: "A grant request should never be paired with a complaint response — they need different audiences and tones.",
+    suggest: ["Grant writing"],
+  },
+  {
+    when: ["Grant writing", "Reporting a concern"],
+    reason: "Grant asks should stay focused on funding impact, not classroom concerns.",
+    suggest: ["Grant writing"],
+  },
+  {
+    when: ["Grant writing", "Scheduling / logistics"],
+    reason: "Logistics distract from a grant pitch — send scheduling separately.",
+    suggest: ["Grant writing"],
+  },
+  {
+    when: ["Request for grades", "Request for tutoring"],
+    // not a conflict — these pair well; example of an explicitly allowed combo
+    allowed: true,
+  },
+  {
+    when: ["Other", "Other"], // placeholder so "Other" with anything else is gently flagged
+    soft: true,
+  },
+];
+
+function validateSituations(selected) {
+  const issues = [];
+  if (selected.length > SITUATION_MAX) {
+    issues.push({
+      level: "error",
+      message: `You've selected ${selected.length} situations. Pick ${SITUATION_MAX} or fewer so the AI can address each one clearly.`,
+      suggestion: selected.slice(0, SITUATION_MAX),
+    });
+  }
+  if (selected.includes("Other") && selected.length > 1) {
+    issues.push({
+      level: "warning",
+      message: `"Other" is a catch-all — pairing it with specific situations confuses the AI's focus.`,
+      suggestion: selected.filter(s => s !== "Other"),
+    });
+  }
+  for (const rule of SITUATION_CONFLICTS) {
+    if (rule.allowed || rule.soft) continue;
+    const [a, b] = rule.when;
+    if (selected.includes(a) && selected.includes(b)) {
+      issues.push({
+        level: "error",
+        message: `"${a}" + "${b}" — ${rule.reason}`,
+        suggestion: rule.suggest,
+      });
+    }
+  }
+  return issues;
+}
+
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone]           = useState("warm-professional");
@@ -3440,12 +3510,42 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
               );
             })}
           </div>
-          {situations.length > 1 && (
-            <div style={{ fontSize:11, color:BRAND, marginBottom:18, fontStyle:"italic" }}>
-              ✨ Combining {situations.length} situations into one message.
-            </div>
-          )}
-          {situations.length <= 1 && <div style={{ marginBottom:18 }} />}
+          {(() => {
+            const issues = validateSituations(situations);
+            const hasError = issues.some(i => i.level === "error");
+            return (
+              <>
+                {issues.map((issue, idx) => {
+                  const isError = issue.level === "error";
+                  const bg     = isError ? "#FEF2F2" : "#FFFBEB";
+                  const border = isError ? "#FCA5A5" : "#FCD34D";
+                  const fg     = isError ? "#991B1B" : "#92400E";
+                  return (
+                    <div key={idx} style={{ marginTop:8, padding:"10px 12px", background:bg, border:`1.5px solid ${border}`, borderRadius:8 }}>
+                      <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                        <span style={{ fontSize:14, lineHeight:"18px" }}>{isError ? "⚠️" : "💡"}</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:12, fontWeight:600, color:fg, lineHeight:1.45 }}>{issue.message}</div>
+                          {issue.suggestion && issue.suggestion.length > 0 && (
+                            <button type="button" onClick={() => setSituations(issue.suggestion)}
+                              style={{ marginTop:8, padding:"6px 10px", borderRadius:6, border:`1.5px solid ${fg}`, background:"white", color:fg, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                              ✨ Use suggested: {issue.suggestion.join(" + ")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {situations.length > 1 && !hasError && (
+                  <div style={{ fontSize:11, color:BRAND, marginTop:8, fontStyle:"italic" }}>
+                    ✨ Combining {situations.length} situations into one message.
+                  </div>
+                )}
+                <div style={{ marginBottom:18 }} />
+              </>
+            );
+          })()}
 
           <span style={lbl}>Your rough draft or key points</span>
           <div style={{ position:"relative" }}>
@@ -3459,10 +3559,17 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 
           {error && <div style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:7, padding:"10px 14px", color:"#DC2626", fontSize:13, marginTop:10, marginBottom:4 }}>{error}</div>}
 
-          <button onClick={polish} disabled={loading || !draft.trim()}
-            style={{ width:"100%", marginTop:14, padding:"12px", borderRadius:8, border:"none", background: !draft.trim()||loading ? "#E5E7EB" : BRAND, color: !draft.trim()||loading ? "#9CA3AF" : "white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:14, cursor: !draft.trim()||loading ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, letterSpacing:0.3 }}>
-            {loading ? <><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} />Polishing…</> : "✦  Polish My Communication"}
-          </button>
+          {(() => {
+            const hasError = validateSituations(situations).some(i => i.level === "error");
+            const blocked = loading || !draft.trim() || hasError;
+            return (
+              <button onClick={polish} disabled={blocked}
+                title={hasError ? "Resolve the situation conflict above to continue." : ""}
+                style={{ width:"100%", marginTop:14, padding:"12px", borderRadius:8, border:"none", background: blocked ? "#E5E7EB" : BRAND, color: blocked ? "#9CA3AF" : "white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:14, cursor: blocked ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, letterSpacing:0.3 }}>
+                {loading ? <><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} />Polishing…</> : hasError ? "⚠️  Fix situation conflict above" : "✦  Polish My Communication"}
+              </button>
+            );
+          })()}
         </div>
       </div>
 
