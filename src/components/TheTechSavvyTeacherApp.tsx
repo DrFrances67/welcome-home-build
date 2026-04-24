@@ -3622,6 +3622,7 @@ function LessonPlanGenerator() {
 
     const diffList = form.diff.length ? form.diff.join(", ") : "General education";
     const isGradualRelease = form.model.toLowerCase().includes("gradual");
+    const is5E = form.model.toLowerCase().includes("5e");
     const isNeurodiverse = form.diff.includes("Neurodiverse Students (Autism / Multiple Disabilities)");
 
     // Concise per-need instructions — no bullet points or special chars that bloat JSON responses
@@ -3637,9 +3638,11 @@ function LessonPlanGenerator() {
       ? "Differentiation strategies to embed throughout every lesson section: " + diffNotes.join(" | ")
       : "No specific differentiation required.";
 
-    const sectionNames = isGradualRelease
-      ? "Do Now/Hook, I Do-Modeling, We Do-Guided Practice, You Do-Independent Practice, Closure"
-      : "Do Now/Hook, Direct Instruction, Guided Practice, Independent Work, Closure";
+    const sectionNames = is5E
+      ? "Engage, Explore, Explain, Elaborate, Evaluate (5E Model — sections MUST use these exact 5 names in this order; Engage hooks curiosity, Explore is hands-on inquiry, Explain consolidates concepts/vocabulary, Elaborate applies learning to new contexts, Evaluate measures mastery)"
+      : isGradualRelease
+        ? "Do Now/Hook, I Do-Modeling, We Do-Guided Practice, You Do-Independent Practice, Closure"
+        : "Do Now/Hook, Direct Instruction, Guided Practice, Independent Work, Closure";
 
     const extras = [
       form.objectives ? `Objectives: ${form.objectives}` : "",
