@@ -3456,6 +3456,8 @@ function LessonPlanGenerator() {
   // Slide deck generation state
   const [slidesLoading, setSlidesLoading] = useState(false);
   const [slidesError,   setSlidesError]   = useState("");
+  const [deckData,      setDeckData]      = useState(null); // cached AI-generated deck
+  const [exportingFmt,  setExportingFmt]  = useState("");   // which format is being exported
 
   const setF = (k,v) => setForm(p => ({...p,[k]:v}));
   const toggleDiff = (d) => setF("diff", form.diff.includes(d) ? form.diff.filter(x=>x!==d) : [...form.diff, d]);
