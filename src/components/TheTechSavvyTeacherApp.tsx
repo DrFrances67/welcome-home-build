@@ -3300,7 +3300,7 @@ ${isGrant ? `GRANT CONTEXT — This email is a grant / funding request. The teac
 - Avoid sounding desperate or generic; sound mission-driven.` : ""}
 ${isStudent ? `STUDENT CONTEXT — This message is being written DIRECTLY TO A STUDENT. You MUST:
 - Always use student-friendly language that is easy to read and understand.
-- TARGET READING LEVEL: ${rlObj?.label} (${rlObj?.desc}). Calibrate sentence length, vocabulary complexity, and explanations to this level. For K–2, use very short sentences (≤8 words when possible) and only the most common words. For 3–5, keep sentences short and explain any tricky word. For 6–8, use everyday vocabulary and slightly longer sentences. For 9–12, you may use stronger vocabulary but keep things clear and respectful. For "simple"/"medium"/"advanced", calibrate vocabulary richness accordingly while keeping the tone student-friendly.
+- TARGET READING LEVEL: ${readingLabel} (${readingDesc}). Calibrate sentence length, vocabulary complexity, and explanations to this level. For K–2, use very short sentences (≤8 words when possible) and only the most common words. For 3–5, keep sentences short and explain any tricky word. For 6–8 and 9–12, follow the chosen complexity tier (Simple = plain & short, Medium = balanced, Advanced = richer vocabulary while still respectful and clear).
 - Replace jargon, academic phrasing, and complex words with plain alternatives a student can quickly grasp.
 - Keep a warm, encouraging, respectful tone — never condescending.
 - Be specific and concrete: tell the student exactly what is happening, what they need to do, and by when.
