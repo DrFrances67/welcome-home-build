@@ -3260,10 +3260,11 @@ function EmailAssistant() {
     const rLabel = EMAIL_RECIPIENTS.find(r => r.id === recipient)?.label;
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
     try {
+      const isGrant = recipient === "grant" || /grant/i.test(situation);
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1200,
+          model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional emails.
 Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation: ${situation}.
 ${recipient === "grant" || /grant/i.test(situation) ? `GRANT CONTEXT — This email is a grant / funding request. The teacher is asking a foundation, donor, business, or funder for resources (supplies, technology, books, materials, field trips, etc.) for their classroom or school. The email MUST:
