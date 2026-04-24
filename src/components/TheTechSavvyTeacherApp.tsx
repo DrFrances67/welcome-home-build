@@ -3793,6 +3793,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       `${result.gradeSubject} | ${result.duration}`,
       `Standard: ${result.standard}`, "",
       "OBJECTIVES:", ...(result.objectives||[]).map(o=>`  - ${o}`), "",
+      "SUCCESS CRITERIA (Students):", ...(result.successCriteria||[]).map(s=>`  - ${s}`), "",
       "MATERIALS:", ...(result.materials||[]).map(m=>`  - ${m}`), "",
       "KEY VOCABULARY:", (result.vocabulary||[]).join(", "), "",
       ...(result.sections||[]).flatMap(s=>[
