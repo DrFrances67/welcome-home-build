@@ -3456,18 +3456,24 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
         <div style={cardHead}><span style={cardHeadTxt}>✏️  Compose</span></div>
         <div style={{ padding:"20px 20px 24px" }}>
 
-          <span style={lbl}>Who are you writing to?</span>
-          <div style={{ display:"flex", flexDirection:"column", gap:7, marginBottom:18 }}>
-            {EMAIL_RECIPIENTS.map(r => (
-              <button key={r.id} onClick={() => setRecipient(r.id)}
-                style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:8, border:`1.5px solid ${recipient===r.id ? BRAND : "#E5E7EB"}`, background: recipient===r.id ? LIGHT : "white", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}>
-                <span style={{ fontSize:20 }}>{r.icon}</span>
-                <div>
-                  <div style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color: recipient===r.id ? BRAND : "#111827" }}>{r.label}</div>
-                  <div style={{ fontSize:11, color:"#6B7280", marginTop:1 }}>{r.desc}</div>
-                </div>
-              </button>
-            ))}
+          <span id="recipient-label" style={lbl}>Who are you writing to?</span>
+          <div role="radiogroup" aria-labelledby="recipient-label"
+            style={{ display:"flex", flexDirection:"column", gap:7, marginBottom:18 }}>
+            {EMAIL_RECIPIENTS.map(r => {
+              const selected = recipient === r.id;
+              return (
+                <button key={r.id} type="button" onClick={() => setRecipient(r.id)}
+                  role="radio" aria-checked={selected}
+                  aria-label={`${r.label}. ${r.desc}${selected ? ". Currently selected" : ""}`}
+                  style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:8, border:`1.5px solid ${selected ? BRAND : "#E5E7EB"}`, background: selected ? LIGHT : "white", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}>
+                  <span style={{ fontSize:20 }} aria-hidden="true">{r.icon}</span>
+                  <div>
+                    <div style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color: selected ? BRAND : "#111827" }}>{r.label}</div>
+                    <div style={{ fontSize:11, color:"#6B7280", marginTop:1 }}>{r.desc}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {recipient === "student" && (() => {
