@@ -5436,6 +5436,62 @@ function TheTechSavvyTeacherAppRoot() {
   const [swipeHint, setSwipeHint] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const touchStart = useRef<{ x: number; y: number; t: number; valid: boolean } | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Track scroll within the worksheet canvas (and the page itself when stacked
+  // on mobile) to show a floating "back to top" button after meaningful scroll.
+  useEffect(() => {
+    const isCoarse = typeof window !== "undefined" &&
+      window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (!isCoarse) { setShowScrollTop(false); return; }
+    if (activeTool !== "worksheet") { setShowScrollTop(false); return; }
+
+    const THRESHOLD = 280;
+    const getTargets = () => {
+      const arr: (HTMLElement | Window)[] = [window];
+      const canvas = document.getElementById("worksheet-canvas");
+      if (canvas) arr.push(canvas);
+      return arr;
+    };
+    const onScroll = () => {
+      const canvas = document.getElementById("worksheet-canvas");
+      const canvasY = canvas ? canvas.scrollTop : 0;
+      const winY = window.scrollY || document.documentElement.scrollTop || 0;
+      setShowScrollTop(Math.max(canvasY, winY) > THRESHOLD);
+    };
+    // Slight delay so the canvas exists after render
+    const timer = window.setTimeout(() => {
+      const targets = getTargets();
+      targets.forEach(t => t.addEventListener("scroll", onScroll, { passive: true }));
+      onScroll();
+      // store cleanup
+      (onScroll as any)._cleanup = () => targets.forEach(t => t.removeEventListener("scroll", onScroll));
+    }, 60);
+    return () => {
+      window.clearTimeout(timer);
+      (onScroll as any)._cleanup?.();
+    };
+  }, [activeTool]);
+
+  const scrollToTop = () => {
+    const canvas = document.getElementById("worksheet-canvas");
+    if (canvas && canvas.scrollTop > 0) canvas.scrollTo({ top: 0, behavior: "smooth" });
+    if ((window.scrollY || 0) > 0) window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Online/offline awareness
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const update = () => setIsOffline(!navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
 
   // Change tools by swipe direction. dir="left" means user swiped left → next tool.
   const changeToolByDir = (dir: "left" | "right") => {
@@ -5653,6 +5709,61 @@ function TheTechSavvyTeacherAppRoot() {
           .swipe-anim-right, .swipe-anim-left { animation: none !important; }
           .swipe-hint-toast { animation: none !important; opacity: 1 !important; }
         }
+
+        /* ━━ Floating "back to top" FAB ━━ */
+        @keyframes fabPop { from { opacity:0; transform:translateY(10px) scale(0.85);} to { opacity:1; transform:translateY(0) scale(1);} }
+        .scroll-top-fab {
+          position: fixed; right: 16px; bottom: 20px;
+          width: 52px; height: 52px; border-radius: 50%;
+          background: #CF27F5; color: white; border: none;
+          box-shadow: 0 8px 24px rgba(207,39,245,0.45), 0 2px 6px rgba(0,0,0,0.18);
+          font-size: 22px; font-weight: 800; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          z-index: 9997; animation: fabPop 0.2s ease-out;
+          touch-action: manipulation;
+        }
+        .scroll-top-fab:hover { background: #B21FD6; }
+        .scroll-top-fab:active { transform: scale(0.92); }
+        @media (prefers-reduced-motion: reduce) { .scroll-top-fab { animation: none !important; } }
+
+        /* ━━ Offline banner ━━ */
+        .offline-banner {
+          position: fixed; left: 50%; top: 12px; transform: translateX(-50%);
+          background: #1F2937; color: white; font-family:'Inter',sans-serif;
+          font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 22px;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.35); z-index: 9999;
+          display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 24px);
+        }
+
+        /* ━━ Readable error & warning text on small screens ━━ */
+        @media (max-width: 768px) {
+          /* All explicit alert/status panels */
+          [role="alert"], [role="status"] {
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+          }
+          /* Inline DC2626 error text used throughout the app */
+          [style*="color:\"#DC2626\""], [style*="color: \"#DC2626\""],
+          [style*="color:\"#B91C1C\""], [style*="color: \"#B91C1C\""] {
+            font-size: 14px !important;
+          }
+          /* Validation suggestion buttons & cap notices remain tappable */
+          .scroll-top-fab { right: 14px; bottom: 16px; width: 56px; height: 56px; }
+        }
+
+        /* ━━ Bigger dropdown / option hit areas ━━ */
+        select { line-height: 1.5; padding-top: 8px; padding-bottom: 8px; }
+        select option { padding: 8px 10px; min-height: 36px; }
+        select optgroup { font-weight: 800; padding: 6px 0; }
+        @media (hover: none) and (pointer: coarse) {
+          select { padding-top: 12px !important; padding-bottom: 12px !important; padding-right: 30px !important; min-height: 44px !important; background-position: right 10px center; }
+          select option { padding: 12px 12px !important; min-height: 44px !important; font-size: 16px !important; }
+          /* Radio / checkbox option rows used as styled "buttons" */
+          [role="radio"], [role="checkbox"], [role="option"] { min-height: 44px !important; padding: 10px 12px !important; }
+          label { min-height: 36px; }
+          /* Add a touch of breathing room between adjacent option chips */
+          [role="radiogroup"], [role="group"] { row-gap: 10px; }
+        }
       `}</style>
 
       <a href="#main-content" className="skip-nav">Skip to main content</a>
@@ -5760,6 +5871,28 @@ function TheTechSavvyTeacherAppRoot() {
         <div className="swipe-hint-toast" role="status" aria-live="polite">
           <span aria-hidden="true">👆</span>{swipeHint}
         </div>
+      )}
+
+      {/* Offline banner — only shown when the device loses connectivity.
+          The previously visited app shell is served from the browser HTTP
+          cache, so the UI still loads on weak connections. */}
+      {isOffline && (
+        <div role="status" aria-live="polite" className="offline-banner">
+          <span aria-hidden="true">📡</span>
+          <span>You're offline — using cached app. Some AI features need a connection.</span>
+        </div>
+      )}
+
+      {/* Floating "scroll to top" — mobile worksheet view */}
+      {showScrollTop && activeTool === "worksheet" && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          aria-label="Scroll to top of worksheet"
+          className="scroll-top-fab"
+        >
+          <span aria-hidden="true">⬆</span>
+        </button>
       )}
     </div>
   );
