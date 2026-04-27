@@ -3449,7 +3449,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
   const inp = { width:"100%", padding:"9px 11px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:13, color:"#111827", outline:"none", boxSizing:"border-box", background:"white" };
 
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1080, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:28, alignItems:"start" }}>
+    <div className="two-col-grid" style={{ padding:"28px 32px", maxWidth:1080, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:28, alignItems:"start" }}>
 
       {/* LEFT: Compose */}
       <div style={card}>
