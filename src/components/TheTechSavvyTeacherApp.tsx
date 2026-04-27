@@ -5455,6 +5455,68 @@ function TheTechSavvyTeacherAppRoot() {
         .app-shell { background:#F8F9FA; }
         .tool-tab { transition: background 0.15s, border-color 0.15s !important; }
         .tool-tab:hover { background: rgba(255,255,255,0.15) !important; }
+
+        /* ━━ Responsive layout for phones & tablets ━━ */
+        .tool-tabs-row { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        .tool-tabs-row::-webkit-scrollbar { height: 3px; }
+        .tool-tabs-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+
+        /* Tablets (iPad portrait & smaller) */
+        @media (max-width: 1024px) {
+          .two-col-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
+          .lesson-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
+          .ws-sidebar-left { width: 170px !important; }
+          .ws-sidebar-right { width: 240px !important; }
+          .ws-topbar { flex-wrap: wrap !important; height: auto !important; padding: 8px 12px !important; gap: 8px !important; }
+          .ws-topbar > * { flex-shrink: 1 !important; }
+          .powered-badge { top: 8px !important; right: 8px !important; padding: 3px 10px 3px 8px !important; font-size: 10px !important; }
+        }
+
+        /* Phones */
+        @media (max-width: 768px) {
+          .site-brand { padding: 16px 14px 0 !important; }
+          .site-brand h1 { font-size: 22px !important; }
+          .site-brand p { font-size: 9px !important; letter-spacing: 2px !important; }
+          .site-brand-emoji { font-size: 28px !important; margin-bottom: 6px !important; }
+          .powered-badge { position: static !important; margin: 8px auto 0 !important; align-self: center !important; }
+          .powered-badge-wrap { display: flex; justify-content: center; padding: 0 8px; }
+          .tool-tabs-row { justify-content: flex-start !important; padding: 0 8px; margin-top: 12px !important; }
+          .tool-tab { padding: 10px 14px !important; font-size: 12px !important; }
+          .tool-tab span { font-size: 14px !important; }
+
+          /* Worksheet builder: stack the 3-column body */
+          .ws-body { flex-direction: column !important; overflow: auto !important; }
+          .ws-sidebar-left, .ws-sidebar-right {
+            width: 100% !important;
+            max-height: 38vh;
+            border-right: none !important;
+            border-left: none !important;
+            border-bottom: 1px solid #E5E7EB !important;
+          }
+          .ws-canvas-wrap { height: auto !important; min-height: 60vh; }
+          .app-shell { height: auto !important; min-height: 100vh !important; overflow: auto !important; }
+
+          /* Worksheet topbar — compact */
+          .ws-topbar { padding: 8px !important; gap: 6px !important; }
+          .ws-topbar input { font-size: 13px !important; min-width: 120px !important; flex-basis: 100% !important; order: 99; }
+          .ws-topbar fieldset { display: none !important; }
+
+          /* Two-column form grids inside cards collapse */
+          .form-2col { grid-template-columns: 1fr !important; }
+
+          /* Modals fit phone screens */
+          .modal-card { max-width: 96vw !important; max-height: 92vh !important; }
+
+          /* Larger touch targets */
+          button, select, input[type="checkbox"] { touch-action: manipulation; }
+        }
+
+        /* Very small phones */
+        @media (max-width: 420px) {
+          .site-brand h1 { font-size: 19px !important; }
+          .tool-tab { padding: 9px 10px !important; font-size: 11px !important; }
+          .ws-topbar button { padding: 5px 8px !important; font-size: 11px !important; }
+        }
       `}</style>
 
       <a href="#main-content" className="skip-nav">Skip to main content</a>
