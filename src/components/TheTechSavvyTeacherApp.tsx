@@ -5709,6 +5709,61 @@ function TheTechSavvyTeacherAppRoot() {
           .swipe-anim-right, .swipe-anim-left { animation: none !important; }
           .swipe-hint-toast { animation: none !important; opacity: 1 !important; }
         }
+
+        /* ━━ Floating "back to top" FAB ━━ */
+        @keyframes fabPop { from { opacity:0; transform:translateY(10px) scale(0.85);} to { opacity:1; transform:translateY(0) scale(1);} }
+        .scroll-top-fab {
+          position: fixed; right: 16px; bottom: 20px;
+          width: 52px; height: 52px; border-radius: 50%;
+          background: #CF27F5; color: white; border: none;
+          box-shadow: 0 8px 24px rgba(207,39,245,0.45), 0 2px 6px rgba(0,0,0,0.18);
+          font-size: 22px; font-weight: 800; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          z-index: 9997; animation: fabPop 0.2s ease-out;
+          touch-action: manipulation;
+        }
+        .scroll-top-fab:hover { background: #B21FD6; }
+        .scroll-top-fab:active { transform: scale(0.92); }
+        @media (prefers-reduced-motion: reduce) { .scroll-top-fab { animation: none !important; } }
+
+        /* ━━ Offline banner ━━ */
+        .offline-banner {
+          position: fixed; left: 50%; top: 12px; transform: translateX(-50%);
+          background: #1F2937; color: white; font-family:'Inter',sans-serif;
+          font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 22px;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.35); z-index: 9999;
+          display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 24px);
+        }
+
+        /* ━━ Readable error & warning text on small screens ━━ */
+        @media (max-width: 768px) {
+          /* All explicit alert/status panels */
+          [role="alert"], [role="status"] {
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+          }
+          /* Inline DC2626 error text used throughout the app */
+          [style*="color:\"#DC2626\""], [style*="color: \"#DC2626\""],
+          [style*="color:\"#B91C1C\""], [style*="color: \"#B91C1C\""] {
+            font-size: 14px !important;
+          }
+          /* Validation suggestion buttons & cap notices remain tappable */
+          .scroll-top-fab { right: 14px; bottom: 16px; width: 56px; height: 56px; }
+        }
+
+        /* ━━ Bigger dropdown / option hit areas ━━ */
+        select { line-height: 1.5; padding-top: 8px; padding-bottom: 8px; }
+        select option { padding: 8px 10px; min-height: 36px; }
+        select optgroup { font-weight: 800; padding: 6px 0; }
+        @media (hover: none) and (pointer: coarse) {
+          select { padding-top: 12px !important; padding-bottom: 12px !important; padding-right: 30px !important; min-height: 44px !important; background-position: right 10px center; }
+          select option { padding: 12px 12px !important; min-height: 44px !important; font-size: 16px !important; }
+          /* Radio / checkbox option rows used as styled "buttons" */
+          [role="radio"], [role="checkbox"], [role="option"] { min-height: 44px !important; padding: 10px 12px !important; }
+          label { min-height: 36px; }
+          /* Add a touch of breathing room between adjacent option chips */
+          [role="radiogroup"], [role="group"] { row-gap: 10px; }
+        }
       `}</style>
 
       <a href="#main-content" className="skip-nav">Skip to main content</a>
