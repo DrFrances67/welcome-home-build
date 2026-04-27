@@ -5567,6 +5567,7 @@ function TheTechSavvyTeacherAppRoot() {
               document.getElementById(`tool-tab-${ids[ids.length - 1]}`)?.focus();
             }
           }}
+          className="tool-tabs-row"
           style={{ display:"flex", justifyContent:"center", gap:2, marginTop:16, background:"rgba(0,0,0,0.18)" }}>
           {TOOLS.map(t => {
             const isActive = activeTool === t.id;
