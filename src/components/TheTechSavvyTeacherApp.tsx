@@ -2895,7 +2895,7 @@ Output ONLY the JSON array.`,
       <div aria-live="polite" aria-atomic="true" className="no-print" style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>{statusMsg}</div>
 
       {/* ── TOP BAR ── */}
-      <header role="banner" className="no-print" style={{ height: 56, background: "white", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", padding: "0 16px", gap: 12, flexShrink: 0, zIndex: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <header role="banner" className="no-print ws-topbar" style={{ height: 56, background: "white", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", padding: "0 16px", gap: 12, flexShrink: 0, zIndex: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, background: gv.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }} aria-hidden="true">📄</div>
           <div style={{ lineHeight: 1.15 }}>
@@ -2942,10 +2942,10 @@ Output ONLY the JSON array.`,
       </header>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div className="ws-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
         {/* LEFT PANEL */}
-        <nav role="navigation" aria-label="Worksheet tools" className="no-print" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
 
           {/* Standards button */}
           <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
@@ -3175,7 +3175,7 @@ Output ONLY the JSON array.`,
         </main>
 
         {/* RIGHT PANEL */}
-        <aside role="complementary" aria-label="Element editor and tools" className="no-print" style={{ width: 292, background: "white", borderLeft: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+        <aside role="complementary" aria-label="Element editor and tools" className="no-print ws-sidebar-right" style={{ width: 292, background: "white", borderLeft: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ display: "flex", borderBottom: "1px solid #E5E7EB", flexShrink: 0 }}>
             {[["edit", "✏️ Edit"], ["image", "🎨 Image"], ["ai", "🤖 AI Help"]].map(([t, l]) => (
               <button key={t} onClick={() => setRightTab(t)} role="tab" aria-selected={rightTab === t} aria-controls={`panel-${t}`}
@@ -3449,7 +3449,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
   const inp = { width:"100%", padding:"9px 11px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:13, color:"#111827", outline:"none", boxSizing:"border-box", background:"white" };
 
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1080, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:28, alignItems:"start" }}>
+    <div className="two-col-grid" style={{ padding:"28px 32px", maxWidth:1080, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:28, alignItems:"start" }}>
 
       {/* LEFT: Compose */}
       <div style={card}>
@@ -4483,7 +4483,7 @@ document.addEventListener('keydown',e=>{
   const inp = { width:"100%", padding:"9px 11px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:13, color:"#111827", outline:"none", boxSizing:"border-box", background:"white" };
 
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"360px 1fr", gap:28, alignItems:"start" }}>
+    <div className="lesson-grid" style={{ padding:"28px 32px", maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"360px 1fr", gap:28, alignItems:"start" }}>
 
       {/* LEFT: Form */}
       <div style={{ background:"white", borderRadius:10, border:"1px solid #E5E7EB", overflow:"hidden" }}>
@@ -5455,6 +5455,68 @@ function TheTechSavvyTeacherAppRoot() {
         .app-shell { background:#F8F9FA; }
         .tool-tab { transition: background 0.15s, border-color 0.15s !important; }
         .tool-tab:hover { background: rgba(255,255,255,0.15) !important; }
+
+        /* ━━ Responsive layout for phones & tablets ━━ */
+        .tool-tabs-row { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        .tool-tabs-row::-webkit-scrollbar { height: 3px; }
+        .tool-tabs-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+
+        /* Tablets (iPad portrait & smaller) */
+        @media (max-width: 1024px) {
+          .two-col-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
+          .lesson-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
+          .ws-sidebar-left { width: 170px !important; }
+          .ws-sidebar-right { width: 240px !important; }
+          .ws-topbar { flex-wrap: wrap !important; height: auto !important; padding: 8px 12px !important; gap: 8px !important; }
+          .ws-topbar > * { flex-shrink: 1 !important; }
+          .powered-badge { top: 8px !important; right: 8px !important; padding: 3px 10px 3px 8px !important; font-size: 10px !important; }
+        }
+
+        /* Phones */
+        @media (max-width: 768px) {
+          .site-brand { padding: 16px 14px 0 !important; }
+          .site-brand h1 { font-size: 22px !important; }
+          .site-brand p { font-size: 9px !important; letter-spacing: 2px !important; }
+          .site-brand-emoji { font-size: 28px !important; margin-bottom: 6px !important; }
+          .powered-badge { position: static !important; margin: 8px auto 0 !important; align-self: center !important; }
+          .powered-badge-wrap { display: flex; justify-content: center; padding: 0 8px; }
+          .tool-tabs-row { justify-content: flex-start !important; padding: 0 8px; margin-top: 12px !important; }
+          .tool-tab { padding: 10px 14px !important; font-size: 12px !important; }
+          .tool-tab span { font-size: 14px !important; }
+
+          /* Worksheet builder: stack the 3-column body */
+          .ws-body { flex-direction: column !important; overflow: auto !important; }
+          .ws-sidebar-left, .ws-sidebar-right {
+            width: 100% !important;
+            max-height: 38vh;
+            border-right: none !important;
+            border-left: none !important;
+            border-bottom: 1px solid #E5E7EB !important;
+          }
+          .ws-canvas-wrap { height: auto !important; min-height: 60vh; }
+          .app-shell { height: auto !important; min-height: 100vh !important; overflow: auto !important; }
+
+          /* Worksheet topbar — compact */
+          .ws-topbar { padding: 8px !important; gap: 6px !important; }
+          .ws-topbar input { font-size: 13px !important; min-width: 120px !important; flex-basis: 100% !important; order: 99; }
+          .ws-topbar fieldset { display: none !important; }
+
+          /* Two-column form grids inside cards collapse */
+          .form-2col { grid-template-columns: 1fr !important; }
+
+          /* Modals fit phone screens */
+          .modal-card { max-width: 96vw !important; max-height: 92vh !important; }
+
+          /* Larger touch targets */
+          button, select, input[type="checkbox"] { touch-action: manipulation; }
+        }
+
+        /* Very small phones */
+        @media (max-width: 420px) {
+          .site-brand h1 { font-size: 19px !important; }
+          .tool-tab { padding: 9px 10px !important; font-size: 11px !important; }
+          .ws-topbar button { padding: 5px 8px !important; font-size: 11px !important; }
+        }
       `}</style>
 
       <a href="#main-content" className="skip-nav">Skip to main content</a>
@@ -5468,14 +5530,14 @@ function TheTechSavvyTeacherAppRoot() {
       }}>
 
         {/* Powered-by badge — top right */}
-        <div style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)", zIndex:2 }}>
+        <div className="powered-badge" style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)", zIndex:2 }}>
           <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ADE80", boxShadow:"0 0 0 2px rgba(74,222,128,0.35)" }} />
           <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600, fontFamily:"'Inter',sans-serif", letterSpacing:0.3 }}>Powered by Lovable AI</span>
         </div>
 
         {/* Centered branding */}
-        <div style={{ textAlign:"center", padding:"24px 32px 0", display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <div style={{ fontSize:38, lineHeight:1, marginBottom:10 }} aria-hidden="true">💽</div>
+        <div className="site-brand" style={{ textAlign:"center", padding:"24px 32px 0", display:"flex", flexDirection:"column", alignItems:"center" }}>
+          <div className="site-brand-emoji" style={{ fontSize:38, lineHeight:1, marginBottom:10 }} aria-hidden="true">💽</div>
           <h1 style={{ fontFamily:"'Playfair Display',serif", color:"white", fontSize:30, fontWeight:800, margin:"0 0 7px", letterSpacing:0.3, lineHeight:1.1 }}>
             The Tech Savvy Teacher
           </h1>
@@ -5505,6 +5567,7 @@ function TheTechSavvyTeacherAppRoot() {
               document.getElementById(`tool-tab-${ids[ids.length - 1]}`)?.focus();
             }
           }}
+          className="tool-tabs-row"
           style={{ display:"flex", justifyContent:"center", gap:2, marginTop:16, background:"rgba(0,0,0,0.18)" }}>
           {TOOLS.map(t => {
             const isActive = activeTool === t.id;
@@ -5543,9 +5606,10 @@ function TheTechSavvyTeacherAppRoot() {
         role="tabpanel"
         aria-labelledby={`tool-tab-${activeTool}`}
         tabIndex={-1}
+        className="app-main"
         style={{ flex:1, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none" }}>
         {activeTool === "worksheet" && (
-          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
+          <div className="ws-canvas-wrap" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
             <WorksheetBuilder />
           </div>
         )}
