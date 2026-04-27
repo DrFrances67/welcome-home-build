@@ -5817,6 +5817,28 @@ function TheTechSavvyTeacherAppRoot() {
           <span aria-hidden="true">👆</span>{swipeHint}
         </div>
       )}
+
+      {/* Offline banner — only shown when the device loses connectivity.
+          The previously visited app shell is served from the browser HTTP
+          cache, so the UI still loads on weak connections. */}
+      {isOffline && (
+        <div role="status" aria-live="polite" className="offline-banner">
+          <span aria-hidden="true">📡</span>
+          <span>You're offline — using cached app. Some AI features need a connection.</span>
+        </div>
+      )}
+
+      {/* Floating "scroll to top" — mobile worksheet view */}
+      {showScrollTop && activeTool === "worksheet" && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          aria-label="Scroll to top of worksheet"
+          className="scroll-top-fab"
+        >
+          <span aria-hidden="true">⬆</span>
+        </button>
+      )}
     </div>
   );
 }
