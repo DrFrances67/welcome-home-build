@@ -5606,9 +5606,10 @@ function TheTechSavvyTeacherAppRoot() {
         role="tabpanel"
         aria-labelledby={`tool-tab-${activeTool}`}
         tabIndex={-1}
+        className="app-main"
         style={{ flex:1, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none" }}>
         {activeTool === "worksheet" && (
-          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
+          <div className="ws-canvas-wrap" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
             <WorksheetBuilder />
           </div>
         )}
