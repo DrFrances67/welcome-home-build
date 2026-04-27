@@ -5530,14 +5530,14 @@ function TheTechSavvyTeacherAppRoot() {
       }}>
 
         {/* Powered-by badge — top right */}
-        <div style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)", zIndex:2 }}>
+        <div className="powered-badge" style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)", zIndex:2 }}>
           <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ADE80", boxShadow:"0 0 0 2px rgba(74,222,128,0.35)" }} />
           <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600, fontFamily:"'Inter',sans-serif", letterSpacing:0.3 }}>Powered by Lovable AI</span>
         </div>
 
         {/* Centered branding */}
-        <div style={{ textAlign:"center", padding:"24px 32px 0", display:"flex", flexDirection:"column", alignItems:"center" }}>
-          <div style={{ fontSize:38, lineHeight:1, marginBottom:10 }} aria-hidden="true">💽</div>
+        <div className="site-brand" style={{ textAlign:"center", padding:"24px 32px 0", display:"flex", flexDirection:"column", alignItems:"center" }}>
+          <div className="site-brand-emoji" style={{ fontSize:38, lineHeight:1, marginBottom:10 }} aria-hidden="true">💽</div>
           <h1 style={{ fontFamily:"'Playfair Display',serif", color:"white", fontSize:30, fontWeight:800, margin:"0 0 7px", letterSpacing:0.3, lineHeight:1.1 }}>
             The Tech Savvy Teacher
           </h1>
