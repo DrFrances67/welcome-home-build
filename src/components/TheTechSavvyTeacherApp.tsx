@@ -3175,7 +3175,7 @@ Output ONLY the JSON array.`,
         </main>
 
         {/* RIGHT PANEL */}
-        <aside role="complementary" aria-label="Element editor and tools" className="no-print" style={{ width: 292, background: "white", borderLeft: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+        <aside role="complementary" aria-label="Element editor and tools" className="no-print ws-sidebar-right" style={{ width: 292, background: "white", borderLeft: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ display: "flex", borderBottom: "1px solid #E5E7EB", flexShrink: 0 }}>
             {[["edit", "✏️ Edit"], ["image", "🎨 Image"], ["ai", "🤖 AI Help"]].map(([t, l]) => (
               <button key={t} onClick={() => setRightTab(t)} role="tab" aria-selected={rightTab === t} aria-controls={`panel-${t}`}
