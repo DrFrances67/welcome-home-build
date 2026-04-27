@@ -4483,7 +4483,7 @@ document.addEventListener('keydown',e=>{
   const inp = { width:"100%", padding:"9px 11px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:13, color:"#111827", outline:"none", boxSizing:"border-box", background:"white" };
 
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"360px 1fr", gap:28, alignItems:"start" }}>
+    <div className="lesson-grid" style={{ padding:"28px 32px", maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"360px 1fr", gap:28, alignItems:"start" }}>
 
       {/* LEFT: Form */}
       <div style={{ background:"white", borderRadius:10, border:"1px solid #E5E7EB", overflow:"hidden" }}>
