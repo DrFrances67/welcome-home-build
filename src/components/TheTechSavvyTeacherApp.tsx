@@ -5436,6 +5436,62 @@ function TheTechSavvyTeacherAppRoot() {
   const [swipeHint, setSwipeHint] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const touchStart = useRef<{ x: number; y: number; t: number; valid: boolean } | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Track scroll within the worksheet canvas (and the page itself when stacked
+  // on mobile) to show a floating "back to top" button after meaningful scroll.
+  useEffect(() => {
+    const isCoarse = typeof window !== "undefined" &&
+      window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (!isCoarse) { setShowScrollTop(false); return; }
+    if (activeTool !== "worksheet") { setShowScrollTop(false); return; }
+
+    const THRESHOLD = 280;
+    const getTargets = () => {
+      const arr: (HTMLElement | Window)[] = [window];
+      const canvas = document.getElementById("worksheet-canvas");
+      if (canvas) arr.push(canvas);
+      return arr;
+    };
+    const onScroll = () => {
+      const canvas = document.getElementById("worksheet-canvas");
+      const canvasY = canvas ? canvas.scrollTop : 0;
+      const winY = window.scrollY || document.documentElement.scrollTop || 0;
+      setShowScrollTop(Math.max(canvasY, winY) > THRESHOLD);
+    };
+    // Slight delay so the canvas exists after render
+    const timer = window.setTimeout(() => {
+      const targets = getTargets();
+      targets.forEach(t => t.addEventListener("scroll", onScroll, { passive: true }));
+      onScroll();
+      // store cleanup
+      (onScroll as any)._cleanup = () => targets.forEach(t => t.removeEventListener("scroll", onScroll));
+    }, 60);
+    return () => {
+      window.clearTimeout(timer);
+      (onScroll as any)._cleanup?.();
+    };
+  }, [activeTool]);
+
+  const scrollToTop = () => {
+    const canvas = document.getElementById("worksheet-canvas");
+    if (canvas && canvas.scrollTop > 0) canvas.scrollTo({ top: 0, behavior: "smooth" });
+    if ((window.scrollY || 0) > 0) window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Online/offline awareness
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const update = () => setIsOffline(!navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
 
   // Change tools by swipe direction. dir="left" means user swiped left → next tool.
   const changeToolByDir = (dir: "left" | "right") => {
