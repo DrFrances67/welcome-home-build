@@ -5444,41 +5444,42 @@ function TheTechSavvyTeacherAppRoot() {
   useEffect(() => {
     const isCoarse = typeof window !== "undefined" &&
       window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    if (!isCoarse) { setShowScrollTop(false); return; }
-    if (activeTool !== "worksheet") { setShowScrollTop(false); return; }
 
-    const THRESHOLD = 280;
-    const getTargets = () => {
-      const arr: (HTMLElement | Window)[] = [window];
-      const canvas = document.getElementById("worksheet-canvas");
-      if (canvas) arr.push(canvas);
-      return arr;
-    };
-    const onScroll = () => {
+    const compute = () => {
       const canvas = document.getElementById("worksheet-canvas");
       const canvasY = canvas ? canvas.scrollTop : 0;
       const winY = window.scrollY || document.documentElement.scrollTop || 0;
-      setShowScrollTop(Math.max(canvasY, winY) > THRESHOLD);
+      setShowScrollTop(
+        shouldShowScrollTop({
+          activeTool,
+          isCoarsePointer: !!isCoarse,
+          canvasScrollTop: canvasY,
+          windowScrollTop: winY,
+        })
+      );
     };
-    // Slight delay so the canvas exists after render
+
+    if (!isCoarse || activeTool !== "worksheet") {
+      setShowScrollTop(false);
+      return;
+    }
+
+    let cleanup: (() => void) | null = null;
     const timer = window.setTimeout(() => {
-      const targets = getTargets();
-      targets.forEach(t => t.addEventListener("scroll", onScroll, { passive: true }));
-      onScroll();
-      // store cleanup
-      (onScroll as any)._cleanup = () => targets.forEach(t => t.removeEventListener("scroll", onScroll));
+      const targets: (HTMLElement | Window)[] = [window];
+      const canvas = document.getElementById("worksheet-canvas");
+      if (canvas) targets.push(canvas);
+      targets.forEach(t => t.addEventListener("scroll", compute, { passive: true }));
+      compute();
+      cleanup = () => targets.forEach(t => t.removeEventListener("scroll", compute));
     }, 60);
     return () => {
       window.clearTimeout(timer);
-      (onScroll as any)._cleanup?.();
+      cleanup?.();
     };
   }, [activeTool]);
 
-  const scrollToTop = () => {
-    const canvas = document.getElementById("worksheet-canvas");
-    if (canvas && canvas.scrollTop > 0) canvas.scrollTo({ top: 0, behavior: "smooth" });
-    if ((window.scrollY || 0) > 0) window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const scrollToTop = () => scrollEverythingToTop();
 
   // Online/offline awareness
   useEffect(() => {
