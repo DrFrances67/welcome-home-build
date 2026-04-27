@@ -5432,6 +5432,92 @@ const SITE_DARK  = "#8B0AB0";
 
 function TheTechSavvyTeacherAppRoot() {
   const [activeTool, setActiveTool] = useState("lesson");
+  const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
+  const [swipeHint, setSwipeHint] = useState<string | null>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const touchStart = useRef<{ x: number; y: number; t: number; valid: boolean } | null>(null);
+
+  // Change tools by swipe direction. dir="left" means user swiped left → next tool.
+  const changeToolByDir = (dir: "left" | "right") => {
+    const ids = TOOLS.map(t => t.id);
+    const idx = ids.indexOf(activeTool);
+    if (idx === -1) return;
+    const nextIdx = dir === "left" ? idx + 1 : idx - 1;
+    if (nextIdx < 0 || nextIdx >= ids.length) {
+      // Edge — show a brief hint and bail
+      setSwipeHint(dir === "left" ? "You're on the last tool" : "You're on the first tool");
+      window.setTimeout(() => setSwipeHint(null), 1600);
+      return;
+    }
+    const nextId = ids[nextIdx];
+    const label = TOOLS.find(t => t.id === nextId)?.label || nextId;
+    setSwipeDir(dir === "left" ? "right" : "left"); // incoming-from direction
+    setActiveTool(nextId);
+    setSwipeHint(`→ ${label}`);
+    window.setTimeout(() => setSwipeHint(null), 1400);
+  };
+
+  // Swipe gesture detection on the main content area.
+  // Only active on coarse-pointer devices and ignores swipes starting on
+  // form fields, the worksheet canvas (which has its own pan/zoom), or
+  // controls that need horizontal interaction.
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const isCoarse = typeof window !== "undefined" &&
+      window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (!isCoarse) return;
+
+    const SHOULD_IGNORE = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return false;
+      // Ignore swipes that start inside form controls or the worksheet canvas
+      // (the canvas needs its own pan/scroll). Also ignore inside any element
+      // marked with data-no-swipe.
+      return !!target.closest(
+        'input,textarea,select,button,[role="slider"],[role="tab"],[contenteditable="true"],' +
+        '#worksheet-canvas,.canvas-area,.ws-sidebar-left,.ws-sidebar-right,[data-no-swipe]'
+      );
+    };
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) { touchStart.current = null; return; }
+      const t = e.touches[0];
+      touchStart.current = {
+        x: t.clientX, y: t.clientY, t: Date.now(),
+        valid: !SHOULD_IGNORE(e.target),
+      };
+    };
+    const onEnd = (e: TouchEvent) => {
+      const start = touchStart.current;
+      touchStart.current = null;
+      if (!start || !start.valid) return;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      const dt = Date.now() - start.t;
+      const absX = Math.abs(dx), absY = Math.abs(dy);
+      // Require: mostly horizontal, decent distance, reasonable speed
+      if (absX < 60) return;
+      if (absX < absY * 1.6) return; // too vertical → likely a scroll
+      if (dt > 700) return;
+      changeToolByDir(dx < 0 ? "left" : "right");
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchend", onEnd);
+    };
+  }, [activeTool]);
+
+  // Clear the slide animation class once it has played
+  useEffect(() => {
+    if (!swipeDir) return;
+    const id = window.setTimeout(() => setSwipeDir(null), 260);
+    return () => window.clearTimeout(id);
+  }, [swipeDir, activeTool]);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", minHeight:"100vh", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
