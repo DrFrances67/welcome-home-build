@@ -5442,7 +5442,9 @@ function TheTechSavvyTeacherAppRoot() {
         @keyframes spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-9px)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        :focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 2px !important; border-radius: 4px; }
+        :focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 2px !important; border-radius: 4px; box-shadow: 0 0 0 5px rgba(207,39,245,0.18) !important; }
+        button:focus-visible, [role="button"]:focus-visible, [role="tab"]:focus-visible, [role="radio"]:focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 3px !important; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 1px !important; border-color: #CF27F5 !important; }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; } }
         @media print { .site-header { display:none !important; } }
         .skip-nav { position:absolute; top:-100px; left:8px; z-index:9999; background:#CF27F5; color:white; padding:8px 16px; border-radius:6px; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; text-decoration:none; transition:top 0.2s; }
@@ -5516,6 +5518,36 @@ function TheTechSavvyTeacherAppRoot() {
           .site-brand h1 { font-size: 19px !important; }
           .tool-tab { padding: 9px 10px !important; font-size: 11px !important; }
           .ws-topbar button { padding: 5px 8px !important; font-size: 11px !important; }
+        }
+
+        /* ━━ Touch-device UX: bigger tap targets, swipe spacing ━━ */
+        /* Applied to coarse pointers (touch screens) regardless of width
+           so iPads in landscape also benefit. Desktop stays compact. */
+        @media (hover: none) and (pointer: coarse) {
+          /* Prevent iOS auto-zoom on focus by ensuring inputs are >= 16px */
+          input, select, textarea { font-size: 16px !important; }
+
+          /* Generous minimum tap target (Apple HIG: 44px, Material: 48px) */
+          button, [role="button"], [role="tab"], [role="radio"], [role="checkbox"], select, a.skip-nav, .tool-tab, label > input[type="checkbox"] + *, summary {
+            min-height: 44px;
+          }
+          button, [role="button"], .tool-tab { min-width: 44px; padding-top: 10px; padding-bottom: 10px; }
+
+          /* Larger checkboxes & radios */
+          input[type="checkbox"], input[type="radio"] { width: 20px !important; height: 20px !important; }
+
+          /* Swipe-friendly spacing between adjacent controls */
+          .tool-tabs-row { gap: 6px !important; padding: 4px 8px !important; }
+          .ws-topbar { gap: 10px !important; }
+
+          /* Removes the 300ms tap delay & sticky hover */
+          a, button, [role="button"], select, input, textarea, .tool-tab { touch-action: manipulation; -webkit-tap-highlight-color: rgba(207,39,245,0.18); }
+
+          /* Smoother momentum scrolling for any scrollable region */
+          .tool-tabs-row, .ws-body, .canvas-area, .app-shell, main { -webkit-overflow-scrolling: touch; }
+
+          /* Stronger focus ring on touch devices */
+          :focus-visible { outline-width: 4px !important; outline-offset: 3px !important; }
         }
       `}</style>
 
