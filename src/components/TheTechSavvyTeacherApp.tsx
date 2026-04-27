@@ -2942,10 +2942,10 @@ Output ONLY the JSON array.`,
       </header>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div className="ws-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
         {/* LEFT PANEL */}
-        <nav role="navigation" aria-label="Worksheet tools" className="no-print" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
 
           {/* Standards button */}
           <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
