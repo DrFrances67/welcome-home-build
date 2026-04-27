@@ -2895,7 +2895,7 @@ Output ONLY the JSON array.`,
       <div aria-live="polite" aria-atomic="true" className="no-print" style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>{statusMsg}</div>
 
       {/* ── TOP BAR ── */}
-      <header role="banner" className="no-print" style={{ height: 56, background: "white", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", padding: "0 16px", gap: 12, flexShrink: 0, zIndex: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <header role="banner" className="no-print ws-topbar" style={{ height: 56, background: "white", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", padding: "0 16px", gap: 12, flexShrink: 0, zIndex: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, background: gv.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }} aria-hidden="true">📄</div>
           <div style={{ lineHeight: 1.15 }}>
