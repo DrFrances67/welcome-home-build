@@ -5549,6 +5549,24 @@ function TheTechSavvyTeacherAppRoot() {
           /* Stronger focus ring on touch devices */
           :focus-visible { outline-width: 4px !important; outline-offset: 3px !important; }
         }
+
+        /* ━━ Swipe-tab transitions & hint toast ━━ */
+        @keyframes slideInFromRight { from { opacity:0; transform:translateX(28px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes slideInFromLeft  { from { opacity:0; transform:translateX(-28px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes swipeHintFade { 0%{opacity:0;transform:translate(-50%,12px)} 12%{opacity:1;transform:translate(-50%,0)} 80%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0;transform:translate(-50%,-6px)} }
+        .swipe-anim-right { animation: slideInFromRight 0.22s ease-out; }
+        .swipe-anim-left  { animation: slideInFromLeft  0.22s ease-out; }
+        .swipe-hint-toast {
+          position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+          background: rgba(17,17,30,0.92); color: white; font-family:'Inter',sans-serif;
+          font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 22px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.35); z-index: 9998; pointer-events: none;
+          animation: swipeHintFade 1.6s ease-out forwards; display:flex; align-items:center; gap:8px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .swipe-anim-right, .swipe-anim-left { animation: none !important; }
+          .swipe-hint-toast { animation: none !important; opacity: 1 !important; }
+        }
       `}</style>
 
       <a href="#main-content" className="skip-nav">Skip to main content</a>
