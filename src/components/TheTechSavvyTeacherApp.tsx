@@ -5631,16 +5631,22 @@ function TheTechSavvyTeacherAppRoot() {
           .tool-tab span { font-size: 14px !important; }
 
           /* Worksheet builder: stack the 3-column body */
-          .ws-body { flex-direction: column !important; overflow: auto !important; }
+          .ws-body { flex-direction: column !important; overflow: visible !important; height: auto !important; }
           .ws-sidebar-left, .ws-sidebar-right {
             width: 100% !important;
-            max-height: 38vh;
+            max-height: none !important;
+            height: auto !important;
+            overflow: visible !important;
             border-right: none !important;
             border-left: none !important;
             border-bottom: 1px solid #E5E7EB !important;
+            flex-shrink: 0 !important;
           }
-          .ws-canvas-wrap { height: auto !important; min-height: 60vh; }
-          .app-shell { height: auto !important; min-height: 100vh !important; overflow: auto !important; }
+          /* Make any inner scroll containers in the sidebars expand naturally */
+          .ws-sidebar-left > *, .ws-sidebar-right > * { overflow: visible !important; }
+          .ws-canvas-wrap { height: auto !important; min-height: 60vh; overflow: visible !important; }
+          .app-shell { height: auto !important; min-height: 100vh !important; overflow: visible !important; }
+          html, body { overflow-x: hidden; overflow-y: auto; }
 
           /* Worksheet topbar — compact */
           .ws-topbar { padding: 8px !important; gap: 6px !important; }
