@@ -5442,7 +5442,9 @@ function TheTechSavvyTeacherAppRoot() {
         @keyframes spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-9px)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        :focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 2px !important; border-radius: 4px; }
+        :focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 2px !important; border-radius: 4px; box-shadow: 0 0 0 5px rgba(207,39,245,0.18) !important; }
+        button:focus-visible, [role="button"]:focus-visible, [role="tab"]:focus-visible, [role="radio"]:focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 3px !important; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #CF27F5 !important; outline-offset: 1px !important; border-color: #CF27F5 !important; }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; } }
         @media print { .site-header { display:none !important; } }
         .skip-nav { position:absolute; top:-100px; left:8px; z-index:9999; background:#CF27F5; color:white; padding:8px 16px; border-radius:6px; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; text-decoration:none; transition:top 0.2s; }
