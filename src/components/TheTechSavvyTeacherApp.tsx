@@ -1288,9 +1288,156 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       {(el.type === "successCriteria" || el.type === "exitTicket") && (
         <ChecklistEditor el={el} onChange={onChange} gv={gv} inp={inp} />
       )}
+
+      {el.type === "dokQuestions" && (
+        <DokEditor el={el} onChange={onChange} gv={gv} inp={inp} />
+      )}
     </div>
   );
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DOK QUESTIONS EDITOR
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const DOK_LEVEL_DEFS = [
+  { level: 1, label: "Recall & Reproduction", desc: "identify, name, point to, tell" },
+  { level: 2, label: "Skills & Concepts",     desc: "describe, show, sort, match" },
+  { level: 3, label: "Strategic Thinking",    desc: "explain, why, predict, support with evidence" },
+  { level: 4, label: "Extended Thinking",     desc: "create, design, compare, act out, tell your own story" },
+];
+
+function DokEditor({ el, onChange, gv, inp }) {
+  const mode = el.mode || "manual";
+  const [topic, setTopic] = useState(el.topic || "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const generate = async () => {
+    if (!topic.trim() || busy) return;
+    setBusy(true); setErr("");
+    const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty. Generate 2–3 student-facing questions for EACH of the 4 DOK levels:
+- Level 1 (Recall & Reproduction): recall facts, terms, simple routine procedures (identify, name, point to, tell).
+- Level 2 (Skills & Concepts): apply skills/concepts in specific contexts (describe, show, sort, match, basic inferences).
+- Level 3 (Strategic Thinking): reasoning, planning, using evidence to support conclusions in non-routine problems (explain, why, predict, justify).
+- Level 4 (Extended Thinking): complex reasoning, integrating multiple sources, sustained effort, project-based / creative (create, design, compare, act out, tell your own story).
+Calibrate vocabulary and complexity to ${gv.name} (${BANDS[gv.band]?.label}). Use student-friendly language.
+Return ONLY a JSON array of exactly 4 objects, in level order, with this shape:
+[{"level":1,"label":"Recall & Reproduction","items":["...","..."]},{"level":2,"label":"Skills & Concepts","items":["...","..."]},{"level":3,"label":"Strategic Thinking","items":["...","..."]},{"level":4,"label":"Extended Thinking","items":["...","..."]}]
+No markdown, no preamble, no commentary.`;
+    try {
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 1200,
+          system: sys,
+          messages: [{ role: "user", content: `Topic / standard / text: ${topic}` }],
+        }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const raw = d.content?.map(b => b.text || "").join("") || "[]";
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const s = clean.indexOf("["); const e = clean.lastIndexOf("]");
+      const slice = s >= 0 && e > s ? clean.slice(s, e + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("AI did not return DOK levels");
+      // Normalize: ensure 4 levels in order with required fields
+      const normalized = DOK_LEVEL_DEFS.map(def => {
+        const found = parsed.find(p => Number(p.level) === def.level) || {};
+        const items = Array.isArray(found.items) ? found.items.map(x => String(x).trim()).filter(Boolean) : [];
+        return { level: def.level, label: def.label, items: items.length ? items : ["(add a question)"] };
+      });
+      onChange({ levels: normalized, mode: "ai", topic });
+    } catch (e) {
+      setErr(e?.message || "Could not generate. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateLevelItems = (li, text) => {
+    const next = (el.levels || []).map((lv, i) =>
+      i === li ? { ...lv, items: text.split("\n").map(s => s.trimStart()).filter(s => s.trim().length) } : lv
+    );
+    onChange({ levels: next });
+  };
+
+  const LBL = { display: "block", fontSize: 11, fontWeight: 700, color: "#374151", marginTop: 10, fontFamily: F };
+  const LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <label style={LBL}>Title</label>
+      <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
+
+      <label style={LBL}>Intro / Directions</label>
+      <input type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
+
+      <label style={LBL}>How to fill this in</label>
+      <select
+        value={mode}
+        onChange={e => onChange({ mode: e.target.value })}
+        style={{ ...inp, marginTop: 4, minHeight: 40 }}
+        aria-label="Generation mode"
+      >
+        <option value="manual">✍️ Build your own</option>
+        <option value="ai">✨ AI generation</option>
+      </select>
+
+      {mode === "ai" && (
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FAFAFA", border: "1px solid #E5E7EB" }}>
+          <label style={{ ...LBL, marginTop: 0 }}>Topic, standard, or text excerpt</label>
+          <textarea
+            value={topic}
+            spellCheck
+            onChange={e => setTopic(e.target.value)}
+            placeholder="e.g. Identify the main character in a short story about friendship"
+            style={{ ...inp, minHeight: 70, marginTop: 4 }}
+            aria-label="AI prompt"
+          />
+          <button
+            type="button"
+            onClick={generate}
+            disabled={busy || !topic.trim()}
+            style={{ marginTop: 8, width: "100%", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${gv.color}`, background: busy ? "#F3F4F6" : gv.color, color: busy ? "#6B7280" : "white", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: busy ? "wait" : "pointer", minHeight: 44 }}
+          >
+            {busy ? "Generating…" : "✨ Generate DOK Questions"}
+          </button>
+          {err && <p role="alert" style={{ fontSize: 14, color: "#B91C1C", margin: "8px 0 0", fontFamily: F, lineHeight: 1.5 }}>{err}</p>}
+        </div>
+      )}
+
+      <p style={{ fontSize: 11, color: "#6B7280", margin: "12px 0 0", fontFamily: F, lineHeight: 1.5 }}>
+        Edit the questions for each DOK level — one per line. Each item appears on the worksheet with a check-off box.
+      </p>
+
+      {DOK_LEVEL_DEFS.map((def, li) => {
+        const lv = (el.levels || [])[li] || { level: def.level, label: def.label, items: [] };
+        const c = LEVEL_COLORS[li];
+        return (
+          <div key={def.level} style={{ marginTop: 10, padding: 10, borderRadius: 8, background: c + "10", border: `1.5px solid ${c}55` }}>
+            <p style={{ fontSize: 12, fontWeight: 800, color: c, margin: 0, fontFamily: F }}>
+              DOK {def.level} · {def.label}
+            </p>
+            <p style={{ fontSize: 10, color: "#6B7280", margin: "2px 0 6px", fontFamily: F, fontStyle: "italic" }}>
+              {def.desc}
+            </p>
+            <textarea
+              value={(lv.items || []).join("\n")}
+              spellCheck
+              onChange={e => updateLevelItems(li, e.target.value)}
+              style={{ ...inp, minHeight: 80, marginTop: 4 }}
+              placeholder="One question per line"
+              aria-label={`DOK Level ${def.level} questions`}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CHECKLIST EDITOR (Success Criteria & Exit Ticket)
