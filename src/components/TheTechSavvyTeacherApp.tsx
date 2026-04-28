@@ -2243,6 +2243,11 @@ function VersionsModal({ gv, ws, onClose }) {
       if (el.type === "wordBank") return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs-4,13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title||"Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words||[]).map(w=>`<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${w}</span>`).join("")}</div></div>`;
       if (el.type === "essay") return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${el.prompt||""}</p>${Array.from({length:el.lines||14}).map(()=>`<div style="height:${gv2.lineH*0.75}px;border-bottom:1.5px solid #DDD;margin-bottom:4px"></div>`).join("")}</div>`;
       if (el.type === "divider") return `<div style="margin:8px 0;text-align:center;color:${gv2.color};font-size:16px">✦</div>`;
+      if (el.type === "successCriteria" || el.type === "exitTicket") {
+        const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
+        const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title?`<p style="font-size:${Math.max(fs-2,13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>`:""}${el.intro?`<p style="font-size:${Math.max(fs-4,11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${el.intro}</p>`:""}<ul style="list-style:none;padding:0;margin:0">${(el.items||[]).map(item=>`<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${item}</span></li>`).join("")}</ul></div>`;
+      }
       return "";
     };
 
