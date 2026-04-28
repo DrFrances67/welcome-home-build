@@ -1452,18 +1452,46 @@ No markdown, no preamble, no commentary.`;
           />
           <button
             type="button"
-            onClick={generate}
+            onClick={() => generate()}
             disabled={busy || !topic.trim()}
             style={{ marginTop: 8, width: "100%", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${gv.color}`, background: busy ? "#F3F4F6" : gv.color, color: busy ? "#6B7280" : "white", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: busy ? "wait" : "pointer", minHeight: 44 }}
           >
             {busy ? "Generating…" : "✨ Generate DOK Questions"}
           </button>
           {err && <p role="alert" style={{ fontSize: 14, color: "#B91C1C", margin: "8px 0 0", fontFamily: F, lineHeight: 1.5 }}>{err}</p>}
+          {aiNotice && !err && (
+            <p role="status" style={{ fontSize: 12, color: missingLevels.length ? "#B45309" : "#047857", margin: "8px 0 0", fontFamily: F, lineHeight: 1.5, fontWeight: 700 }}>
+              {aiNotice}
+            </p>
+          )}
+          {missingLevels.length > 0 && (
+            <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FEF3C7", border: "1.5px solid #F59E0B" }}>
+              <label style={{ ...LBL, marginTop: 0, color: "#92400E" }}>
+                Follow-up: tell the AI more about DOK {missingLevels.join(", ")}
+              </label>
+              <textarea
+                value={clarification}
+                spellCheck
+                onChange={e => setClarification(e.target.value)}
+                placeholder="e.g. Focus on a specific text, add a real-world scenario, or describe what students should create."
+                style={{ ...inp, minHeight: 60, marginTop: 4 }}
+                aria-label="Clarification prompt for missing DOK levels"
+              />
+              <button
+                type="button"
+                onClick={() => generate(clarification, missingLevels)}
+                disabled={busy || !clarification.trim()}
+                style={{ marginTop: 8, width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #B45309", background: busy ? "#F3F4F6" : "#B45309", color: busy ? "#6B7280" : "white", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: busy ? "wait" : "pointer", minHeight: 44 }}
+              >
+                {busy ? "Retrying…" : `↻ Fill in DOK ${missingLevels.join(", ")}`}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       <p style={{ fontSize: 11, color: "#6B7280", margin: "12px 0 0", fontFamily: F, lineHeight: 1.5 }}>
-        Edit the questions for each DOK level — one per line. Each item appears on the worksheet with a check-off box.
+        ✏️ All questions below are editable — tweak the AI's wording, add your own, or remove ones you don't need. One question per line.
       </p>
 
       {DOK_LEVEL_DEFS.map((def, li) => {
