@@ -6294,6 +6294,9 @@ function TheTechSavvyTeacherAppRoot() {
           <span aria-hidden="true">⬆</span>
         </button>
       )}
+
+      {/* Keyboard shortcuts help overlay */}
+      <ShortcutsHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} shortcuts={shortcuts} />
     </div>
   );
 }
