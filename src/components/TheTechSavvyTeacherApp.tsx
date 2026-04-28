@@ -989,6 +989,39 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     );
   }
 
+  if (el.type === "dokQuestions") {
+    const LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `6px solid ${gv.color}`, borderRadius: 10, padding: "12px 16px" }}>
+          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: gv.color, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
+          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {(el.levels || []).map((lv, li) => {
+              const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
+              return (
+                <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderRadius: 8, padding: "8px 10px" }}>
+                  <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 800, color: c, margin: "0 0 6px 0", fontFamily: FF }}>
+                    DOK {lv.level} · {lv.label}
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                    {(lv.items || []).map((q, qi) => (
+                      <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <span aria-hidden="true" style={{ flexShrink: 0, width: 16, height: 16, marginTop: 2, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
+                        <span style={{ fontSize: Math.max(fs - 1, 12), fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45 }}>{q}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
+
   if (el.type === "table") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
