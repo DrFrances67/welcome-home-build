@@ -2407,6 +2407,12 @@ function ExportModal({ gv, ws, onClose }) {
         (el.left||[]).forEach((item, j) => lines.push(`${item}  ──  ${(el.right||[])[j]||"______"}`));
         lines.push("");
       }
+      else if (el.type === "successCriteria" || el.type === "exitTicket") {
+        if (el.title) lines.push(el.title);
+        if (el.intro) lines.push(el.intro);
+        (el.items||[]).forEach(item => lines.push(`[ ] ${item}`));
+        lines.push("");
+      }
       else if (el.type === "divider") { lines.push("─".repeat(40)); lines.push(""); }
     };
     for (let p = 0; p < totalPages; p++) {
