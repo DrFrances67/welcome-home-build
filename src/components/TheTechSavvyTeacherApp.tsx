@@ -1956,6 +1956,8 @@ Allowed element shapes (use exactly these keys):
 {"type":"essay","prompt":"<prompt>","points":10,"lines":14}
 {"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
 {"type":"image","imagePrompt":"<short visual description for an AI image generator, e.g. 'a friendly cartoon brown dog sitting'>","caption":"<optional short caption>","size":"small","align":"center"}
+{"type":"successCriteria","title":"🎯 Success Criteria","intro":"I can…","items":["I can …","I can …","I can …"]}
+{"type":"exitTicket","title":"🎟️ Exit Ticket","intro":"Check off everything you completed today:","items":["…","…","…"]}
 
 CRITICAL: Whenever the worksheet would benefit from a picture (e.g. matching pictures to words, label-the-picture, picture-prompt writing, vocabulary with visuals), include {"type":"image", ...} blocks with a clear "imagePrompt". NEVER output text like "(picture of a cat)" or "[image: dog]" — emit a real image block instead so we can generate the picture.
 
