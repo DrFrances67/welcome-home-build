@@ -2,6 +2,8 @@
 /* eslint-disable */
 import { useState, useRef, useEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
+import { repairAndParse } from "@/lib/repairJson";
+import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DATA
@@ -1337,31 +1339,11 @@ No markdown, no preamble, no commentary.`;
       const d = await r.json();
       if (d.error) throw new Error(d.error.message || "AI error");
       const raw = d.content?.map(b => b.text || "").join("") || "[]";
-      const clean = raw.replace(/```json|```/g, "").trim();
-      const s = clean.indexOf("["); const e = clean.lastIndexOf("]");
-      let slice = s >= 0 && e > s ? clean.slice(s, e + 1) : clean;
-      // Remove control chars that break JSON.parse
-      slice = slice.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
       let parsed;
       try {
-        parsed = JSON.parse(slice);
-      } catch {
-        // Repair common issues: trailing commas, then attempt to close
-        // truncated arrays/strings/objects.
-        let repaired = slice.replace(/,\s*([\]}])/g, "$1");
-        try {
-          parsed = JSON.parse(repaired);
-        } catch {
-          // Truncated mid-string/object: walk back to last complete object,
-          // then close the array.
-          let r = repaired;
-          // Find last "}," or "}" inside the array and cut there
-          const lastObjEnd = Math.max(r.lastIndexOf("},"), r.lastIndexOf("}"));
-          if (lastObjEnd > 0) {
-            r = r.slice(0, lastObjEnd + 1).replace(/,\s*$/, "") + "]";
-          }
-          parsed = JSON.parse(r);
-        }
+        parsed = repairAndParse(raw, { container: "array" });
+      } catch (parseErr) {
+        throw new Error(`AI returned malformed JSON: ${(parseErr as Error).message}`);
       }
       if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("AI did not return DOK levels");
       // Normalize: ensure 4 levels in order with required fields
@@ -5811,6 +5793,7 @@ function TheTechSavvyTeacherAppRoot() {
   const touchStart = useRef<{ x: number; y: number; t: number; valid: boolean } | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Track scroll within the worksheet canvas (and the page itself when stacked
   // on mobile) to show a floating "back to top" button after meaningful scroll.
@@ -5853,6 +5836,26 @@ function TheTechSavvyTeacherAppRoot() {
   }, [activeTool]);
 
   const scrollToTop = () => scrollEverythingToTop();
+
+  // ━━ Global keyboard shortcuts ━━
+  const shortcuts = [
+    { key: "?", mods: ["shift"] as const, description: "Show keyboard shortcuts", group: "General",
+      run: () => setHelpOpen(o => !o) },
+    { key: "1", description: "Switch to Lesson Plan Generator", group: "Navigation",
+      run: () => setActiveTool("lesson") },
+    { key: "2", description: "Switch to Danielson Review", group: "Navigation",
+      run: () => setActiveTool("danielson") },
+    { key: "3", description: "Switch to Worksheet Builder", group: "Navigation",
+      run: () => setActiveTool("worksheet") },
+    { key: "4", description: "Switch to Professional Communication", group: "Navigation",
+      run: () => setActiveTool("email") },
+    { key: "g", description: "Go to top of page", group: "Navigation",
+      run: () => scrollEverythingToTop() },
+    { key: "Escape", description: "Close dialogs / cancel", group: "General", allowInInput: true,
+      run: () => setHelpOpen(false) },
+  ].map(s => ({ ...s, mods: s.mods ? [...s.mods] : undefined })) as Parameters<typeof useGlobalShortcuts>[0];
+
+  useGlobalShortcuts(shortcuts);
 
   // Online/offline awareness
   useEffect(() => {
@@ -6156,10 +6159,27 @@ function TheTechSavvyTeacherAppRoot() {
         position: "relative",
       }}>
 
-        {/* Powered-by badge — top right */}
-        <div className="powered-badge" style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)", zIndex:2 }}>
-          <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ADE80", boxShadow:"0 0 0 2px rgba(74,222,128,0.35)" }} />
-          <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600, fontFamily:"'Inter',sans-serif", letterSpacing:0.3 }}>Powered by Lovable AI</span>
+        {/* Powered-by badge + keyboard help — top right */}
+        <div style={{ position:"absolute", top:14, right:20, display:"flex", alignItems:"center", gap:8, zIndex:2 }}>
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            aria-label="Show keyboard shortcuts (press ? )"
+            title="Keyboard shortcuts (?)"
+            style={{
+              background:"rgba(255,255,255,0.14)", color:"white",
+              border:"1px solid rgba(255,255,255,0.25)", borderRadius:20,
+              padding:"5px 12px", fontSize:12, fontWeight:700, cursor:"pointer",
+              fontFamily:"'Inter',sans-serif", display:"flex", alignItems:"center", gap:6,
+            }}
+          >
+            <kbd style={{ background:"rgba(0,0,0,0.25)", borderRadius:4, padding:"1px 6px", fontSize:11 }}>?</kbd>
+            Shortcuts
+          </button>
+          <div className="powered-badge" style={{ display:"flex", alignItems:"center", gap:7, background:"rgba(255,255,255,0.14)", borderRadius:20, padding:"5px 14px 5px 10px", backdropFilter:"blur(6px)" }}>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ADE80", boxShadow:"0 0 0 2px rgba(74,222,128,0.35)" }} />
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600, fontFamily:"'Inter',sans-serif", letterSpacing:0.3 }}>Powered by Lovable AI</span>
+          </div>
         </div>
 
         {/* Centered branding */}
@@ -6274,6 +6294,9 @@ function TheTechSavvyTeacherAppRoot() {
           <span aria-hidden="true">⬆</span>
         </button>
       )}
+
+      {/* Keyboard shortcuts help overlay */}
+      <ShortcutsHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} shortcuts={shortcuts} />
     </div>
   );
 }
