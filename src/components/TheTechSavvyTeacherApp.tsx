@@ -487,6 +487,8 @@ const PALETTE = [
   { type:"essay",          label:"Essay Prompt",     emoji:"📜" },
   { type:"table",          label:"Table / Chart",    emoji:"📊" },
   { type:"customShape",    label:"Custom Shapes",    emoji:"🔷" },
+  { type:"successCriteria",label:"Success Criteria", emoji:"🎯" },
+  { type:"exitTicket",     label:"Exit Ticket",      emoji:"🎟️" },
   { type:"divider",        label:"Section Break",    emoji:"〰️" },
 ];
 
