@@ -63,7 +63,7 @@ describe("worksheet builder responsive sidebar", () => {
 
     expect(sidebar.style.overflowY).toBe("auto");
     expect(sidebar.style.maxHeight).toBe("100%");
-    expect(sidebar.style.minHeight).toBe("0px");
+    expect(sidebar.style.minHeight).toBe("0");
     expect(sidebar.style.overscrollBehavior).toBe("contain");
 
     Object.defineProperty(sidebar, "clientHeight", { value: 360, configurable: true });
@@ -84,7 +84,7 @@ describe("worksheet builder responsive sidebar", () => {
     expect(within(sidebar).getByLabelText(/upload worksheet file to recreate/i)).toBeTruthy();
 
     for (const option of worksheetOptions) {
-      const button = within(sidebar).getByRole("button", { name: new RegExp(`add ${option} element`, "i") });
+      const button = within(sidebar).getByRole("listitem", { name: new RegExp(`add ${option} element`, "i") });
       button.focus();
       expect(document.activeElement).toBe(button);
     }
