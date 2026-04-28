@@ -2649,9 +2649,11 @@ function ExportModal({ gv, ws, onClose }) {
         const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
         return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title?`<p style="font-size:${Math.max(fs-2,13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>`:""}${el.intro?`<p style="font-size:${Math.max(fs-4,11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${el.intro}</p>`:""}<ul style="list-style:none;padding:0;margin:0">${(el.items||[]).map(item=>`<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${item}</span></li>`).join("")}</ul></div>`;
       }
+      if (el.type === "dokQuestions") {
+        const LC = ["#10B981","#0EA5E9","#8B5CF6","#F59E0B"];
+        return `<div style="margin-bottom:18px;background:#FFFFFF;border:2px solid ${gv2.color}45;border-left:6px solid ${gv2.color};border-radius:10px;padding:12px 16px">${el.title?`<p style="font-size:${Math.max(fs-2,13)}px;font-weight:900;color:${gv2.color};margin:0 0 6px">${el.title}</p>`:""}${el.intro?`<p style="font-size:${Math.max(fs-4,11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${el.intro}</p>`:""}${(el.levels||[]).map((lv,li)=>{const c=LC[(lv.level||li+1)-1]||gv2.color;return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs-4,11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items||[]).map(q=>`<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs-1,12)}px;font-weight:600;color:#111827;line-height:1.45">${q}</span></li>`).join("")}</ul></div>`}).join("")}</div>`;
+      }
       return "";
-    };
-    const totalPages = Math.max(1, ws.pageCount || 1);
     const hidden = new Set(ws.pageHeadersHidden || []);
     const pagesHtml = Array.from({ length: totalPages }).map((_, pIdx) => {
       const pageEls = ws.elements.filter(e => Math.min(totalPages - 1, e.page || 0) === pIdx);
