@@ -487,6 +487,8 @@ const PALETTE = [
   { type:"essay",          label:"Essay Prompt",     emoji:"📜" },
   { type:"table",          label:"Table / Chart",    emoji:"📊" },
   { type:"customShape",    label:"Custom Shapes",    emoji:"🔷" },
+  { type:"successCriteria",label:"Success Criteria", emoji:"🎯" },
+  { type:"exitTicket",     label:"Exit Ticket",      emoji:"🎟️" },
   { type:"divider",        label:"Section Break",    emoji:"〰️" },
 ];
 
@@ -527,6 +529,8 @@ const mkEl = (type, slot) => {
                         { shape:"rectangle", label:"", fill:"#FFFFFF", border:"#6D28D9", borderWidth:2, width:180, height:120, lines:0 },
                         { shape:"rectangle", label:"", fill:"#FFFFFF", border:"#6D28D9", borderWidth:2, width:180, height:120, lines:0 },
                       ], layout:"2-col" },
+    successCriteria: { id, type, title: "🎯 Success Criteria", intro: "I can…", items: ["I can look at the picture.", "I can read the text.", "I can identify the character in the story."], mode: "manual" },
+    exitTicket:     { id, type, title: "🎟️ Exit Ticket", intro: "Check off everything you completed today:", items: ["I participated in class.", "I completed the reading assignment.", "I participated in at least two center activities."], mode: "manual" },
     divider:        { id, type },
   };
   const base = map[type] || { id, type };
@@ -956,6 +960,28 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     </div>
   );
 
+  if (el.type === "successCriteria" || el.type === "exitTicket") {
+    const accent = el.type === "successCriteria" ? gv.color : "#0369A1";
+    const bg = el.type === "successCriteria" ? gv.light : "#EFF6FF";
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
+        <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `6px solid ${accent}`, borderRadius: 10, padding: "12px 16px" }}>
+          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: accent, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
+          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            {(el.items || []).map((item, i) => (
+              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span aria-hidden="true" style={{ flexShrink: 0, width: 18, height: 18, marginTop: 2, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
+                <span style={{ fontSize: fs, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
+
   if (el.type === "table") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
@@ -1218,13 +1244,115 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       </>)}
 
       {el.type === "customShape" && <CustomShapeEditor el={el} onChange={onChange} gv={gv} inp={inp} />}
+
+      {(el.type === "successCriteria" || el.type === "exitTicket") && (
+        <ChecklistEditor el={el} onChange={onChange} gv={gv} inp={inp} />
+      )}
     </div>
   );
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CUSTOM SHAPE EDITOR
+// CHECKLIST EDITOR (Success Criteria & Exit Ticket)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function ChecklistEditor({ el, onChange, gv, inp }) {
+  const isSuccess = el.type === "successCriteria";
+  const accent = isSuccess ? gv.color : "#0369A1";
+  const mode = el.mode || "manual";
+  const [topic, setTopic] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const generate = async () => {
+    if (!topic.trim() || busy) return;
+    setBusy(true); setErr("");
+    const sysSuccess = `You design student-friendly success criteria for K–12 lessons. Success criteria are specific, measurable, standards-aligned skills written as "I can …" statements. They tell students exactly what to demonstrate to meet a learning objective. Calibrate vocabulary and complexity to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short "I can …" strings — no markdown, no preamble. Example: ["I can look at the picture.","I can read the text.","I can identify the character in the story."]`;
+    const sysExit = `You design quick formative exit tickets for K–12 lessons. Exit tickets are brief (1–5 minute) end-of-lesson self-checks. Items should be checkable statements students can mark off, e.g. participation, completion, or demonstration of one specific concept. Calibrate vocabulary to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short statements — no markdown, no preamble. Example: ["I participated in class.","I completed the reading assignment.","I participated in at least two center activities."]`;
+    try {
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 500,
+          system: isSuccess ? sysSuccess : sysExit,
+          messages: [{ role: "user", content: `Topic / lesson objective: ${topic}` }],
+        }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const raw = d.content?.map(b => b.text || "").join("") || "[]";
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const s = clean.indexOf("["); const e = clean.lastIndexOf("]");
+      const slice = s >= 0 && e > s ? clean.slice(s, e + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return a list");
+      onChange({ items: parsed.map(x => String(x).trim()).filter(Boolean), mode: "ai" });
+    } catch (e) {
+      setErr(e?.message || "Could not generate. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const LBL = { display: "block", fontSize: 11, fontWeight: 700, color: "#374151", marginTop: 10, fontFamily: F };
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <label style={LBL}>Title</label>
+      <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
+
+      <label style={LBL}>Intro / Directions</label>
+      <input type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
+
+      <label style={LBL}>How to fill this in</label>
+      <select
+        value={mode}
+        onChange={e => onChange({ mode: e.target.value })}
+        style={{ ...inp, marginTop: 4, minHeight: 40 }}
+        aria-label="Generation mode"
+      >
+        <option value="manual">✍️ Build your own</option>
+        <option value="ai">✨ AI generation</option>
+      </select>
+
+      {mode === "ai" && (
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FAFAFA", border: "1px solid #E5E7EB" }}>
+          <label style={{ ...LBL, marginTop: 0 }}>{isSuccess ? "Learning objective / standard" : "Lesson topic or focus"}</label>
+          <textarea
+            value={topic}
+            spellCheck
+            onChange={e => setTopic(e.target.value)}
+            placeholder={isSuccess ? "e.g. Identify the main character in a short story" : "e.g. End of ELA lesson on character traits"}
+            style={{ ...inp, minHeight: 60, marginTop: 4 }}
+            aria-label="AI prompt"
+          />
+          <button
+            type="button"
+            onClick={generate}
+            disabled={busy || !topic.trim()}
+            style={{ marginTop: 8, width: "100%", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${accent}`, background: busy ? "#F3F4F6" : accent, color: busy ? "#6B7280" : "white", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: busy ? "wait" : "pointer", minHeight: 44 }}
+          >
+            {busy ? "Generating…" : `✨ Generate ${isSuccess ? "Success Criteria" : "Exit Ticket"}`}
+          </button>
+          {err && <p role="alert" style={{ fontSize: 12, color: "#B91C1C", margin: "8px 0 0", fontFamily: F, lineHeight: 1.5 }}>{err}</p>}
+        </div>
+      )}
+
+      <label style={LBL}>Items {mode === "ai" ? "(generated — edit freely; one per line)" : "(one per line)"}</label>
+      <textarea
+        value={(el.items || []).join("\n")}
+        spellCheck
+        onChange={e => onChange({ items: e.target.value.split("\n").map(s => s.trimStart()).filter(s => s.trim().length) })}
+        style={{ ...inp, minHeight: 110, marginTop: 4 }}
+        placeholder={isSuccess ? "I can look at the picture.\nI can read the text.\nI can identify the character in the story." : "I participated in class.\nI completed the reading assignment.\nI participated in at least two center activities."}
+        aria-label="Checklist items"
+      />
+      <p style={{ fontSize: 11, color: "#6B7280", margin: "6px 0 0", fontFamily: F, lineHeight: 1.5 }}>
+        Each item appears on the worksheet with a check-off box.
+      </p>
+    </div>
+  );
+}
 
 function CustomShapeEditor({ el, onChange, gv, inp }) {
   const shapes = el.shapes || [];
@@ -1828,6 +1956,8 @@ Allowed element shapes (use exactly these keys):
 {"type":"essay","prompt":"<prompt>","points":10,"lines":14}
 {"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]]}
 {"type":"image","imagePrompt":"<short visual description for an AI image generator, e.g. 'a friendly cartoon brown dog sitting'>","caption":"<optional short caption>","size":"small","align":"center"}
+{"type":"successCriteria","title":"🎯 Success Criteria","intro":"I can…","items":["I can …","I can …","I can …"]}
+{"type":"exitTicket","title":"🎟️ Exit Ticket","intro":"Check off everything you completed today:","items":["…","…","…"]}
 
 CRITICAL: Whenever the worksheet would benefit from a picture (e.g. matching pictures to words, label-the-picture, picture-prompt writing, vocabulary with visuals), include {"type":"image", ...} blocks with a clear "imagePrompt". NEVER output text like "(picture of a cat)" or "[image: dog]" — emit a real image block instead so we can generate the picture.
 
@@ -2115,6 +2245,11 @@ function VersionsModal({ gv, ws, onClose }) {
       if (el.type === "wordBank") return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs-4,13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title||"Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words||[]).map(w=>`<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${w}</span>`).join("")}</div></div>`;
       if (el.type === "essay") return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${el.prompt||""}</p>${Array.from({length:el.lines||14}).map(()=>`<div style="height:${gv2.lineH*0.75}px;border-bottom:1.5px solid #DDD;margin-bottom:4px"></div>`).join("")}</div>`;
       if (el.type === "divider") return `<div style="margin:8px 0;text-align:center;color:${gv2.color};font-size:16px">✦</div>`;
+      if (el.type === "successCriteria" || el.type === "exitTicket") {
+        const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
+        const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title?`<p style="font-size:${Math.max(fs-2,13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>`:""}${el.intro?`<p style="font-size:${Math.max(fs-4,11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${el.intro}</p>`:""}<ul style="list-style:none;padding:0;margin:0">${(el.items||[]).map(item=>`<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${item}</span></li>`).join("")}</ul></div>`;
+      }
       return "";
     };
 
@@ -2274,6 +2409,12 @@ function ExportModal({ gv, ws, onClose }) {
         (el.left||[]).forEach((item, j) => lines.push(`${item}  ──  ${(el.right||[])[j]||"______"}`));
         lines.push("");
       }
+      else if (el.type === "successCriteria" || el.type === "exitTicket") {
+        if (el.title) lines.push(el.title);
+        if (el.intro) lines.push(el.intro);
+        (el.items||[]).forEach(item => lines.push(`[ ] ${item}`));
+        lines.push("");
+      }
       else if (el.type === "divider") { lines.push("─".repeat(40)); lines.push(""); }
     };
     for (let p = 0; p < totalPages; p++) {
@@ -2303,6 +2444,11 @@ function ExportModal({ gv, ws, onClose }) {
       if (el.type === "essay") return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${el.prompt||""}</p>${Array.from({length:el.lines||14}).map(()=>`<div style="height:${gv2.lineH*0.75}px;border-bottom:1.5px solid #DDD;margin-bottom:4px"></div>`).join("")}</div>`;
       if (el.type === "divider") return `<div style="margin:8px 0;text-align:center;color:${gv2.color};font-size:16px">✦</div>`;
       if (el.type === "table") return `<div style="margin-bottom:18px">${el.title?`<p style="font-size:${Math.max(fs-4,13)}px;font-weight:800;margin:0 0 10px">${el.title}</p>`:""}<table style="width:100%;border-collapse:collapse;font-size:${Math.max(fs-4,12)}px"><thead><tr>${(el.headers||[]).map(h=>`<th style="padding:8px 12px;border:2px solid ${gv2.color};background:${gv2.color};color:white;font-weight:900;text-align:center">${h}</th>`).join("")}</tr></thead><tbody>${(el.rows||[]).map(row=>`<tr>${(row||[]).map(cell=>`<td style="padding:6px 10px;border:1.5px solid #DDD;height:${gv2.lineH}px;vertical-align:top">${cell||""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+      if (el.type === "successCriteria" || el.type === "exitTicket") {
+        const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
+        const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title?`<p style="font-size:${Math.max(fs-2,13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>`:""}${el.intro?`<p style="font-size:${Math.max(fs-4,11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${el.intro}</p>`:""}<ul style="list-style:none;padding:0;margin:0">${(el.items||[]).map(item=>`<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${item}</span></li>`).join("")}</ul></div>`;
+      }
       return "";
     };
     const totalPages = Math.max(1, ws.pageCount || 1);
