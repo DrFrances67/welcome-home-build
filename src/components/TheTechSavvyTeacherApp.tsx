@@ -3300,7 +3300,7 @@ Output ONLY the JSON array.`,
       <div className="ws-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
         {/* LEFT PANEL */}
-        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "hidden", flexShrink: 0, minHeight: 0 }}>
 
           {/* Standards button */}
           <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
@@ -3374,7 +3374,7 @@ Output ONLY the JSON array.`,
           <div style={{ padding: "6px 8px 2px" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: 0, fontFamily: F }}>Add Element</p>
           </div>
-          <div style={{ overflowY: "auto", padding: "2px 6px 10px", flex: 1 }} role="list" aria-label="Worksheet elements">
+          <div style={{ padding: "2px 6px 10px" }} role="list" aria-label="Worksheet elements">
             {PALETTE.map(p => (
               <button key={p.type} onClick={() => addEl(p.type)} role="listitem" aria-label={`Add ${p.label} element`}
                 style={{ width: "100%", textAlign: "left", padding: "6px 8px", borderRadius: 7, border: "1.5px solid transparent", background: "transparent", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 12.5, color: "#374151", display: "flex", alignItems: "center", gap: 7, marginBottom: 1, transition: "all 0.1s" }}
