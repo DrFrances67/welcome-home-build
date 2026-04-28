@@ -960,7 +960,28 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     </div>
   );
 
-  if (el.type === "table") return (
+  if (el.type === "successCriteria" || el.type === "exitTicket") {
+    const accent = el.type === "successCriteria" ? gv.color : "#0369A1";
+    const bg = el.type === "successCriteria" ? gv.light : "#EFF6FF";
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
+        <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `6px solid ${accent}`, borderRadius: 10, padding: "12px 16px" }}>
+          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: accent, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
+          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            {(el.items || []).map((item, i) => (
+              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span aria-hidden="true" style={{ flexShrink: 0, width: 18, height: 18, marginTop: 2, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
+                <span style={{ fontSize: fs, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
+
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: Math.max(fs - 4, 11), fontFamily: elFamily }} role="table">
