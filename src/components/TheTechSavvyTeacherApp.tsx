@@ -529,6 +529,8 @@ const mkEl = (type, slot) => {
                         { shape:"rectangle", label:"", fill:"#FFFFFF", border:"#6D28D9", borderWidth:2, width:180, height:120, lines:0 },
                         { shape:"rectangle", label:"", fill:"#FFFFFF", border:"#6D28D9", borderWidth:2, width:180, height:120, lines:0 },
                       ], layout:"2-col" },
+    successCriteria: { id, type, title: "🎯 Success Criteria", intro: "I can…", items: ["I can look at the picture.", "I can read the text.", "I can identify the character in the story."], mode: "manual" },
+    exitTicket:     { id, type, title: "🎟️ Exit Ticket", intro: "Check off everything you completed today:", items: ["I participated in class.", "I completed the reading assignment.", "I participated in at least two center activities."], mode: "manual" },
     divider:        { id, type },
   };
   const base = map[type] || { id, type };
