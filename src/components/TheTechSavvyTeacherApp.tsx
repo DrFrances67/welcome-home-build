@@ -1244,6 +1244,10 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       </>)}
 
       {el.type === "customShape" && <CustomShapeEditor el={el} onChange={onChange} gv={gv} inp={inp} />}
+
+      {(el.type === "successCriteria" || el.type === "exitTicket") && (
+        <ChecklistEditor el={el} onChange={onChange} gv={gv} inp={inp} />
+      )}
     </div>
   );
 }
