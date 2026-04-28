@@ -1314,46 +1314,96 @@ function DokEditor({ el, onChange, gv, inp }) {
   const [topic, setTopic] = useState(el.topic || "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  // Levels the AI couldn't generate — triggers a follow-up prompt to the user.
+  const [missingLevels, setMissingLevels] = useState<number[]>([]);
+  const [clarification, setClarification] = useState("");
+  const [aiNotice, setAiNotice] = useState("");
 
-  const generate = async () => {
-    if (!topic.trim() || busy) return;
-    setBusy(true); setErr("");
-    const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty. Generate 2–3 student-facing questions for EACH of the 4 DOK levels:
+  // Call the AI gateway with a DOK-shaped prompt. `onlyLevels` lets us re-ask
+  // for just the levels that came back empty on a prior attempt.
+  const callAI = async (promptTopic: string, onlyLevels?: number[], extraContext?: string) => {
+    const levelsBlock = (onlyLevels && onlyLevels.length)
+      ? `Generate 2–3 student-facing questions for ONLY these DOK levels: ${onlyLevels.join(", ")}. Return objects only for those levels.`
+      : `Generate 2–3 student-facing questions for EACH of the 4 DOK levels. EVERY level (1, 2, 3, and 4) MUST have at least 2 non-empty items — do not skip any level.`;
+    const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty.
 - Level 1 (Recall & Reproduction): recall facts, terms, simple routine procedures (identify, name, point to, tell).
 - Level 2 (Skills & Concepts): apply skills/concepts in specific contexts (describe, show, sort, match, basic inferences).
 - Level 3 (Strategic Thinking): reasoning, planning, using evidence to support conclusions in non-routine problems (explain, why, predict, justify).
 - Level 4 (Extended Thinking): complex reasoning, integrating multiple sources, sustained effort, project-based / creative (create, design, compare, act out, tell your own story).
+${levelsBlock}
 Calibrate vocabulary and complexity to ${gv.name} (${BANDS[gv.band]?.label}). Use student-friendly language.
-Return ONLY a JSON array of exactly 4 objects, in level order, with this shape:
-[{"level":1,"label":"Recall & Reproduction","items":["...","..."]},{"level":2,"label":"Skills & Concepts","items":["...","..."]},{"level":3,"label":"Strategic Thinking","items":["...","..."]},{"level":4,"label":"Extended Thinking","items":["...","..."]}]
+Return ONLY a JSON array of objects in level order, with this shape:
+[{"level":1,"label":"Recall & Reproduction","items":["...","..."]}, ...]
 No markdown, no preamble, no commentary.`;
+    const userMsg = extraContext
+      ? `Topic / standard / text: ${promptTopic}\n\nAdditional context from the teacher: ${extraContext}`
+      : `Topic / standard / text: ${promptTopic}`;
+    const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 2000,
+        system: sys,
+        messages: [{ role: "user", content: userMsg }],
+      }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message || "AI error");
+    const raw = d.content?.map((b: any) => b.text || "").join("") || "[]";
+    return repairAndParse(raw, { container: "array" }) as any[];
+  };
+
+  // Merge AI results into the existing levels, returning the new array and the
+  // list of level numbers that are still missing usable content.
+  const mergeLevels = (existing: any[], incoming: any[]) => {
+    const merged = DOK_LEVEL_DEFS.map(def => {
+      const prior = existing.find(p => Number(p?.level) === def.level);
+      const found = incoming.find(p => Number(p?.level) === def.level);
+      const newItems = Array.isArray(found?.items)
+        ? found.items.map((x: any) => String(x).trim()).filter(Boolean)
+        : [];
+      const priorItems = Array.isArray(prior?.items)
+        ? prior.items.map((x: any) => String(x).trim()).filter((s: string) => s && s !== "(add a question)")
+        : [];
+      const items = newItems.length ? newItems : priorItems;
+      return { level: def.level, label: def.label, items };
+    });
+    const missing = merged.filter(lv => lv.items.length === 0).map(lv => lv.level);
+    return { merged, missing };
+  };
+
+  const generate = async (clarif?: string, onlyLevels?: number[]) => {
+    if (!topic.trim() || busy) return;
+    setBusy(true); setErr(""); setAiNotice("");
     try {
-      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 2000,
-          system: sys,
-          messages: [{ role: "user", content: `Topic / standard / text: ${topic}` }],
-        }),
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message || "AI error");
-      const raw = d.content?.map(b => b.text || "").join("") || "[]";
-      let parsed;
-      try {
-        parsed = repairAndParse(raw, { container: "array" });
-      } catch (parseErr) {
-        throw new Error(`AI returned malformed JSON: ${(parseErr as Error).message}`);
-      }
+      const parsed = await callAI(topic, onlyLevels, clarif);
       if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("AI did not return DOK levels");
-      // Normalize: ensure 4 levels in order with required fields
-      const normalized = DOK_LEVEL_DEFS.map(def => {
-        const found = parsed.find(p => Number(p.level) === def.level) || {};
-        const items = Array.isArray(found.items) ? found.items.map(x => String(x).trim()).filter(Boolean) : [];
-        return { level: def.level, label: def.label, items: items.length ? items : ["(add a question)"] };
-      });
-      onChange({ levels: normalized, mode: "ai", topic });
-    } catch (e) {
+      const baseLevels = onlyLevels ? (el.levels || []) : [];
+      let { merged, missing } = mergeLevels(baseLevels, parsed);
+
+      // One automatic retry targeting just the missing levels with a stronger ask.
+      if (missing.length && !onlyLevels) {
+        try {
+          const retry = await callAI(topic, missing, clarif);
+          ({ merged, missing } = mergeLevels(merged, retry));
+        } catch { /* fall through to follow-up prompt */ }
+      }
+
+      // Persist what we have so the teacher can edit it directly.
+      const finalLevels = merged.map(lv => ({
+        ...lv,
+        items: lv.items.length ? lv.items : ["(add a question)"],
+      }));
+      onChange({ levels: finalLevels, mode: "ai", topic });
+
+      if (missing.length) {
+        setMissingLevels(missing);
+        setAiNotice(`AI couldn't generate enough material for DOK ${missing.join(", ")}. Add a quick clarification below and we'll fill those in.`);
+      } else {
+        setMissingLevels([]);
+        setClarification("");
+        setAiNotice("✅ All 4 DOK levels generated. Edit any question below to fine-tune.");
+      }
+    } catch (e: any) {
       setErr(e?.message || "Could not generate. Try again.");
     } finally {
       setBusy(false);
