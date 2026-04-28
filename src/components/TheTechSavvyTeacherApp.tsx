@@ -2,6 +2,8 @@
 /* eslint-disable */
 import { useState, useRef, useEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
+import { repairAndParse } from "@/lib/repairJson";
+import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DATA
@@ -1337,31 +1339,11 @@ No markdown, no preamble, no commentary.`;
       const d = await r.json();
       if (d.error) throw new Error(d.error.message || "AI error");
       const raw = d.content?.map(b => b.text || "").join("") || "[]";
-      const clean = raw.replace(/```json|```/g, "").trim();
-      const s = clean.indexOf("["); const e = clean.lastIndexOf("]");
-      let slice = s >= 0 && e > s ? clean.slice(s, e + 1) : clean;
-      // Remove control chars that break JSON.parse
-      slice = slice.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
       let parsed;
       try {
-        parsed = JSON.parse(slice);
-      } catch {
-        // Repair common issues: trailing commas, then attempt to close
-        // truncated arrays/strings/objects.
-        let repaired = slice.replace(/,\s*([\]}])/g, "$1");
-        try {
-          parsed = JSON.parse(repaired);
-        } catch {
-          // Truncated mid-string/object: walk back to last complete object,
-          // then close the array.
-          let r = repaired;
-          // Find last "}," or "}" inside the array and cut there
-          const lastObjEnd = Math.max(r.lastIndexOf("},"), r.lastIndexOf("}"));
-          if (lastObjEnd > 0) {
-            r = r.slice(0, lastObjEnd + 1).replace(/,\s*$/, "") + "]";
-          }
-          parsed = JSON.parse(r);
-        }
+        parsed = repairAndParse(raw, { container: "array" });
+      } catch (parseErr) {
+        throw new Error(`AI returned malformed JSON: ${(parseErr as Error).message}`);
       }
       if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("AI did not return DOK levels");
       // Normalize: ensure 4 levels in order with required fields
