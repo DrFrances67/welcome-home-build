@@ -5986,7 +5986,7 @@ function TheTechSavvyTeacherAppRoot() {
         @media (max-width: 1024px) {
           .two-col-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
           .lesson-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
-          .ws-sidebar-left { width: 170px !important; }
+          .ws-sidebar-left { width: 170px !important; max-height: 100% !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
           .ws-sidebar-right { width: 240px !important; }
           .ws-topbar { flex-wrap: wrap !important; height: auto !important; padding: 8px 12px !important; gap: 8px !important; }
           .ws-topbar > * { flex-shrink: 1 !important; }
@@ -6069,7 +6069,7 @@ function TheTechSavvyTeacherAppRoot() {
           a, button, [role="button"], select, input, textarea, .tool-tab { touch-action: manipulation; -webkit-tap-highlight-color: rgba(207,39,245,0.18); }
 
           /* Smoother momentum scrolling for any scrollable region */
-          .tool-tabs-row, .ws-body, .canvas-area, .app-shell, main { -webkit-overflow-scrolling: touch; }
+          .tool-tabs-row, .ws-body, .canvas-area, .app-shell, main, .ws-sidebar-left { -webkit-overflow-scrolling: touch; }
 
           /* Stronger focus ring on touch devices */
           :focus-visible { outline-width: 4px !important; outline-offset: 3px !important; }
