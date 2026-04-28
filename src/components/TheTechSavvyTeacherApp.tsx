@@ -3240,7 +3240,7 @@ Output ONLY the JSON array.`,
 
 
   return (
-    <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
+    <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
 
       {/* Skip navigation */}
@@ -3297,10 +3297,10 @@ Output ONLY the JSON array.`,
       </header>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="ws-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div className="ws-body" style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
 
         {/* LEFT PANEL */}
-        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "hidden", flexShrink: 0, minHeight: 0 }}>
+        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, maxHeight: "100%", background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", scrollbarGutter: "stable", flexShrink: 0, minHeight: 0 }}>
 
           {/* Standards button */}
           <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
