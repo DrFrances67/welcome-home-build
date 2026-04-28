@@ -1329,7 +1329,7 @@ No markdown, no preamble, no commentary.`;
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 1200,
+          model: "claude-sonnet-4-20250514", max_tokens: 2000,
           system: sys,
           messages: [{ role: "user", content: `Topic / standard / text: ${topic}` }],
         }),
