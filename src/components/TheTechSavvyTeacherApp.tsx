@@ -1253,8 +1253,106 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CUSTOM SHAPE EDITOR
+// CHECKLIST EDITOR (Success Criteria & Exit Ticket)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function ChecklistEditor({ el, onChange, gv, inp }) {
+  const isSuccess = el.type === "successCriteria";
+  const accent = isSuccess ? gv.color : "#0369A1";
+  const mode = el.mode || "manual";
+  const [topic, setTopic] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const generate = async () => {
+    if (!topic.trim() || busy) return;
+    setBusy(true); setErr("");
+    const sysSuccess = `You design student-friendly success criteria for K–12 lessons. Success criteria are specific, measurable, standards-aligned skills written as "I can …" statements. They tell students exactly what to demonstrate to meet a learning objective. Calibrate vocabulary and complexity to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short "I can …" strings — no markdown, no preamble. Example: ["I can look at the picture.","I can read the text.","I can identify the character in the story."]`;
+    const sysExit = `You design quick formative exit tickets for K–12 lessons. Exit tickets are brief (1–5 minute) end-of-lesson self-checks. Items should be checkable statements students can mark off, e.g. participation, completion, or demonstration of one specific concept. Calibrate vocabulary to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short statements — no markdown, no preamble. Example: ["I participated in class.","I completed the reading assignment.","I participated in at least two center activities."]`;
+    try {
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 500,
+          system: isSuccess ? sysSuccess : sysExit,
+          messages: [{ role: "user", content: `Topic / lesson objective: ${topic}` }],
+        }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const raw = d.content?.map(b => b.text || "").join("") || "[]";
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const s = clean.indexOf("["); const e = clean.lastIndexOf("]");
+      const slice = s >= 0 && e > s ? clean.slice(s, e + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return a list");
+      onChange({ items: parsed.map(x => String(x).trim()).filter(Boolean), mode: "ai" });
+    } catch (e) {
+      setErr(e?.message || "Could not generate. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const LBL = { display: "block", fontSize: 11, fontWeight: 700, color: "#374151", marginTop: 10, fontFamily: F };
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <label style={LBL}>Title</label>
+      <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
+
+      <label style={LBL}>Intro / Directions</label>
+      <input type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
+
+      <label style={LBL}>How to fill this in</label>
+      <select
+        value={mode}
+        onChange={e => onChange({ mode: e.target.value })}
+        style={{ ...inp, marginTop: 4, minHeight: 40 }}
+        aria-label="Generation mode"
+      >
+        <option value="manual">✍️ Build your own</option>
+        <option value="ai">✨ AI generation</option>
+      </select>
+
+      {mode === "ai" && (
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FAFAFA", border: "1px solid #E5E7EB" }}>
+          <label style={{ ...LBL, marginTop: 0 }}>{isSuccess ? "Learning objective / standard" : "Lesson topic or focus"}</label>
+          <textarea
+            value={topic}
+            spellCheck
+            onChange={e => setTopic(e.target.value)}
+            placeholder={isSuccess ? "e.g. Identify the main character in a short story" : "e.g. End of ELA lesson on character traits"}
+            style={{ ...inp, minHeight: 60, marginTop: 4 }}
+            aria-label="AI prompt"
+          />
+          <button
+            type="button"
+            onClick={generate}
+            disabled={busy || !topic.trim()}
+            style={{ marginTop: 8, width: "100%", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${accent}`, background: busy ? "#F3F4F6" : accent, color: busy ? "#6B7280" : "white", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: busy ? "wait" : "pointer", minHeight: 44 }}
+          >
+            {busy ? "Generating…" : `✨ Generate ${isSuccess ? "Success Criteria" : "Exit Ticket"}`}
+          </button>
+          {err && <p role="alert" style={{ fontSize: 12, color: "#B91C1C", margin: "8px 0 0", fontFamily: F, lineHeight: 1.5 }}>{err}</p>}
+        </div>
+      )}
+
+      <label style={LBL}>Items {mode === "ai" ? "(generated — edit freely; one per line)" : "(one per line)"}</label>
+      <textarea
+        value={(el.items || []).join("\n")}
+        spellCheck
+        onChange={e => onChange({ items: e.target.value.split("\n").map(s => s.trimStart()).filter(s => s.trim().length) })}
+        style={{ ...inp, minHeight: 110, marginTop: 4 }}
+        placeholder={isSuccess ? "I can look at the picture.\nI can read the text.\nI can identify the character in the story." : "I participated in class.\nI completed the reading assignment.\nI participated in at least two center activities."}
+        aria-label="Checklist items"
+      />
+      <p style={{ fontSize: 11, color: "#6B7280", margin: "6px 0 0", fontFamily: F, lineHeight: 1.5 }}>
+        Each item appears on the worksheet with a check-off box.
+      </p>
+    </div>
+  );
+}
 
 function CustomShapeEditor({ el, onChange, gv, inp }) {
   const shapes = el.shapes || [];
