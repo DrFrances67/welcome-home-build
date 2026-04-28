@@ -72,7 +72,7 @@ describe("worksheet builder responsive sidebar", () => {
     fireEvent.scroll(sidebar);
 
     expect(sidebar.scrollTop).toBe(560);
-    expect(within(sidebar).getByRole("button", { name: /add section break element/i })).toBeTruthy();
+    expect(within(sidebar).getByRole("listitem", { name: /add section break element/i })).toBeTruthy();
   });
 
   it("keeps every worksheet section and option reachable in the mobile stacked layout", () => {
