@@ -5793,6 +5793,7 @@ function TheTechSavvyTeacherAppRoot() {
   const touchStart = useRef<{ x: number; y: number; t: number; valid: boolean } | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Track scroll within the worksheet canvas (and the page itself when stacked
   // on mobile) to show a floating "back to top" button after meaningful scroll.
@@ -5835,6 +5836,26 @@ function TheTechSavvyTeacherAppRoot() {
   }, [activeTool]);
 
   const scrollToTop = () => scrollEverythingToTop();
+
+  // ━━ Global keyboard shortcuts ━━
+  const shortcuts = [
+    { key: "?", mods: ["shift"] as const, description: "Show keyboard shortcuts", group: "General",
+      run: () => setHelpOpen(o => !o) },
+    { key: "1", description: "Switch to Lesson Plan Generator", group: "Navigation",
+      run: () => setActiveTool("lesson") },
+    { key: "2", description: "Switch to Danielson Review", group: "Navigation",
+      run: () => setActiveTool("danielson") },
+    { key: "3", description: "Switch to Worksheet Builder", group: "Navigation",
+      run: () => setActiveTool("worksheet") },
+    { key: "4", description: "Switch to Professional Communication", group: "Navigation",
+      run: () => setActiveTool("email") },
+    { key: "g", description: "Go to top of page", group: "Navigation",
+      run: () => scrollEverythingToTop() },
+    { key: "Escape", description: "Close dialogs / cancel", group: "General", allowInInput: true,
+      run: () => setHelpOpen(false) },
+  ].map(s => ({ ...s, mods: s.mods ? [...s.mods] : undefined })) as Parameters<typeof useGlobalShortcuts>[0];
+
+  useGlobalShortcuts(shortcuts);
 
   // Online/offline awareness
   useEffect(() => {
