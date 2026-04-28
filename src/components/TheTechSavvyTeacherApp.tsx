@@ -532,6 +532,12 @@ const mkEl = (type, slot) => {
                       ], layout:"2-col" },
     successCriteria: { id, type, title: "🎯 Success Criteria", intro: "I can…", items: ["I can look at the picture.", "I can read the text.", "I can identify the character in the story."], mode: "manual" },
     exitTicket:     { id, type, title: "🎟️ Exit Ticket", intro: "Check off everything you completed today:", items: ["I participated in class.", "I completed the reading assignment.", "I participated in at least two center activities."], mode: "manual" },
+    dokQuestions:   { id, type, title: "🧠 DOK Questions", intro: "Answer the questions at each level of thinking.", topic: "", mode: "manual", levels: [
+      { level: 1, label: "Recall & Reproduction", items: ["Who is the main character in the story?", "Can you name the character we just read about?"] },
+      { level: 2, label: "Skills & Concepts",     items: ["What does the character look like? Describe them.", "Is the character happy or sad? How do you know?"] },
+      { level: 3, label: "Strategic Thinking",    items: ["Why do you think the character did that?", "What do you think the character will do next?"] },
+      { level: 4, label: "Extended Thinking",     items: ["If you were the character, what would you do differently? Why?", "Tell a new story about the character. What happens next?"] },
+    ] },
     divider:        { id, type },
   };
   const base = map[type] || { id, type };
