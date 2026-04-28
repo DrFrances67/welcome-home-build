@@ -108,7 +108,7 @@ describe("repairAndParse", () => {
       '{"level":1,"label":"Recall & Reproduction","items":["Who is the main character?","What happened first?","What is the title of the story?"]},' +
       '{"level":2,"label":"Skills & Concepts","items":["Describe how the character felt.","Sort the events from beginning to end.","Show the part where the problem starts."]},' +
       '{"level":3,"label":"Strategic Thinking","items":["Why do you think the character made that choice?","Predict what would happen if the setting were different.","Use evidence from the text to expla';
-    const out = repairAndParse<Array<{ level: number; items: string[] }>>(truncated);
+    const out = repairAndParse<Array<{ level: number; label: string; items: string[] }>>(truncated);
     expect(out.length).toBeGreaterThanOrEqual(2);
     expect(out[0].items[0]).toMatch(/main character/);
     expect(out[1].label).toBe("Skills & Concepts");
