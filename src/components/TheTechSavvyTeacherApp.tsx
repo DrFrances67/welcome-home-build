@@ -3240,7 +3240,7 @@ Output ONLY the JSON array.`,
 
 
   return (
-    <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
+    <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
 
       {/* Skip navigation */}
@@ -3297,10 +3297,10 @@ Output ONLY the JSON array.`,
       </header>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="ws-body" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div className="ws-body" style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
 
         {/* LEFT PANEL */}
-        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "hidden", flexShrink: 0, minHeight: 0 }}>
+        <nav role="navigation" aria-label="Worksheet tools" className="no-print ws-sidebar-left" style={{ width: 196, maxHeight: "100%", background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", scrollbarGutter: "stable", flexShrink: 0, minHeight: 0 }}>
 
           {/* Standards button */}
           <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
@@ -5953,7 +5953,7 @@ function TheTechSavvyTeacherAppRoot() {
   }, [swipeDir, activeTool]);
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", minHeight:"100vh", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+    <div className="site-shell" style={{ display:"flex", flexDirection:"column", height:"100vh", minHeight:0, overflow:"hidden", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
@@ -5986,7 +5986,7 @@ function TheTechSavvyTeacherAppRoot() {
         @media (max-width: 1024px) {
           .two-col-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
           .lesson-grid { grid-template-columns: 1fr !important; gap: 18px !important; padding: 18px !important; }
-          .ws-sidebar-left { width: 170px !important; }
+          .ws-sidebar-left { width: 170px !important; max-height: 100% !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
           .ws-sidebar-right { width: 240px !important; }
           .ws-topbar { flex-wrap: wrap !important; height: auto !important; padding: 8px 12px !important; gap: 8px !important; }
           .ws-topbar > * { flex-shrink: 1 !important; }
@@ -6007,6 +6007,7 @@ function TheTechSavvyTeacherAppRoot() {
 
           /* Worksheet builder: stack the 3-column body */
           .ws-body { flex-direction: column !important; overflow: visible !important; height: auto !important; }
+          .site-shell, .app-main { height: auto !important; min-height: 100vh !important; overflow: visible !important; }
           .ws-sidebar-left, .ws-sidebar-right {
             width: 100% !important;
             max-height: none !important;
@@ -6069,7 +6070,7 @@ function TheTechSavvyTeacherAppRoot() {
           a, button, [role="button"], select, input, textarea, .tool-tab { touch-action: manipulation; -webkit-tap-highlight-color: rgba(207,39,245,0.18); }
 
           /* Smoother momentum scrolling for any scrollable region */
-          .tool-tabs-row, .ws-body, .canvas-area, .app-shell, main { -webkit-overflow-scrolling: touch; }
+          .tool-tabs-row, .ws-body, .canvas-area, .app-shell, main, .ws-sidebar-left { -webkit-overflow-scrolling: touch; }
 
           /* Stronger focus ring on touch devices */
           :focus-visible { outline-width: 4px !important; outline-offset: 3px !important; }
@@ -6255,9 +6256,9 @@ function TheTechSavvyTeacherAppRoot() {
         aria-labelledby={`tool-tab-${activeTool}`}
         tabIndex={-1}
         className={`app-main ${swipeDir === "right" ? "swipe-anim-right" : swipeDir === "left" ? "swipe-anim-left" : ""}`}
-        style={{ flex:1, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none", touchAction:"pan-y" }}>
+        style={{ flex:1, minHeight:0, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none", touchAction:"pan-y" }}>
         {activeTool === "worksheet" && (
-          <div className="ws-canvas-wrap" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
+          <div className="ws-canvas-wrap" style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column", overflow:"hidden" }}>
             <WorksheetBuilder />
           </div>
         )}
