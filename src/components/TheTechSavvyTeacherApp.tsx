@@ -489,6 +489,7 @@ const PALETTE = [
   { type:"customShape",    label:"Custom Shapes",    emoji:"🔷" },
   { type:"successCriteria",label:"Success Criteria", emoji:"🎯" },
   { type:"exitTicket",     label:"Exit Ticket",      emoji:"🎟️" },
+  { type:"dokQuestions",   label:"DOK Questions",    emoji:"🧠" },
   { type:"divider",        label:"Section Break",    emoji:"〰️" },
 ];
 
