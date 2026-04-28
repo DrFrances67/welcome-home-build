@@ -6255,9 +6255,9 @@ function TheTechSavvyTeacherAppRoot() {
         aria-labelledby={`tool-tab-${activeTool}`}
         tabIndex={-1}
         className={`app-main ${swipeDir === "right" ? "swipe-anim-right" : swipeDir === "left" ? "swipe-anim-left" : ""}`}
-        style={{ flex:1, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none", touchAction:"pan-y" }}>
+        style={{ flex:1, minHeight:0, overflow: activeTool==="worksheet" ? "hidden" : "auto", display:"flex", flexDirection:"column", outline:"none", touchAction:"pan-y" }}>
         {activeTool === "worksheet" && (
-          <div className="ws-canvas-wrap" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", height:"calc(100vh - 172px)" }}>
+          <div className="ws-canvas-wrap" style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column", overflow:"hidden" }}>
             <WorksheetBuilder />
           </div>
         )}
