@@ -5953,7 +5953,7 @@ function TheTechSavvyTeacherAppRoot() {
   }, [swipeDir, activeTool]);
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", minHeight:"100vh", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+    <div className="site-shell" style={{ display:"flex", flexDirection:"column", height:"100vh", minHeight:0, overflow:"hidden", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
@@ -6007,6 +6007,7 @@ function TheTechSavvyTeacherAppRoot() {
 
           /* Worksheet builder: stack the 3-column body */
           .ws-body { flex-direction: column !important; overflow: visible !important; height: auto !important; }
+          .site-shell, .app-main { height: auto !important; min-height: 100vh !important; overflow: visible !important; }
           .ws-sidebar-left, .ws-sidebar-right {
             width: 100% !important;
             max-height: none !important;
