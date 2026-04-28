@@ -982,6 +982,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     );
   }
 
+  if (el.type === "table") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: Math.max(fs - 4, 11), fontFamily: elFamily }} role="table">
