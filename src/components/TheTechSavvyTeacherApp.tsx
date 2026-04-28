@@ -2606,6 +2606,15 @@ function ExportModal({ gv, ws, onClose }) {
         (el.items||[]).forEach(item => lines.push(`[ ] ${item}`));
         lines.push("");
       }
+      else if (el.type === "dokQuestions") {
+        if (el.title) lines.push(el.title);
+        if (el.intro) lines.push(el.intro);
+        (el.levels||[]).forEach(lv => {
+          lines.push(`-- DOK ${lv.level} · ${lv.label} --`);
+          (lv.items||[]).forEach(q => lines.push(`[ ] ${q}`));
+        });
+        lines.push("");
+      }
       else if (el.type === "divider") { lines.push("─".repeat(40)); lines.push(""); }
     };
     for (let p = 0; p < totalPages; p++) {
