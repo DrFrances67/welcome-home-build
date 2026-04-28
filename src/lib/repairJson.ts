@@ -85,24 +85,27 @@ export function repairAndParse<T = JsonValue>(
   const noTrailing = removeTrailingCommas(cleaned);
   try { return JSON.parse(noTrailing) as T; } catch { /* try next */ }
 
-  // Strategy 3: close truncated array at last complete object
-  const closed = repairTruncatedArray(noTrailing);
+  // Strategy 3: brute close — terminate any open string and append the
+  // missing brackets in correct order. Preserves the most data.
+  const closed = bruteClose(noTrailing);
   if (closed !== noTrailing) {
     try { return JSON.parse(closed) as T; } catch { /* try next */ }
   }
 
-  // Strategy 4: drop a dangling trailing object that is mid-string/key,
-  // then close. e.g.  [{...},{"foo":"unterm
+  // Strategy 4: walk back to last complete object and close the array.
+  // Loses the in-progress trailing object but more permissive when brute
+  // close still produced invalid JSON (e.g. dangling key without value).
+  const trimmed = repairTruncatedArray(noTrailing);
+  if (trimmed !== noTrailing) {
+    try { return JSON.parse(trimmed) as T; } catch { /* try next */ }
+  }
+
+  // Strategy 5: drop the dangling trailing object after the last "},"
+  // and close the array.
   const lastSep = noTrailing.lastIndexOf("},");
   if (lastSep > 0) {
     const candidate = noTrailing.slice(0, lastSep + 1) + "]";
-    try { return JSON.parse(candidate) as T; } catch { /* fall through */ }
-  }
-
-  // Strategy 5: brute close — append missing brackets in order based on stack
-  const closeAttempt = bruteClose(noTrailing);
-  if (closeAttempt !== noTrailing) {
-    try { return JSON.parse(closeAttempt) as T; } catch (e) {
+    try { return JSON.parse(candidate) as T; } catch (e) {
       throw new SyntaxError(`repairAndParse: exhausted strategies (${(e as Error).message})`);
     }
   }
