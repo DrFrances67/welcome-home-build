@@ -1213,8 +1213,8 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     // push most questions out of view.
     const dokS = Math.max(SCALE_MIN, Math.min(1.35, sc.sx));
     const dokTextScale = fsLocked ? 1 : dokS;
-    const levelGap = Math.min(14, Math.max(6, 10 * dokS));
-    const itemGap = Math.min(8, Math.max(4, 6 * dokS));
+    const levelGap = 10;
+    const itemGap = 6;
     const dokLineStyle = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
