@@ -269,7 +269,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         expect(contentTransformsOf(wrapper)).toEqual([]);
         expect(parseFloat((chips[0] as HTMLElement).style.fontSize)).toBeGreaterThan(10);
         const statement = Array.from(wrapper.querySelectorAll<HTMLElement>("span")).find(
-          s => (s.textContent || "").includes("Plants need water"),
+          s => (s.textContent || "").includes("The Earth orbits the Sun"),
         );
         expect(statement?.style.flex).toBe("1 1 0%");
       });
