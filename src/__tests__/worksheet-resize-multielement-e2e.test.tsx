@@ -329,6 +329,34 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         expect(topPxOf(wrapper)).toBeGreaterThanOrEqual(0);
         expect(contentTransformsOf(wrapper)).toEqual([]);
       });
-    });
-  }
-});
+
+      it("EVERY worksheet element type supports vertical-only resize (bottom + top handles, width unchanged)", async () => {
+        openBuilder();
+        for (const t of ALL_ELEMENT_TYPES) {
+          const wrapper = addElement(t.label);
+
+          // Bottom handle: drag down → height grows, width is untouched.
+          const startW = widthPctOf(wrapper);
+          const startH = heightPxOf(wrapper);
+          await dragHandle(getHandles(wrapper).bottom, 0, 120);
+          const afterBottomH = heightPxOf(wrapper);
+          const afterBottomW = widthPctOf(wrapper);
+          expect(afterBottomH, `${t.name}: bottom-drag must grow height`).toBeGreaterThan(startH);
+          expect(afterBottomW, `${t.name}: bottom-drag must NOT change width`).toBe(startW);
+
+          // Top handle: drag up → height grows further, width is still untouched.
+          await dragHandle(getHandles(wrapper).top, 0, -60);
+          const afterTopH = heightPxOf(wrapper);
+          const afterTopW = widthPctOf(wrapper);
+          expect(afterTopH, `${t.name}: top-drag must grow height`).toBeGreaterThan(afterBottomH);
+          expect(afterTopW, `${t.name}: top-drag must NOT change width`).toBe(afterBottomW);
+
+          // The wrapper must apply the heightOverride explicitly so vertical
+          // resize works even when natural content is shorter than the box.
+          expect(wrapper.style.height, `${t.name}: explicit height must be set`).toMatch(/px$/);
+          expect(wrapper.style.minHeight, `${t.name}: minHeight must be set`).toMatch(/px$/);
+
+          // No leaked CSS scale transforms on inner content after vertical resize.
+          expect(contentTransformsOf(wrapper), `${t.name}: no leaked transforms`).toEqual([]);
+        }
+      });
