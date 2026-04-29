@@ -3182,6 +3182,20 @@ export function WorksheetBuilder() {
     return { ...p, elements: els };
   });
 
+  // Reset an element's size/position overrides back to the default 32%-wide
+  // box with no height override, no resize axis lock, and no vertical scale
+  // flag. Useful as an "undo my last resize" escape hatch when something
+  // looks off after dragging — exposed via the ↻ button on the top-left of
+  // every selected element.
+  const handleResetElement = (elId) => {
+    updEl(elId, {
+      widthOverride: BASELINE_WIDTH_PCT,
+      heightOverride: undefined,
+      resizeAxis: undefined,
+      verticalScale: false,
+    });
+  };
+
   // ── 4-sided drag-to-resize ─────────────────────────────────────────
   const handleResizeStart = (e, elId, direction) => {
     e.preventDefault();
