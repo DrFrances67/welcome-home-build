@@ -737,6 +737,73 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 // ELEMENT VIEW
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ScaledContent: wraps an element's inner content and scales it (via CSS
+// transform) so that boxes, text, lines, and other inner elements grow or
+// shrink together when the user resizes the outer wrapper. It measures the
+// content's natural size and the available wrapper space, then applies
+// transform: scale(sx, sy) with top-left origin. The outer wrapper keeps
+// absolute positioning so resize handles stay anchored to its edges.
+function ScaledContent({ el, children }) {
+  const outerRef = useRef(null);
+  const innerRef = useRef(null);
+  const [scale, setScale] = useState({ x: 1, y: 1, h: null });
+
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+
+    const measure = () => {
+      // Reset transform before measuring natural size
+      inner.style.transform = "none";
+      inner.style.width = "auto";
+      const naturalW = inner.scrollWidth || inner.offsetWidth || 1;
+      const naturalH = inner.scrollHeight || inner.offsetHeight || 1;
+      const availW = outer.clientWidth || naturalW;
+      // Treat heightOverride as the desired box height (in px). When the
+      // user has not set one, content keeps its natural height (sy = 1).
+      const desiredH = el.heightOverride || naturalH;
+
+      const sx = availW > 0 && naturalW > 0 ? availW / naturalW : 1;
+      const sy = el.heightOverride && naturalH > 0 ? desiredH / naturalH : sx;
+
+      // Force the inner box to its natural width so the scale math works
+      // consistently on both axes.
+      inner.style.width = naturalW + "px";
+      setScale({ x: sx, y: sy, h: Math.max(naturalH * sy, 12) });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, [el.widthOverride, el.heightOverride, el]);
+
+  return (
+    <div
+      ref={outerRef}
+      style={{
+        width: "100%",
+        height: scale.h != null ? scale.h + "px" : "auto",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        ref={innerRef}
+        style={{
+          transform: `scale(${scale.x}, ${scale.y})`,
+          transformOrigin: "top left",
+          width: "100%",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+
 function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
