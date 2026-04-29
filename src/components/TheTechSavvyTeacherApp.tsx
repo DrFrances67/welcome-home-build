@@ -3092,33 +3092,37 @@ export function WorksheetBuilder() {
     const startX = e.clientX;
     const startY = e.clientY;
     const el = ws.elements.find(x => x.id === elId);
-    const startH = el?.heightOverride || 80;
-    const startW = el?.widthOverride  || 100; // percent of container
+    const startH = el?.heightOverride || BASELINE_HEIGHT_PX;
+    const startW = el?.widthOverride ?? BASELINE_WIDTH_PCT; // percent of container
+    const startElX = el?.x || 0;
+    const startElY = el?.y || 0;
     // Get element DOM width in px for percentage calc
     const paperWidth = 632; // approx inner width of 760px paper with 64px padding each side
 
-    resizeRef.current = { elId, startX, startY, startH, startW, direction };
+    resizeRef.current = { elId, startX, startY, startH, startW, startElX, startElY, paperWidth, direction };
 
     const onMove = (mv) => {
       if (!resizeRef.current) return;
-      const { direction, startX, startY, startH, startW } = resizeRef.current;
+      const { direction, startX, startY, startH, startW, startElX, startElY, paperWidth } = resizeRef.current;
       const dy = mv.clientY - startY;
       const dx = mv.clientX - startX;
+      const dxPct = (dx / paperWidth) * 100;
 
       if (direction === "bottom") {
         updEl(elId, { heightOverride: Math.max(48, startH + dy) });
       } else if (direction === "top") {
-        updEl(elId, { heightOverride: Math.max(48, startH - dy) });
+        const nextH = Math.max(48, startH - dy);
+        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)) });
       } else if (direction === "right") {
-        const newW = Math.min(100, Math.max(20, startW + (dx / paperWidth) * 100));
+        const newW = Math.min(100, Math.max(20, startW + dxPct));
         updEl(elId, { widthOverride: Math.round(newW) });
       } else if (direction === "left") {
-        const newW = Math.min(100, Math.max(20, startW - (dx / paperWidth) * 100));
-        updEl(elId, { widthOverride: Math.round(newW) });
+        const newW = Math.min(100, Math.max(20, startW - dxPct));
+        updEl(elId, { widthOverride: Math.round(newW), x: Math.max(0, startElX + startW - newW) });
       } else if (direction === "corner") {
         updEl(elId, {
           heightOverride: Math.max(48, startH + dy),
-          widthOverride:  Math.min(100, Math.max(20, startW + (dx / paperWidth) * 100)),
+          widthOverride:  Math.min(100, Math.max(20, startW + dxPct)),
         });
       }
     };
