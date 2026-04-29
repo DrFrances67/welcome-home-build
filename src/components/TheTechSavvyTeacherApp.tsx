@@ -1086,9 +1086,9 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.note && <p style={{ fontSize: Math.max(fs - 7, 11) * sc.s, fontWeight: 500, color: "#6B7280", margin: `0 0 ${8 * sc.s}px 0`, fontFamily: F }}>{el.note}</p>}
-        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign }}>
+        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign, wordBreak: "break-word", overflowWrap: "anywhere", maxWidth: "100%" }}>
           {(el.text || "").split("______").map((part, i, arr) => (
-            <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: 85 * sc.s, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: `0 ${3 * sc.s}px` }} />}</span>
+            <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: Math.min(85, 60) * sc.s, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: `0 ${3 * sc.s}px` }} />}</span>
           ))}
         </p>
         <DeleteBtn /><ResizeHandles />
