@@ -877,12 +877,12 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     minHeight: el.heightOverride || undefined,
     height: el.heightOverride || undefined,
     boxSizing: "border-box",
-    // Keep inner content inside the resizable wrapper. Tables show a scrollbar
-    // so every row remains reachable even before the user enlarges the box.
-    // NOTE: Use overflow=visible so the resize handles (which sit slightly
-    // outside the wrapper edge for easier grabbing) are not clipped. Inner
-    // content is clipped by its own container styles where needed.
-    overflow: isTable ? "auto" : "visible",
+    // Clip ALL inner content to the resizable bounds so nothing renders
+    // outside the box on any worksheet element. Tables stay scrollable so
+    // every row remains reachable. Resize handles are repositioned to sit
+    // flush with the edges (see ResizeHandles below) so clipping does not
+    // hide them.
+    overflow: isTable ? "auto" : "hidden",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
@@ -946,25 +946,25 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
       {/* Bottom — vertical resize */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "bottom"); }}
         title="Drag to resize height"
-        style={{ position:"absolute", bottom:-3, left:"50%", transform:"translateX(-50%)", width:56, height:18, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:56, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:44, height:6, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Top — vertical resize */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "top"); }}
         title="Drag to resize height"
-        style={{ position:"absolute", top:-3, left:"50%", transform:"translateX(-50%)", width:56, height:18, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:56, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:44, height:6, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Right — horizontal resize (drag this edge to make the box WIDER) */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "right"); }}
         title="Drag to resize width"
-        style={{ position:"absolute", right:-3, top:"50%", transform:"translateY(-50%)", width:18, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:14, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:6, height:44, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Left — horizontal resize (drag this edge to make the box WIDER) */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "left"); }}
         title="Drag to resize width"
-        style={{ position:"absolute", left:-3, top:"50%", transform:"translateY(-50%)", width:18, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:14, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:6, height:44, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Bottom-right corner */}
