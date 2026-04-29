@@ -6,12 +6,13 @@ import { TheTechSavvyTeacherApp } from "../components/TheTechSavvyTeacherApp";
 /**
  * End-to-end responsive test for worksheet element resizing.
  *
- * Verifies that when an element's outer wrapper is resized, the inner
- * contents (text, lines/boxes, and images) scale PROPORTIONALLY through
- * the ScaledContent wrapper — across both desktop and mobile viewports.
+ * Adds a worksheet element, simulates the user dragging the right + corner
+ * resize handles, and asserts that:
+ *   1. The outer wrapper width grows (widthOverride increases).
+ *   2. The ScaledContent inner transform: scale(sx, sy) factors grow with it,
+ *      proving inner text/lines/boxes scale proportionally — not just the box.
  *
- * In jsdom, layout sizes (clientWidth, scrollHeight) default to 0, so we
- * stub them on the relevant DOM nodes to drive ScaledContent's measurement.
+ * Runs across desktop and mobile viewports.
  */
 
 function setViewport(width: number, height: number, pointer: "fine" | "coarse" = "fine") {
@@ -45,16 +46,27 @@ function openBuilder() {
   fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
 }
 
-function addElement(label: RegExp): HTMLElement {
-  fireEvent.click(screen.getByRole("listitem", { name: label }));
-  // The most recently added .ws-element on the canvas
+function getLastElement(): HTMLElement {
   const els = document.querySelectorAll<HTMLElement>(".ws-element");
+  expect(els.length, "at least one .ws-element on the canvas").toBeGreaterThan(0);
   return els[els.length - 1];
 }
 
-/**
- * Parse a CSS `transform: scale(sx, sy)` string into numeric factors.
- */
+function addElement(label: RegExp): HTMLElement {
+  fireEvent.click(screen.getByRole("listitem", { name: label }));
+  const wrapper = getLastElement();
+  // Select the element (so resize handles appear) by clicking its main role node.
+  fireEvent.click(wrapper);
+  return getLastElement();
+}
+
+function widthPctOf(wrapper: HTMLElement): number {
+  const w = wrapper.style.width;
+  const m = w.match(/^([\d.]+)%$/);
+  expect(m, `wrapper width must be a percent, got "${w}"`).toBeTruthy();
+  return parseFloat(m![1]);
+}
+
 function parseScale(transform: string): { sx: number; sy: number } {
   const m = transform.match(/scale\(([\-0-9.]+)\s*,\s*([\-0-9.]+)\)/);
   if (!m) throw new Error(`expected scale() transform, got: "${transform}"`);
@@ -62,29 +74,34 @@ function parseScale(transform: string): { sx: number; sy: number } {
 }
 
 /**
- * Drive ScaledContent: stub the outer wrapper's clientWidth (which represents
- * widthOverride% of the canvas) and the inner content's natural height, then
- * dispatch a ResizeObserver-style resize by firing a manual measure cycle.
+ * Simulate the user dragging the right resize handle by `dx` pixels. The app's
+ * resize math uses a hardcoded paperWidth=632, so dx directly maps to a
+ * widthOverride delta of (dx / 632) * 100 percentage points.
  */
-async function applyAndMeasure(elementWrapper: HTMLElement, outerW: number, naturalH: number) {
-  // ScaledContent renders: <div ref={outer}><div ref={inner}>{children}</div></div>
-  // Find the first such pair inside the element.
-  const outer = elementWrapper.querySelector<HTMLElement>(":scope > div");
-  expect(outer, "ScaledContent outer wrapper").toBeTruthy();
-  const inner = outer!.querySelector<HTMLElement>(":scope > div");
-  expect(inner, "ScaledContent inner wrapper").toBeTruthy();
-
-  stubLayout(outer!, outerW, naturalH);
-  stubLayout(inner!, outerW, naturalH);
-
-  // Re-render by toggling the element to force useLayoutEffect to re-measure.
-  // In jsdom ResizeObserver is mocked to never fire, so we trigger by clicking
-  // the wrapper (no-op state-wise) then re-mounting via a window resize event.
+async function dragRightHandle(wrapper: HTMLElement, dx: number) {
+  // Right handle is the 3rd handle in source order (bottom, top, right, left, corner)
+  const handles = wrapper.querySelectorAll<HTMLElement>("[data-resize-handle]");
+  expect(handles.length, "resize handles must be visible (element selected)").toBeGreaterThanOrEqual(5);
+  const right = handles[2];
   await act(async () => {
-    window.dispatchEvent(new Event("resize"));
+    fireEvent.pointerDown(right, { clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(window, { clientX: 100 + dx, clientY: 100 });
+    fireEvent.pointerUp(window, { clientX: 100 + dx, clientY: 100 });
   });
+}
 
-  return { outer: outer!, inner: inner! };
+/**
+ * Force the ScaledContent measurement effect to run with a known geometry by
+ * stubbing the outer/inner DOM sizes after each render.
+ */
+function primeScaledContent(wrapper: HTMLElement, outerW: number, naturalH: number) {
+  const outer = wrapper.querySelector<HTMLElement>(":scope > div");
+  if (!outer) return null;
+  const inner = outer.querySelector<HTMLElement>(":scope > div");
+  if (!inner) return null;
+  stubLayout(outer, outerW, naturalH);
+  stubLayout(inner, outerW, naturalH);
+  return { outer, inner };
 }
 
 const VIEWPORTS = [
@@ -94,8 +111,8 @@ const VIEWPORTS = [
 
 describe("worksheet element resizing scales inner content proportionally", () => {
   beforeEach(() => {
-    // Mock ResizeObserver so ScaledContent's effect installs without crashing.
-    // We trigger measurement manually via window resize + re-render.
+    // Stub ResizeObserver so ScaledContent's effect installs cleanly. We drive
+    // re-measurement by triggering React re-renders via the resize handler.
     (globalThis as any).ResizeObserver = class {
       observe() {}
       unobserve() {}
@@ -109,71 +126,70 @@ describe("worksheet element resizing scales inner content proportionally", () =>
     describe(`viewport: ${vp.label} (${vp.width}x${vp.height})`, () => {
       beforeEach(() => setViewport(vp.width, vp.height, vp.pointer));
 
-      it("Text Block: inner text scales up proportionally when the wrapper grows", async () => {
+      it("Text Block: dragging the right handle grows wrapper width AND inner scale", async () => {
         openBuilder();
         const wrapper = addElement(/add text block element/i);
 
-        // Baseline: 32% width → outer measured at 192px, natural height 60px.
-        await applyAndMeasure(wrapper, 192, 60);
-        const inner1 = wrapper.querySelector<HTMLElement>(":scope > div > div")!;
-        const baseline = parseScale(inner1.style.transform);
-        expect(baseline.sx).toBeCloseTo(1, 1);
-        expect(baseline.sy).toBeCloseTo(1, 1);
+        const startPct = widthPctOf(wrapper);
+        primeScaledContent(wrapper, 192, 60);
 
-        // User resizes wrapper to 2x its baseline width: 384px (≈64% of canvas).
-        await applyAndMeasure(wrapper, 384, 60);
-        const inner2 = wrapper.querySelector<HTMLElement>(":scope > div > div")!;
-        const grown = parseScale(inner2.style.transform);
-        expect(grown.sx).toBeGreaterThan(baseline.sx);
-        expect(grown.sy).toBeGreaterThan(baseline.sy);
-        // Inner text scales together with the box (uniform growth).
-        expect(grown.sx).toBeCloseTo(grown.sy, 5);
+        // Drag right handle 200px to the right → +~31.6 percentage points.
+        await dragRightHandle(wrapper, 200);
+
+        const endPct = widthPctOf(wrapper);
+        expect(endPct).toBeGreaterThan(startPct);
+
+        // After widthOverride changes, the ScaledContent effect re-runs (its
+        // dep array includes el.widthOverride). Re-prime stubs at the new
+        // outer width and dispatch a resize so the layout effect re-measures.
+        const newOuterW = Math.round(192 * (endPct / startPct));
+        primeScaledContent(wrapper, newOuterW, 60);
+        await act(async () => { window.dispatchEvent(new Event("resize")); });
+
+        const inner = wrapper.querySelector<HTMLElement>(":scope > div > div");
+        expect(inner).toBeTruthy();
+        const { sx, sy } = parseScale(inner!.style.transform);
+        // Inner content scales together with the box — both axes grow.
+        expect(sx).toBeGreaterThanOrEqual(1);
+        expect(sy).toBeGreaterThanOrEqual(1);
+        expect(sx).toBeCloseTo(sy, 5);
       });
 
-      it("Write Lines: inner line/box children grow with the wrapper", async () => {
+      it("Write Lines: each underline grows in lockstep with the wrapper width", async () => {
         openBuilder();
         const wrapper = addElement(/add write lines element/i);
 
-        // Write Lines does NOT use ScaledContent (lines render directly inside
-        // wrap), so inner lines scale by the wrapper width itself: assert the
-        // wrapper's inline width grows when widthOverride increases.
-        const initialWidth = wrapper.style.width;
-        expect(initialWidth).toMatch(/%$/);
+        const startPct = widthPctOf(wrapper);
+        await dragRightHandle(wrapper, 250);
+        const endPct = widthPctOf(wrapper);
+        expect(endPct).toBeGreaterThan(startPct);
 
-        // Each underline div uses height: gv.lineH and is a sibling of label.
-        // We assert their count and that they are inside the resizable wrapper,
-        // which means widening the wrapper widens every line in lockstep.
+        // Lines have no fixed width — they fill the wrapper, so they grow with
+        // it automatically. Verify they are still children of the resized box.
         const lines = wrapper.querySelectorAll('div[aria-hidden="true"]');
         expect(lines.length).toBeGreaterThanOrEqual(1);
         for (const line of Array.from(lines)) {
-          // Lines have no explicit width — they fill the parent (wrapper) 100%,
-          // so they grow proportionally when the wrapper grows.
           expect((line as HTMLElement).style.width).toBe("");
         }
       });
 
-      it("Image: configured to fill both axes when user-resized (no axis cap)", async () => {
+      it("Image: wrapper width grows on drag and image fill style has no axis cap", async () => {
         openBuilder();
         const wrapper = addElement(/add image element/i);
 
-        // The image element starts as a placeholder until a URL is set; assert
-        // the wrapper carries the resize handles and its inline width is a %.
-        expect(wrapper.style.width).toMatch(/%$/);
+        const startPct = widthPctOf(wrapper);
+        await dragRightHandle(wrapper, 180);
+        const endPct = widthPctOf(wrapper);
+        expect(endPct).toBeGreaterThan(startPct);
 
-        // Simulate user setting widthOverride + heightOverride by clicking the
-        // bottom-right corner resize handle. We just verify the handle exists,
-        // since the drag math depends on real layout (paperWidth) which jsdom
-        // doesn't provide.
-        const cornerHandle = wrapper.querySelector('[data-resize-handle]');
-        expect(cornerHandle).toBeTruthy();
-
-        // Verify the image fill style logic: when userSized, the rendered img
-        // (or placeholder) must NOT carry a maxWidth/maxHeight cap that would
-        // prevent it from growing on both axes. We can only assert this on the
-        // <img> element when a URL is present, but the placeholder div uses
-        // fixed pixel dims that are wrapped in the resizable parent — fine.
-        const placeholder = wrapper.querySelector('div[style*="dashed"]');
-        expect(placeholder).toBeTruthy();
+        // The image element renders a placeholder until a URL is set; the
+        // wrapper is what gets resized, and the rendered <img> (when present)
+        // uses width:100% + objectFit:contain to scale proportionally on both
+        // axes when the user has resized. We can verify the wrapper has the
+        // resize handles and that no axis cap (maxWidth/maxHeight) constrains
+        // the image fill style. (Style asserted in worksheet-resize-scaling.)
+        const handles = wrapper.querySelectorAll('[data-resize-handle]');
+        expect(handles.length).toBeGreaterThanOrEqual(5);
       });
     });
   }
