@@ -78,6 +78,25 @@ function getDokLevelLayout(wrapper: HTMLElement): { gap: number; justify: string
   };
 }
 
+function getDokCard(wrapper: HTMLElement): HTMLElement {
+  const card = wrapper.querySelector<HTMLElement>(":scope > div");
+  expect(card, "DOK card container").toBeTruthy();
+  return card!;
+}
+
+function getDokQuestionTextNodes(wrapper: HTMLElement): HTMLElement[] {
+  const nodes = Array.from(wrapper.querySelectorAll<HTMLElement>("li span"))
+    .filter(node => (node.textContent || "").trim().length > 0);
+  expect(nodes.length, "DOK question text nodes").toBeGreaterThan(0);
+  return nodes;
+}
+
+function getDokItemGaps(wrapper: HTMLElement): number[] {
+  return Array.from(wrapper.querySelectorAll<HTMLElement>("ul"))
+    .map(ul => parseFloat(ul.style.gap || "0"))
+    .filter(Number.isFinite);
+}
+
 function getListLayout(wrapper: HTMLElement): { gap: number; justify: string } {
   const ul = wrapper.querySelector<HTMLElement>("ul");
   expect(ul, "list element").toBeTruthy();
@@ -134,6 +153,76 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
       .find(node => node.textContent?.includes("?"));
     expect(questionText?.style.whiteSpace).toBe("normal");
     expect(questionText?.style.wordBreak).toBe("break-word");
+  });
+
+  it("DOK Questions: extreme narrow and wide resize keeps questions wrapped and gaps bounded", async () => {
+    openBuilder();
+    const wrapper = addElement(/add dok questions element/i);
+
+    await dragHandle(getHandles(wrapper).right, -1200, 0);
+    expect(wrapper.style.width).toBe("20%");
+    let layout = getDokLevelLayout(wrapper);
+    expect(layout.justify).toBe("flex-start");
+    expect(layout.gap).toBeLessThanOrEqual(10);
+    expect(Math.max(...getDokItemGaps(wrapper))).toBeLessThanOrEqual(6);
+    for (const node of getDokQuestionTextNodes(wrapper)) {
+      expect(node.style.whiteSpace).toBe("normal");
+      expect(node.style.wordBreak).toBe("break-word");
+      expect(node.style.overflow).toBe("visible");
+    }
+
+    await dragHandle(getHandles(wrapper).right, 2400, 0);
+    expect(wrapper.style.width).toBe("100%");
+    layout = getDokLevelLayout(wrapper);
+    expect(layout.justify).toBe("flex-start");
+    expect(layout.gap).toBeLessThanOrEqual(10);
+    expect(Math.max(...getDokItemGaps(wrapper))).toBeLessThanOrEqual(6);
+  });
+
+  it("DOK Questions: extreme short and tall heights use scrolling instead of spreading levels", async () => {
+    openBuilder();
+    const wrapper = addElement(/add dok questions element/i);
+
+    await dragHandle(getHandles(wrapper).bottom, 0, -1200);
+    expect(wrapper.style.height).toBe("48px");
+    expect(getDokCard(wrapper).style.overflowY).toBe("auto");
+    let layout = getDokLevelLayout(wrapper);
+    expect(layout.justify).toBe("flex-start");
+    expect(layout.gap).toBeLessThanOrEqual(10);
+
+    await dragHandle(getHandles(wrapper).bottom, 0, 1200);
+    expect(getDokCard(wrapper).style.overflowY).toBe("auto");
+    layout = getDokLevelLayout(wrapper);
+    expect(layout.justify).toBe("flex-start");
+    expect(layout.gap).toBeLessThanOrEqual(10);
+    expect(Math.max(...getDokItemGaps(wrapper))).toBeLessThanOrEqual(6);
+  });
+
+  it("DOK Questions: multi-line and long questions remain visible after extreme resizing", async () => {
+    openBuilder();
+    const wrapper = addElement(/add dok questions element/i);
+
+    fireEvent.change(screen.getByLabelText(/DOK Level 1 questions/i), {
+      target: {
+        value: [
+          "What details from the text help you identify the main character, setting, and problem in complete sentences?",
+          "Which evidence would you underline, circle, or annotate to prove your answer when explaining your thinking?",
+        ].join("\n"),
+      },
+    });
+
+    await dragHandle(getHandles(wrapper).corner, -1200, -1200);
+
+    const rendered = getDokQuestionTextNodes(wrapper).map(node => node.textContent || "").join(" ");
+    expect(rendered).toContain("What details from the text");
+    expect(rendered).toContain("Which evidence would you underline");
+    expect(getDokCard(wrapper).style.overflowY).toBe("auto");
+    expect(getDokLevelLayout(wrapper).justify).toBe("flex-start");
+    for (const node of getDokQuestionTextNodes(wrapper)) {
+      expect(node.style.whiteSpace).toBe("normal");
+      expect(node.style.textOverflow).not.toBe("ellipsis");
+      expect(node.style.wordBreak).toBe("break-word");
+    }
   });
 
   it("Success Criteria: horizontal-only resize keeps list item gap tight", async () => {
