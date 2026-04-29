@@ -754,9 +754,9 @@ const resizeScaleFor = (el) => {
   const sx = Math.max(1, (el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
   const horizontalOnly = el.resizeAxis === "horizontal";
   const sy = el.heightOverride
-    ? Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX)
+    ? (horizontalOnly && !el.verticalScale ? 1 : Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX))
     : (horizontalOnly ? 1 : sx);
-  return { sx, sy, s: horizontalOnly ? sy : Math.max(sx, sy) };
+  return { sx, sy, s: horizontalOnly && !el.verticalScale ? 1 : Math.max(sx, sy) };
 };
 
 function ScaledContent({ el, children }) {
