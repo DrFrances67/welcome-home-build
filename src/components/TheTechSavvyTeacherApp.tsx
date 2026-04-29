@@ -849,6 +849,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     background: "white",
     transition: "outline 0.1s",
     minHeight: el.heightOverride || undefined,
+    height: el.heightOverride || undefined,
     boxSizing: "border-box",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
