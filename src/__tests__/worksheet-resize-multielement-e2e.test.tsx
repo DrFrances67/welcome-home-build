@@ -240,7 +240,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
 
       it("True/False specifically: each statement row stays inside the scaled wrapper after enlarging", async () => {
         openBuilder();
-        const wrapper = addElement(/add true or false activity/i);
+        const wrapper = addElement(/add true \/ false element/i);
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
         // The TRUE / FALSE chips are spans inside the scaled inner div; they
