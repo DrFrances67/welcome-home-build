@@ -1348,9 +1348,33 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
   const activeSizePt = el.fontSizeOverride || null;
 
   // ── Typography section (shared by ALL worksheet element types) ──
+  // Lock vs Auto toggle:
+  //   • Lock  → fontSizeOverride is set (current preset, custom value, or
+  //             the grade-default snapshot). Resizing the box will NOT change
+  //             the rendered text size.
+  //   • Auto  → fontSizeOverride is null. Text scales with the box.
+  const isLocked = activeSizePt !== null;
   const TypographySection = () => (
     <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #F3F4F6" }}>
       <p style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.8, margin: "0 0 10px 0" }}>Typography</p>
+
+      <label style={LBL}>Font Size Scaling</label>
+      <div role="group" aria-label="Font size scaling mode" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 4, marginBottom: 10 }}>
+        <button
+          onClick={() => onChange({ fontSizeOverride: null })}
+          aria-label="Auto — text scales when the box is resized"
+          aria-pressed={!isLocked}
+          title="Auto — text scales when the box is resized"
+          style={{ padding: "8px 0", borderRadius: 7, border: `1.5px solid ${!isLocked ? gv.color : "#E5E7EB"}`, background: !isLocked ? gv.light : "white", fontFamily: F, fontSize: 12, fontWeight: 800, cursor: "pointer", color: !isLocked ? gv.color : "#374151", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+        ><span aria-hidden="true">↔</span> Auto-scale</button>
+        <button
+          onClick={() => onChange({ fontSizeOverride: el.fontSizeOverride || gv.fontSize })}
+          aria-label="Lock — keep text size fixed when the box is resized"
+          aria-pressed={isLocked}
+          title="Lock — text stays the same size when the box is resized"
+          style={{ padding: "8px 0", borderRadius: 7, border: `1.5px solid ${isLocked ? gv.color : "#E5E7EB"}`, background: isLocked ? gv.light : "white", fontFamily: F, fontSize: 12, fontWeight: 800, cursor: "pointer", color: isLocked ? gv.color : "#374151", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+        ><span aria-hidden="true">🔒</span> Lock size{isLocked ? ` (${activeSizePt}pt)` : ""}</button>
+      </div>
 
       <label style={LBL}>Text Size</label>
       <div role="group" aria-label="Text size preset" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 4 }}>
