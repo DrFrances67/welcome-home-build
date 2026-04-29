@@ -1065,10 +1065,17 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
 
   if (el.type === "shortAnswer") {
     const sc = resizeScaleFor(el);
+    // Grow the answer-line count to fill the wrapper height when the user
+    // resizes vertically, so the box never has empty space below the lines.
+    const lineUnit = (gv.lineH * 0.9 * sc.s) + 5;
+    const reserved = 48 * sc.s;
+    const fitLines = el.heightOverride
+      ? Math.max(el.lines || 4, Math.floor((el.heightOverride - reserved) / Math.max(8, lineUnit)))
+      : (el.lines || 4);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
-        {Array.from({ length: el.lines || 4 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9 * sc.s, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 * sc.s }} />)}
+        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{el.question}</p>
+        {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9 * sc.s, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 * sc.s }} />)}
         <DeleteBtn /><ResizeHandles />
       </div>
     );
