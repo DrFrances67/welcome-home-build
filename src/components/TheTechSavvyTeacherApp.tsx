@@ -982,7 +982,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ fontSize: Math.max(fs - 6, 12) * sc.s, fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: `${10 * sc.s}px ${16 * sc.s}px`, borderRadius: 8, borderLeft: `${5 * sc.s}px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -992,7 +992,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1030,7 +1030,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         )}
         {!floated && el.caption && <p style={{ fontSize: Math.max(fs - 10, 11), color: "#6B7280", textAlign: "center", margin: "6px 0 0", fontFamily: F, fontWeight: 600 }}>{el.caption}</p>}
         {floated && <div style={{ clear: "both" }} />}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1039,7 +1039,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Write lines element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.label && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 10px 0", fontFamily: elFamily, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.label}</p>}
       {Array.from({ length: el.lines || 3 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH, borderBottom: "2px solid #D1D5DB", marginBottom: 6 }} />)}
-      <DeleteBtn /><ResizeHandles />
+      <DeleteBtn /><ResetBtn /><ResizeHandles />
     </div>
   );
 
@@ -1051,7 +1051,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         <div style={{ display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 8 * scale.s, padding: `${10 * scale.s}px ${14 * scale.s}px`, background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25`, minHeight: el.heightOverride ? Math.max(24, el.heightOverride - 46) : undefined, boxSizing: "border-box" }}>
           {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs * scale.s, fontWeight: 600, fontFamily: elFamily, padding: `${4 * scale.s}px ${14 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827", lineHeight: 1.35 }}>{w}</span>)}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1070,7 +1070,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             </span>
           ))}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1089,7 +1089,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             </label>
           ))}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1107,7 +1107,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             </div>
           </div>
         ))}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1125,7 +1125,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{el.question}</p>
         {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9 * sc.s, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 * sc.s }} />)}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1140,7 +1140,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: Math.min(85, 60) * sc.s, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: `0 ${3 * sc.s}px` }} />}</span>
           ))}
         </p>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1163,7 +1163,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
           {el.points && <span style={{ fontSize: Math.max(fs - 6, 10) * sc.s, fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12 * sc.s, fontFamily: F, padding: `${3 * sc.s}px ${9 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
         </div>
         {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75 * sc.s, borderBottom: "1px solid #E5E7EB", marginBottom: 3 * sc.s }} />)}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1191,7 +1191,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             ))}
           </ul>
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1229,7 +1229,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             })}
           </div>
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1249,7 +1249,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             ))}
           </tbody>
         </table>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1300,7 +1300,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             );
           })}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
