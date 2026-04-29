@@ -1160,7 +1160,8 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
     const sc = resizeScaleFor(el);
     const levelCount = Math.max(1, (el.levels || []).length);
-    const extraV = el.heightOverride ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
+    const horizontalOnly = el.resizeAxis === "horizontal";
+    const extraV = (el.heightOverride && !horizontalOnly) ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
     const levelGap = (10 * sc.s) + (extraV / (levelCount + 1));
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
