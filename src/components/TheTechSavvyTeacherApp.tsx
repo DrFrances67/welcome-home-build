@@ -4495,7 +4495,7 @@ function LessonPlanGenerator() {
     setRegeneratingDok(false);
   };
 
-
+  // ── Exemplar handlers ──────────────────────────────────────────────
   const readFileAsB64  = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(f); });
   const readFileAsText = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(f); });
 
