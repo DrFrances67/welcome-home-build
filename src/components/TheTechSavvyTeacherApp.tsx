@@ -1442,6 +1442,8 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
         </div>
         <TypographySection />
       </>)}
+
+      {el.type === "blank" && (<>
         <label style={LBL}>Label / Question</label>
         <input type="text" value={el.label || ""} spellCheck onChange={e => onChange({ label: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Write lines label" />
         <label style={LBL}>Number of Lines</label>
