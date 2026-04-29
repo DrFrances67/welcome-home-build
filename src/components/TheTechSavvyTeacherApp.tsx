@@ -1101,7 +1101,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
             {(el.items || []).map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 * sc.s }}>
                 <span aria-hidden="true" style={{ flexShrink: 0, width: 18 * sc.s, height: 18 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
-                <span style={{ fontSize: fs * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{item}</span>
+                <span style={{ fontSize: fs * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{item}</span>
               </li>
             ))}
           </ul>
