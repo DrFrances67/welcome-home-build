@@ -4636,6 +4636,15 @@ REQUIRED for homework and extension:
 REQUIRED for successCriteria:
 - "successCriteria" MUST be an array of 3-5 specific, observable, student-facing "I can…" statements directly aligned to the learning objectives. Each statement is what a student must be able to do/say/produce by the end of the lesson to demonstrate mastery. Use student-friendly language (e.g. "I can identify the main idea of a paragraph and support it with one detail."). NEVER write "N/A".
 
+REQUIRED for dokQuestions (Depth of Knowledge — Norman Webb framework):
+- "dokQuestions" MUST be an array of EXACTLY 4 objects, one per DOK level (1, 2, 3, 4). EVERY level MUST have 2-3 student-facing questions in "items" — never skip a level, never write "N/A".
+- Questions MUST be directly tied to the learning objectives above and use grade-appropriate language for ${form.grade}.
+- DOK measures cognitive complexity, not difficulty. Use these definitions:
+  • DOK 1 — Recall & Reproduction (recall facts, define, identify, list)
+  • DOK 2 — Skills & Concepts (summarize, compare, classify, explain relationships)
+  • DOK 3 — Strategic Thinking (justify, cite evidence, draw conclusions, hypothesize)
+  • DOK 4 — Extended Thinking (synthesize across sources, design, critique, transfer to new context)
+
 Return this JSON (replace all placeholder text with real content, keep values concise):
 {
   "title": "...",
@@ -4650,6 +4659,12 @@ Return this JSON (replace all placeholder text with real content, keep values co
     {"name": "...", "duration": "...", "description": "...", "teacherMoves": "...", "studentActions": "...", "udlNotes": "..."}
   ],
   "assessment": {"formative": "...", "summative": "...", "exitTicket": "..."},
+  "dokQuestions": [
+    {"level": 1, "label": "Recall & Reproduction", "items": ["...", "..."]},
+    {"level": 2, "label": "Skills & Concepts", "items": ["...", "..."]},
+    {"level": 3, "label": "Strategic Thinking", "items": ["...", "..."]},
+    {"level": 4, "label": "Extended Thinking", "items": ["...", "..."]}
+  ],
   "differentiation": {"ell": "...", "iep": "...", "gifted": "...", "universal": "..."},
   "homework": "...",
   "extension": "...",
