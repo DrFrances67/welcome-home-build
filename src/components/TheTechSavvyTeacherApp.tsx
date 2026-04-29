@@ -3522,6 +3522,9 @@ Output ONLY the JSON array.`,
               <input type="checkbox" checked={ws[k]} onChange={e => setF(k, e.target.checked)} aria-label={`Show ${l} on worksheet`} style={{ accentColor: gv.color, width: 14, height: 14 }} /> {l}
             </label>
           ))}
+          <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer", borderLeft: "1px solid #E5E7EB", paddingLeft: 10 }} title="When on, list items in Success Criteria, Exit Ticket, DOK and other multi-item elements stay on a single line (resize the box wider to reveal more text). When off, items wrap to multiple lines.">
+            <input type="checkbox" checked={ws.oneLineOnly !== false} onChange={e => setF("oneLineOnly", e.target.checked)} aria-label="Force list items to a single line" style={{ accentColor: gv.color, width: 14, height: 14 }} /> 1-line items
+          </label>
         </fieldset>
 
         <button onClick={() => setShowHelp(true)} aria-label="Open help documentation"
