@@ -1221,10 +1221,22 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       {el.type === "matching" && (<>
         <label style={LBL}>Title</label>
         <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Matching title" />
-        <label style={LBL}>Left Column (one per line)</label>
-        <textarea value={(el.left || []).join("\n")} spellCheck onChange={e => onChange({ left: e.target.value.split("\n").map(x => x.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 80, marginTop: 4 }} aria-label="Left column items" />
-        <label style={LBL}>Right Column (one per line)</label>
-        <textarea value={(el.right || []).join("\n")} spellCheck onChange={e => onChange({ right: e.target.value.split("\n").map(x => x.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 80, marginTop: 4 }} aria-label="Right column items" />
+        <label style={LBL}>Left Column (one per line — press Enter for a new item)</label>
+        <textarea
+          value={el._leftRaw !== undefined ? el._leftRaw : (el.left || []).join("\n")}
+          spellCheck
+          onChange={e => { const raw = e.target.value; onChange({ _leftRaw: raw, left: raw.split("\n").map(x => x.trim()).filter(Boolean) }); }}
+          style={{ ...inp, minHeight: 80, marginTop: 4 }}
+          aria-label="Left column items"
+        />
+        <label style={LBL}>Right Column (one per line — press Enter for a new item)</label>
+        <textarea
+          value={el._rightRaw !== undefined ? el._rightRaw : (el.right || []).join("\n")}
+          spellCheck
+          onChange={e => { const raw = e.target.value; onChange({ _rightRaw: raw, right: raw.split("\n").map(x => x.trim()).filter(Boolean) }); }}
+          style={{ ...inp, minHeight: 80, marginTop: 4 }}
+          aria-label="Right column items"
+        />
       </>)}
 
       {el.type === "multipleChoice" && (<>
@@ -1232,14 +1244,26 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
         <input type="text" value={el.question || ""} spellCheck onChange={e => onChange({ question: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Question text" />
         <label style={LBL}>Instruction</label>
         <input type="text" value={el.note || ""} spellCheck onChange={e => onChange({ note: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Instruction note" />
-        <label style={LBL}>Answer Choices (one per line)</label>
-        <textarea value={(el.choices || []).join("\n")} spellCheck onChange={e => onChange({ choices: e.target.value.split("\n").map(c => c.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 90, marginTop: 4 }} aria-label="Answer choices" />
+        <label style={LBL}>Answer Choices (one per line — press Enter for a new choice)</label>
+        <textarea
+          value={el._choicesRaw !== undefined ? el._choicesRaw : (el.choices || []).join("\n")}
+          spellCheck
+          onChange={e => { const raw = e.target.value; onChange({ _choicesRaw: raw, choices: raw.split("\n").map(c => c.trim()).filter(Boolean) }); }}
+          style={{ ...inp, minHeight: 90, marginTop: 4 }}
+          aria-label="Answer choices"
+        />
         <TypographySection />
       </>)}
 
       {el.type === "truefalse" && (<>
-        <label style={LBL}>Statements (one per line)</label>
-        <textarea value={(el.statements || []).join("\n")} spellCheck onChange={e => onChange({ statements: e.target.value.split("\n").map(s => s.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 120, marginTop: 4 }} aria-label="True/false statements" />
+        <label style={LBL}>Statements (one per line — press Enter for a new statement)</label>
+        <textarea
+          value={el._statementsRaw !== undefined ? el._statementsRaw : (el.statements || []).join("\n")}
+          spellCheck
+          onChange={e => { const raw = e.target.value; onChange({ _statementsRaw: raw, statements: raw.split("\n").map(s => s.trim()).filter(Boolean) }); }}
+          style={{ ...inp, minHeight: 120, marginTop: 4 }}
+          aria-label="True/false statements"
+        />
         <TypographySection />
       </>)}
 
