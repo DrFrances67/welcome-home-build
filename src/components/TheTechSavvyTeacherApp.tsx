@@ -865,7 +865,10 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     boxSizing: "border-box",
     // Keep inner content inside the resizable wrapper. Tables show a scrollbar
     // so every row remains reachable even before the user enlarges the box.
-    overflow: isTable ? "auto" : "hidden",
+    // NOTE: Use overflow=visible so the resize handles (which sit slightly
+    // outside the wrapper edge for easier grabbing) are not clipped. Inner
+    // content is clipped by its own container styles where needed.
+    overflow: isTable ? "auto" : "visible",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
