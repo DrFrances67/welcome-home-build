@@ -5635,6 +5635,45 @@ document.addEventListener('keydown',e=>{
               ))}
             </div>
 
+            {/* DOK Questions — aligned to learning objectives */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"0 0 10px", borderBottom:"1px solid #E5E7EB", paddingBottom:8 }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", margin:0 }}>🧠 DOK Questions — aligned to learning objectives</p>
+              <button
+                onClick={regenerateDok}
+                disabled={regeneratingDok}
+                style={{ fontFamily:"'Inter',sans-serif", fontSize:10.5, fontWeight:700, color: regeneratingDok ? "#9CA3AF" : BRAND, background:"transparent", border:`1px solid ${regeneratingDok ? "#E5E7EB" : BRAND}40`, borderRadius:6, padding:"4px 10px", cursor: regeneratingDok ? "wait" : "pointer" }}
+                title="Regenerate DOK questions from the current objectives"
+              >
+                {regeneratingDok ? "Regenerating…" : "↻ Regenerate"}
+              </button>
+            </div>
+            {Array.isArray(result.dokQuestions) && result.dokQuestions.length > 0 ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {result.dokQuestions.map((lv, li) => {
+                  const c = DOK_LEVEL_COLORS[(lv.level || li + 1) - 1] || "#374151";
+                  return (
+                    <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderLeft: `5px solid ${c}`, borderRadius:8, padding:"8px 12px" }}>
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:0.6, color:c, margin:"0 0 6px" }}>
+                        DOK {lv.level} · {lv.label}
+                      </p>
+                      <ul style={{ listStyle:"none", padding:0, margin:0, display:"flex", flexDirection:"column", gap:4 }}>
+                        {(lv.items || []).map((q, qi) => (
+                          <li key={qi} style={{ fontFamily:"'Inter',sans-serif", fontSize:12.5, color:"#1F2937", lineHeight:1.5, display:"flex", gap:8, alignItems:"flex-start" }}>
+                            <span aria-hidden="true" style={{ flexShrink:0, width:14, height:14, marginTop:3, border:`2px solid ${c}`, borderRadius:3, background:"white" }} />
+                            <span>{q}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ background:"#F9FAFB", border:"1px dashed #E5E7EB", borderRadius:8, padding:"12px 14px", marginBottom:20, fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280" }}>
+                No DOK questions generated yet — click <strong>↻ Regenerate</strong> to build them from this lesson's objectives.
+              </div>
+            )}
+
             {/* Differentiation */}
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", margin:"0 0 10px", borderBottom:"1px solid #E5E7EB", paddingBottom:8 }}>Differentiation</p>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
