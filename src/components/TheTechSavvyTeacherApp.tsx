@@ -750,6 +750,12 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 const BASELINE_WIDTH_PCT = 32; // matches default widthOverride for new elements
 const BASELINE_HEIGHT_PX = 80;
 
+const resizeScaleFor = (el) => {
+  const sx = Math.max(1, (el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
+  const sy = el.heightOverride ? Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX) : sx;
+  return { sx, sy, s: Math.max(sx, sy) };
+};
+
 function ScaledContent({ el, children }) {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
@@ -970,17 +976,18 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     </div>
   );
 
-  if (el.type === "wordBank") return (
-    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <ScaledContent el={el}>
-        <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF, letterSpacing: 0.3 }}>{el.title}</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 14px", background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25` }}>
-          {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "4px 14px", border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827" }}>{w}</span>)}
+  if (el.type === "wordBank") {
+    const scale = resizeScaleFor(el);
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        <p style={{ fontSize: Math.max(fs - 4, 12) * scale.s, fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF, letterSpacing: 0.3 }}>{el.title}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 8 * scale.s, padding: `${10 * scale.s}px ${14 * scale.s}px`, background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25`, minHeight: el.heightOverride ? Math.max(24, el.heightOverride - 46) : undefined, boxSizing: "border-box" }}>
+          {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs * scale.s, fontWeight: 600, fontFamily: elFamily, padding: `${4 * scale.s}px ${14 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827", lineHeight: 1.35 }}>{w}</span>)}
         </div>
-      </ScaledContent>
-      <DeleteBtn /><ResizeHandles />
-    </div>
-  );
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
 
   if (el.type === "matching") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
@@ -1018,22 +1025,23 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     </div>
   );
 
-  if (el.type === "truefalse") return (
-    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <ScaledContent el={el}>
-        <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
+  if (el.type === "truefalse") {
+    const scale = resizeScaleFor(el);
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        <p style={{ fontSize: Math.max(fs - 4, 12) * scale.s, fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
         {(el.statements || []).map((stmt, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, padding: "8px 12px", background: gv.light, borderRadius: 8 }}>
-            <span style={{ fontSize: fs, fontWeight: 500, fontFamily: elFamily, flex: 1, lineHeight: 1.45 }}>{stmt}</span>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              {["TRUE", "FALSE"].map(t => <span key={t} aria-hidden="true" style={{ fontSize: Math.max(fs - 7, 10), fontWeight: 700, padding: "3px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color }}>{t}</span>)}
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 14 * scale.s, marginBottom: 10 * scale.s, padding: `${8 * scale.s}px ${12 * scale.s}px`, background: gv.light, borderRadius: 8, minHeight: el.heightOverride ? Math.max(34, (el.heightOverride - 42) / Math.max(1, (el.statements || []).length)) : undefined, boxSizing: "border-box" }}>
+            <span style={{ fontSize: fs * scale.s, fontWeight: 500, fontFamily: elFamily, flex: 1, lineHeight: 1.45 }}>{stmt}</span>
+            <div style={{ display: "flex", gap: 8 * scale.s, flexShrink: 0 }}>
+              {["TRUE", "FALSE"].map(t => <span key={t} aria-hidden="true" style={{ fontSize: Math.max(fs - 7, 10) * scale.s, fontWeight: 700, padding: `${3 * scale.s}px ${10 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color }}>{t}</span>)}
             </div>
           </div>
         ))}
-      </ScaledContent>
-      <DeleteBtn /><ResizeHandles />
-    </div>
-  );
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
 
   if (el.type === "shortAnswer") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
@@ -3084,33 +3092,37 @@ export function WorksheetBuilder() {
     const startX = e.clientX;
     const startY = e.clientY;
     const el = ws.elements.find(x => x.id === elId);
-    const startH = el?.heightOverride || 80;
-    const startW = el?.widthOverride  || 100; // percent of container
+    const startH = el?.heightOverride || BASELINE_HEIGHT_PX;
+    const startW = el?.widthOverride ?? BASELINE_WIDTH_PCT; // percent of container
+    const startElX = el?.x || 0;
+    const startElY = el?.y || 0;
     // Get element DOM width in px for percentage calc
     const paperWidth = 632; // approx inner width of 760px paper with 64px padding each side
 
-    resizeRef.current = { elId, startX, startY, startH, startW, direction };
+    resizeRef.current = { elId, startX, startY, startH, startW, startElX, startElY, paperWidth, direction };
 
     const onMove = (mv) => {
       if (!resizeRef.current) return;
-      const { direction, startX, startY, startH, startW } = resizeRef.current;
+      const { direction, startX, startY, startH, startW, startElX, startElY, paperWidth } = resizeRef.current;
       const dy = mv.clientY - startY;
       const dx = mv.clientX - startX;
+      const dxPct = (dx / paperWidth) * 100;
 
       if (direction === "bottom") {
         updEl(elId, { heightOverride: Math.max(48, startH + dy) });
       } else if (direction === "top") {
-        updEl(elId, { heightOverride: Math.max(48, startH - dy) });
+        const nextH = Math.max(48, startH - dy);
+        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)) });
       } else if (direction === "right") {
-        const newW = Math.min(100, Math.max(20, startW + (dx / paperWidth) * 100));
+        const newW = Math.min(100, Math.max(20, startW + dxPct));
         updEl(elId, { widthOverride: Math.round(newW) });
       } else if (direction === "left") {
-        const newW = Math.min(100, Math.max(20, startW - (dx / paperWidth) * 100));
-        updEl(elId, { widthOverride: Math.round(newW) });
+        const newW = Math.min(100, Math.max(20, startW - dxPct));
+        updEl(elId, { widthOverride: Math.round(newW), x: Math.max(0, startElX + startW - newW) });
       } else if (direction === "corner") {
         updEl(elId, {
           heightOverride: Math.max(48, startH + dy),
-          widthOverride:  Math.min(100, Math.max(20, startW + (dx / paperWidth) * 100)),
+          widthOverride:  Math.min(100, Math.max(20, startW + dxPct)),
         });
       }
     };
