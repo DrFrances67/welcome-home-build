@@ -750,6 +750,12 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 const BASELINE_WIDTH_PCT = 32; // matches default widthOverride for new elements
 const BASELINE_HEIGHT_PX = 80;
 
+const resizeScaleFor = (el) => {
+  const sx = Math.max(1, (el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
+  const sy = el.heightOverride ? Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX) : sx;
+  return { sx, sy, s: Math.max(sx, sy) };
+};
+
 function ScaledContent({ el, children }) {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
