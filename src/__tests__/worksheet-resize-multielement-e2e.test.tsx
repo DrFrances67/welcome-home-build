@@ -153,7 +153,8 @@ const ALL_ELEMENT_TYPES = [
   { name: "Success Criteria",label: /add success criteria element/i },
   { name: "Exit Ticket",     label: /add exit ticket element/i },
   { name: "DOK Questions",   label: /add dok questions element/i },
-  { name: "Section Break",   label: /add section break element/i },
+  // Note: "Section Break" (divider) intentionally has no resize handles — it
+  // is a fixed-height visual separator, not a resizable content element.
 ];
 
 describe("worksheet builder: multi-element back-to-back resize E2E", () => {
