@@ -756,7 +756,7 @@ const resizeScaleFor = (el) => {
   const sy = el.heightOverride
     ? (horizontalOnly && !el.verticalScale ? 1 : Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX))
     : (horizontalOnly ? 1 : sx);
-  return { sx, sy, s: horizontalOnly && !el.verticalScale ? 1 : Math.max(sx, sy) };
+  return { sx, sy, s: horizontalOnly ? sy : Math.max(sx, sy) };
 };
 
 function ScaledContent({ el, children }) {
@@ -3165,21 +3165,22 @@ export function WorksheetBuilder() {
       const dxPct = (dx / paperWidth) * 100;
 
       if (direction === "bottom") {
-        updEl(elId, { heightOverride: Math.max(48, startH + dy), resizeAxis: "vertical" });
+        updEl(elId, { heightOverride: Math.max(48, startH + dy), resizeAxis: "vertical", verticalScale: true });
       } else if (direction === "top") {
         const nextH = Math.max(48, startH - dy);
-        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)), resizeAxis: "vertical" });
+        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)), resizeAxis: "vertical", verticalScale: true });
       } else if (direction === "right") {
         const newW = Math.min(100, Math.max(20, startW + dxPct));
-        updEl(elId, { widthOverride: Math.round(newW), heightOverride: startH, resizeAxis: "horizontal" });
+        updEl(elId, { widthOverride: Math.round(newW), heightOverride: startH, resizeAxis: "horizontal", verticalScale: !!el?.verticalScale });
       } else if (direction === "left") {
         const newW = Math.min(100, Math.max(20, startW - dxPct));
-        updEl(elId, { widthOverride: Math.round(newW), heightOverride: startH, x: Math.max(0, startElX + startW - newW), resizeAxis: "horizontal" });
+        updEl(elId, { widthOverride: Math.round(newW), heightOverride: startH, x: Math.max(0, startElX + startW - newW), resizeAxis: "horizontal", verticalScale: !!el?.verticalScale });
       } else if (direction === "corner") {
         updEl(elId, {
           heightOverride: Math.max(48, startH + dy),
           widthOverride:  Math.min(100, Math.max(20, startW + dxPct)),
           resizeAxis: "both",
+          verticalScale: true,
         });
       }
     };
