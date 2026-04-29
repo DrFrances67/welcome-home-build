@@ -4731,7 +4731,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       }
       parsed.dokQuestions = normalizeDok(parsed.dokQuestions);
 
-
+      // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
       // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
       if (!form.standard) {
         const stdStr = String(parsed.standard || "");
