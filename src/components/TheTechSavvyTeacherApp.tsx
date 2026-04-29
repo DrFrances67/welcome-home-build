@@ -1470,6 +1470,8 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
         />
         <TypographySection />
       </>)}
+
+      {el.type === "matching" && (<>
         <label style={LBL}>Title</label>
         <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Matching title" />
         <label style={LBL}>Left Column (one per line — press Enter for a new item)</label>
@@ -1488,6 +1490,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
           style={{ ...inp, minHeight: 80, marginTop: 4 }}
           aria-label="Right column items"
         />
+        <TypographySection />
       </>)}
 
       {el.type === "multipleChoice" && (<>
