@@ -249,18 +249,20 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         const wrapper = addElement(/add true \/ false element/i);
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
-        // The TRUE / FALSE chips are spans inside the scaled inner div; they
-        // must scale together via the wrapper's single transform.
+        // The True / False chips are spans inside the wrapper; their compact
+        // T / F labels keep the row narrow so the statement gets more room.
         const chips = Array.from(wrapper.querySelectorAll("span")).filter(
-          s => /^TRUE$|^FALSE$/.test((s.textContent || "").trim()),
+          s => /^T$|^F$/.test((s.textContent || "").trim()),
         );
         expect(chips.length).toBeGreaterThanOrEqual(2);
         expect(contentTransformsOf(wrapper)).toEqual([]);
-        expect(parseFloat((chips[0] as HTMLElement).style.fontSize)).toBeGreaterThan(10);
+        expect(parseFloat((chips[0] as HTMLElement).style.fontSize)).toBeGreaterThan(8);
         const statement = Array.from(wrapper.querySelectorAll<HTMLElement>("span")).find(
           s => (s.textContent || "").includes("The Earth orbits the Sun"),
         );
-        expect(statement?.style.flex).toBe("1 1 0%");
+        // Statement gets the lion's share of the row width (flex: 1 1 70%)
+        // so longer sentences have room to read before wrapping.
+        expect(statement?.style.flex).toBe("1 1 70%");
       });
 
       it("Word Bank and True/False reflow on right-side resize and support vertical-only resize", async () => {
