@@ -1568,17 +1568,23 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
         <label style={LBL}>Number of Rows</label>
         <input type="number" min={1} max={20} value={(el.rows || []).length || 3}
           onChange={e => { const n = Math.max(1, parseInt(e.target.value) || 1); const cols = (el.headers || []).length || 3; onChange({ rows: Array.from({ length: n }, (_, i) => el.rows?.[i] || Array(cols).fill("")) }); }} style={{ ...inp, marginTop: 4 }} aria-label="Number of rows" />
+        <TypographySection />
       </>)}
 
-      {el.type === "customShape" && <CustomShapeEditor el={el} onChange={onChange} gv={gv} inp={inp} />}
+      {el.type === "customShape" && (<>
+        <CustomShapeEditor el={el} onChange={onChange} gv={gv} inp={inp} />
+        <TypographySection />
+      </>)}
 
-      {(el.type === "successCriteria" || el.type === "exitTicket") && (
+      {(el.type === "successCriteria" || el.type === "exitTicket") && (<>
         <ChecklistEditor el={el} onChange={onChange} gv={gv} inp={inp} />
-      )}
+        <TypographySection />
+      </>)}
 
-      {el.type === "dokQuestions" && (
+      {el.type === "dokQuestions" && (<>
         <DokEditor el={el} onChange={onChange} gv={gv} inp={inp} />
-      )}
+        <TypographySection />
+      </>)}
     </div>
   );
 }
