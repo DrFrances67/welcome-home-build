@@ -187,30 +187,19 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           expect(widthPctOf(wrapper)).toBeGreaterThan(beforeCornerW);
           expect(heightPxOf(wrapper)).toBeGreaterThan(beforeCornerH);
 
-          if (t.name === "Word Bank" || t.name === "True/False") {
-            expect(contentTransformsOf(wrapper), `${t.name} should reflow naturally without leaked transforms`).toEqual([]);
-          } else {
-            // Verify inner transform is a CLEAN scale() with no leaked
-            // rotate/skew/translate from any previous element's resize.
-            const { sx, sy, raw } = innerScaleOf(wrapper);
-            expect(sx).toBeGreaterThan(0);
-            expect(sy).toBeGreaterThan(0);
-            expect(raw).not.toMatch(/rotate|skew|translate|matrix/);
-          }
+          // ALL element types now use the reflow approach: inner content
+          // scales via inline font-size/spacing, NOT a CSS scale transform.
+          // No element should leave a leftover transform string anywhere.
+          expect(contentTransformsOf(wrapper), `${t.name} should reflow naturally without leaked transforms`).toEqual([]);
 
           resized.push({ name: t.name, wrapper, startW, endW: widthPctOf(wrapper) });
         }
 
-        // Cross-element independence: every prior element must still hold its
-        // own scale() — back-to-back resizes do not mutate other elements'
-        // transforms.
+        // Cross-element independence: back-to-back resizes do not mutate other
+        // elements' contents — every prior element remains transform-free and
+        // keeps the new width it was resized to.
         for (const r of resized) {
-          if (r.name === "Word Bank" || r.name === "True/False") {
-            expect(contentTransformsOf(r.wrapper), `${r.name} must remain naturally reflowed`).toEqual([]);
-            continue;
-          }
-          const { raw } = innerScaleOf(r.wrapper);
-          expect(raw, `${r.name} transform must remain a clean scale()`).toMatch(/^scale\([\-0-9.]+\s*,\s*[\-0-9.]+\)$/);
+          expect(contentTransformsOf(r.wrapper), `${r.name} must remain naturally reflowed`).toEqual([]);
           expect(r.endW).toBeGreaterThan(r.startW);
         }
       });
