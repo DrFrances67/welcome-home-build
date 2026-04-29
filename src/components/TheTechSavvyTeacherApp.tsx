@@ -1123,12 +1123,16 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const accent = el.type === "successCriteria" ? gv.color : "#0369A1";
     const bg = el.type === "successCriteria" ? gv.light : "#EFF6FF";
     const sc = resizeScaleFor(el);
+    const itemCount = Math.max(1, (el.items || []).length);
+    // When the user resizes vertically, distribute extra space as gap so items spread to fill the box.
+    const extraV = el.heightOverride ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
+    const itemGap = (8 * sc.s) + (extraV / (itemCount + 1));
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
-        <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `${6 * sc.s}px solid ${accent}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px` }}>
+        <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `${6 * sc.s}px solid ${accent}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
           {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * sc.s, fontWeight: 800, color: accent, margin: `0 0 ${6 * sc.s}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
           {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * sc.s, fontWeight: 600, color: "#374151", margin: `0 0 ${10 * sc.s}px 0`, fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 * sc.s }}>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: itemGap, flex: 1, justifyContent: extraV > 0 ? "space-around" : "flex-start" }}>
             {(el.items || []).map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 * sc.s }}>
                 <span aria-hidden="true" style={{ flexShrink: 0, width: 18 * sc.s, height: 18 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
@@ -1145,12 +1149,15 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
   if (el.type === "dokQuestions") {
     const LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
     const sc = resizeScaleFor(el);
+    const levelCount = Math.max(1, (el.levels || []).length);
+    const extraV = el.heightOverride ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
+    const levelGap = (10 * sc.s) + (extraV / (levelCount + 1));
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `${6 * sc.s}px solid ${gv.color}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px` }}>
+        <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `${6 * sc.s}px solid ${gv.color}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
           {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * sc.s, fontWeight: 800, color: gv.color, margin: `0 0 ${6 * sc.s}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
           {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * sc.s, fontWeight: 600, color: "#374151", margin: `0 0 ${10 * sc.s}px 0`, fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 * sc.s }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: levelGap, flex: 1, justifyContent: extraV > 0 ? "space-around" : "flex-start" }}>
             {(el.levels || []).map((lv, li) => {
               const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
               return (
