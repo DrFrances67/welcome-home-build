@@ -1722,7 +1722,7 @@ No markdown, no preamble, no commentary.`;
       })}
     </div>
   );
-}
+      }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -4444,6 +4444,57 @@ function LessonPlanGenerator() {
     setAiHelperResult("");
   };
 
+  // ── DOK Questions helpers (mirror worksheet builder DOK structure) ──
+  const DOK_DEFS = [
+    { level: 1, label: "Recall & Reproduction" },
+    { level: 2, label: "Skills & Concepts" },
+    { level: 3, label: "Strategic Thinking" },
+    { level: 4, label: "Extended Thinking" },
+  ];
+  const DOK_LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
+
+  const dokOk = (arr) => Array.isArray(arr)
+    && arr.length >= 4
+    && DOK_DEFS.every(d => {
+      const lv = arr.find(x => Number(x?.level) === d.level);
+      return lv && Array.isArray(lv.items) && lv.items.filter(s => s && String(s).trim()).length >= 1;
+    });
+
+  const normalizeDok = (arr) => DOK_DEFS.map(d => {
+    const found = (Array.isArray(arr) ? arr : []).find(x => Number(x?.level) === d.level) || {};
+    const items = (Array.isArray(found.items) ? found.items : [])
+      .map(s => String(s || "").trim()).filter(Boolean);
+    return { level: d.level, label: found.label || d.label, items: items.length ? items : ["(Add a question)"] };
+  });
+
+  // Generate a fresh DOK question set aligned to the lesson's objectives.
+  // Mirrors the worksheet builder DOK generator: 2–3 student-facing questions
+  // per level, every level required, never "N/A".
+  const generateDokFromObjectives = async (objectives, lessonTitle) => {
+    const objsBlock = (objectives || []).filter(Boolean).map((o, i) => `${i + 1}. ${o}`).join("\n") || "(no objectives provided)";
+    const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty. Output ONLY a valid JSON array — no markdown, no fences. Start with [ and end with ].\n\nDOK levels:\n• DOK 1 — Recall & Reproduction (recall facts, define, identify, list)\n• DOK 2 — Skills & Concepts (summarize, compare, classify, explain relationships)\n• DOK 3 — Strategic Thinking (justify, cite evidence, draw conclusions, hypothesize)\n• DOK 4 — Extended Thinking (synthesize across sources, design, critique, transfer to new context)\n\nRules: EVERY level (1, 2, 3, 4) MUST have 2–3 non-empty student-facing questions. Use grade-appropriate language for ${form.grade}. Tie every question directly to the lesson objectives. NEVER write "N/A".`;
+    const user = `Lesson: ${lessonTitle || form.topic || form.subject}\nGrade: ${form.grade} | Subject: ${form.subject}\n\nLearning objectives:\n${objsBlock}\n\nReturn this JSON shape ONLY:\n[\n  {"level":1,"label":"Recall & Reproduction","items":["...","..."]},\n  {"level":2,"label":"Skills & Concepts","items":["...","..."]},\n  {"level":3,"label":"Strategic Thinking","items":["...","..."]},\n  {"level":4,"label":"Extended Thinking","items":["...","..."]}\n]`;
+    const raw = await callClaude(sys, user, 1400);
+    let clean = (raw || "").trim();
+    if (clean.startsWith("```")) clean = clean.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim();
+    const s = clean.indexOf("["), e = clean.lastIndexOf("]");
+    if (s === -1 || e === -1) throw new Error("DOK response was not valid JSON");
+    return JSON.parse(clean.slice(s, e + 1));
+  };
+
+  const [regeneratingDok, setRegeneratingDok] = useState(false);
+  const regenerateDok = async () => {
+    if (!result) return;
+    setRegeneratingDok(true);
+    try {
+      const dok = await generateDokFromObjectives(result.objectives || [], result.title);
+      setResult(prev => prev ? { ...prev, dokQuestions: normalizeDok(dok) } : prev);
+    } catch (e) {
+      setError(`DOK regeneration failed: ${e.message}`);
+    }
+    setRegeneratingDok(false);
+  };
+
   // ── Exemplar handlers ──────────────────────────────────────────────
   const readFileAsB64  = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(f); });
   const readFileAsText = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(f); });
@@ -4636,6 +4687,15 @@ REQUIRED for homework and extension:
 REQUIRED for successCriteria:
 - "successCriteria" MUST be an array of 3-5 specific, observable, student-facing "I can…" statements directly aligned to the learning objectives. Each statement is what a student must be able to do/say/produce by the end of the lesson to demonstrate mastery. Use student-friendly language (e.g. "I can identify the main idea of a paragraph and support it with one detail."). NEVER write "N/A".
 
+REQUIRED for dokQuestions (Depth of Knowledge — Norman Webb framework):
+- "dokQuestions" MUST be an array of EXACTLY 4 objects, one per DOK level (1, 2, 3, 4). EVERY level MUST have 2-3 student-facing questions in "items" — never skip a level, never write "N/A".
+- Questions MUST be directly tied to the learning objectives above and use grade-appropriate language for ${form.grade}.
+- DOK measures cognitive complexity, not difficulty. Use these definitions:
+  • DOK 1 — Recall & Reproduction (recall facts, define, identify, list)
+  • DOK 2 — Skills & Concepts (summarize, compare, classify, explain relationships)
+  • DOK 3 — Strategic Thinking (justify, cite evidence, draw conclusions, hypothesize)
+  • DOK 4 — Extended Thinking (synthesize across sources, design, critique, transfer to new context)
+
 Return this JSON (replace all placeholder text with real content, keep values concise):
 {
   "title": "...",
@@ -4650,6 +4710,12 @@ Return this JSON (replace all placeholder text with real content, keep values co
     {"name": "...", "duration": "...", "description": "...", "teacherMoves": "...", "studentActions": "...", "udlNotes": "..."}
   ],
   "assessment": {"formative": "...", "summative": "...", "exitTicket": "..."},
+  "dokQuestions": [
+    {"level": 1, "label": "Recall & Reproduction", "items": ["...", "..."]},
+    {"level": 2, "label": "Skills & Concepts", "items": ["...", "..."]},
+    {"level": 3, "label": "Strategic Thinking", "items": ["...", "..."]},
+    {"level": 4, "label": "Extended Thinking", "items": ["...", "..."]}
+  ],
   "differentiation": {"ell": "...", "iep": "...", "gifted": "...", "universal": "..."},
   "homework": "...",
   "extension": "...",
@@ -4657,7 +4723,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
 }`;
 
     try {
-      const raw = await callClaude(systemPrompt, userPrompt, 4500);
+      const raw = await callClaude(systemPrompt, userPrompt, 5500);
       if (!raw || !raw.trim()) throw new Error("No response received. Please try again.");
 
       // Strip any accidental fences
@@ -4705,6 +4771,17 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         }
       }
 
+      // Ensure dokQuestions exists and has all 4 levels populated. If missing
+      // or incomplete, ask the AI to generate them from the objectives.
+      if (!dokOk(parsed.dokQuestions)) {
+        try {
+          const objsForDok = (Array.isArray(parsed.objectives) ? parsed.objectives : []).filter(Boolean);
+          const dok = await generateDokFromObjectives(objsForDok, parsed.title || form.topic);
+          if (dokOk(dok)) parsed.dokQuestions = dok;
+        } catch(_) { /* keep whatever the model gave */ }
+      }
+      parsed.dokQuestions = normalizeDok(parsed.dokQuestions);
+
       // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
       // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
       if (!form.standard) {
@@ -4744,6 +4821,14 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       `  Formative: ${result.assessment?.formative||""}`,
       `  Exit Ticket: ${result.assessment?.exitTicket||""}`,
       `  Summative: ${result.assessment?.summative||""}`, "",
+      ...(Array.isArray(result.dokQuestions) && result.dokQuestions.length ? [
+        "DOK QUESTIONS (aligned to objectives):",
+        ...result.dokQuestions.flatMap(lv => [
+          `  -- DOK ${lv.level} · ${lv.label} --`,
+          ...((lv.items || []).map(q => `    • ${q}`)),
+        ]),
+        "",
+      ] : []),
       "DIFFERENTIATION:",
       `  ELL: ${result.differentiation?.ell||""}`,
       `  IEP: ${result.differentiation?.iep||""}`,
@@ -4821,6 +4906,7 @@ ${(result.sections||[]).map((s,i)=>`<div class="sec"><div class="sec-h" style="b
 <div class="box"><div class="box-l">Formative</div><p>${safeHtml(result.assessment?.formative)}</p></div>
 <div class="box"><div class="box-l">Exit Ticket</div><p>${safeHtml(result.assessment?.exitTicket)}</p></div>
 <div class="box"><div class="box-l">Summative</div><p>${safeHtml(result.assessment?.summative)}</p></div></div>
+${Array.isArray(result.dokQuestions) && result.dokQuestions.length ? `<h2>DOK Questions</h2><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">${result.dokQuestions.map((lv,li)=>{const c=["#10B981","#0EA5E9","#8B5CF6","#F59E0B"][(lv.level||li+1)-1]||"#374151";return `<div style="background:${c}10;border:1.5px solid ${c}55;border-left:5px solid ${c};border-radius:6px;padding:8px 10px"><p style="font-size:11px;font-weight:800;color:${c};margin:0 0 5px;text-transform:uppercase;letter-spacing:0.5px">DOK ${lv.level} · ${safeHtml(lv.label)}</p><ul style="padding-left:16px;margin:0">${(lv.items||[]).map(q=>`<li style="font-size:12px;color:#1F2937;margin-bottom:3px">${safeHtml(q)}</li>`).join("")}</ul></div>`;}).join("")}</div>` : ""}
 <h2>Differentiation</h2><div class="g2">
 <div class="box"><div class="box-l">ELL</div><p>${safeHtml(result.differentiation?.ell)}</p></div>
 <div class="box"><div class="box-l">IEP</div><p>${safeHtml(result.differentiation?.iep)}</p></div>
@@ -5548,6 +5634,45 @@ document.addEventListener('keydown',e=>{
                 </div>
               ))}
             </div>
+
+            {/* DOK Questions — aligned to learning objectives */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", margin:"0 0 10px", borderBottom:"1px solid #E5E7EB", paddingBottom:8 }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", margin:0 }}>🧠 DOK Questions — aligned to learning objectives</p>
+              <button
+                onClick={regenerateDok}
+                disabled={regeneratingDok}
+                style={{ fontFamily:"'Inter',sans-serif", fontSize:10.5, fontWeight:700, color: regeneratingDok ? "#9CA3AF" : BRAND, background:"transparent", border:`1px solid ${regeneratingDok ? "#E5E7EB" : BRAND}40`, borderRadius:6, padding:"4px 10px", cursor: regeneratingDok ? "wait" : "pointer" }}
+                title="Regenerate DOK questions from the current objectives"
+              >
+                {regeneratingDok ? "Regenerating…" : "↻ Regenerate"}
+              </button>
+            </div>
+            {Array.isArray(result.dokQuestions) && result.dokQuestions.length > 0 ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {result.dokQuestions.map((lv, li) => {
+                  const c = DOK_LEVEL_COLORS[(lv.level || li + 1) - 1] || "#374151";
+                  return (
+                    <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderLeft: `5px solid ${c}`, borderRadius:8, padding:"8px 12px" }}>
+                      <p style={{ fontFamily:"'Inter',sans-serif", fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:0.6, color:c, margin:"0 0 6px" }}>
+                        DOK {lv.level} · {lv.label}
+                      </p>
+                      <ul style={{ listStyle:"none", padding:0, margin:0, display:"flex", flexDirection:"column", gap:4 }}>
+                        {(lv.items || []).map((q, qi) => (
+                          <li key={qi} style={{ fontFamily:"'Inter',sans-serif", fontSize:12.5, color:"#1F2937", lineHeight:1.5, display:"flex", gap:8, alignItems:"flex-start" }}>
+                            <span aria-hidden="true" style={{ flexShrink:0, width:14, height:14, marginTop:3, border:`2px solid ${c}`, borderRadius:3, background:"white" }} />
+                            <span>{q}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ background:"#F9FAFB", border:"1px dashed #E5E7EB", borderRadius:8, padding:"12px 14px", marginBottom:20, fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280" }}>
+                No DOK questions generated yet — click <strong>↻ Regenerate</strong> to build them from this lesson's objectives.
+              </div>
+            )}
 
             {/* Differentiation */}
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", margin:"0 0 10px", borderBottom:"1px solid #E5E7EB", paddingBottom:8 }}>Differentiation</p>
