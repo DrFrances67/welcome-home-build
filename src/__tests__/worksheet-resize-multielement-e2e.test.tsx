@@ -113,6 +113,13 @@ function innerScaleOf(wrapper: HTMLElement): { sx: number; sy: number; raw: stri
   return { sx: parseFloat(m![1]), sy: parseFloat(m![2]), raw };
 }
 
+function contentTransformsOf(wrapper: HTMLElement): string[] {
+  return Array.from(wrapper.children)
+    .filter((child) => !child.matches("[data-resize-handle], [data-delete-btn]"))
+    .map((child) => (child as HTMLElement).style.transform || "")
+    .filter(Boolean);
+}
+
 const VIEWPORTS = [
   { label: "desktop", width: 1440, height: 900, pointer: "fine" as const },
   { label: "mobile",  width: 390,  height: 844, pointer: "coarse" as const },
@@ -180,12 +187,16 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           expect(widthPctOf(wrapper)).toBeGreaterThan(beforeCornerW);
           expect(heightPxOf(wrapper)).toBeGreaterThan(beforeCornerH);
 
-          // Verify inner transform is a CLEAN scale() with no leaked
-          // rotate/skew/translate from any previous element's resize.
-          const { sx, sy, raw } = innerScaleOf(wrapper);
-          expect(sx).toBeGreaterThan(0);
-          expect(sy).toBeGreaterThan(0);
-          expect(raw).not.toMatch(/rotate|skew|translate|matrix/);
+          if (t.name === "Word Bank" || t.name === "True/False") {
+            expect(contentTransformsOf(wrapper), `${t.name} should reflow naturally without leaked transforms`).toEqual([]);
+          } else {
+            // Verify inner transform is a CLEAN scale() with no leaked
+            // rotate/skew/translate from any previous element's resize.
+            const { sx, sy, raw } = innerScaleOf(wrapper);
+            expect(sx).toBeGreaterThan(0);
+            expect(sy).toBeGreaterThan(0);
+            expect(raw).not.toMatch(/rotate|skew|translate|matrix/);
+          }
 
           resized.push({ name: t.name, wrapper, startW, endW: widthPctOf(wrapper) });
         }
@@ -194,6 +205,10 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         // own scale() — back-to-back resizes do not mutate other elements'
         // transforms.
         for (const r of resized) {
+          if (r.name === "Word Bank" || r.name === "True/False") {
+            expect(contentTransformsOf(r.wrapper), `${r.name} must remain naturally reflowed`).toEqual([]);
+            continue;
+          }
           const { raw } = innerScaleOf(r.wrapper);
           expect(raw, `${r.name} transform must remain a clean scale()`).toMatch(/^scale\([\-0-9.]+\s*,\s*[\-0-9.]+\)$/);
           expect(r.endW).toBeGreaterThan(r.startW);
