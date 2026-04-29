@@ -743,48 +743,66 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 // content's natural size and the available wrapper space, then applies
 // transform: scale(sx, sy) with top-left origin. The outer wrapper keeps
 // absolute positioning so resize handles stay anchored to its edges.
+// Default baseline dimensions used to compute proportional scale factors.
+// When the user has not resized an element, scale stays at 1. As they grow
+// the wrapper beyond these baselines, both inner width AND inner content
+// (text, boxes, lines) scale together via CSS transform.
+const BASELINE_WIDTH_PCT = 32; // matches default widthOverride for new elements
+const BASELINE_HEIGHT_PX = 80;
+
 function ScaledContent({ el, children }) {
   const outerRef = useRef(null);
   const innerRef = useRef(null);
-  const [scale, setScale] = useState({ x: 1, y: 1, h: null });
+  const [dims, setDims] = useState({ outerW: 0, naturalH: 0 });
 
+  // Measure the outer wrapper width (which reflects widthOverride %) and the
+  // natural intrinsic height of the inner content at baseline width. We render
+  // the inner box at a FIXED baseline pixel width so that growing the outer
+  // wrapper truly enlarges (scales up) the content rather than just reflowing
+  // it to fill more horizontal space.
   useLayoutEffect(() => {
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (!outer || !inner) return;
 
     const measure = () => {
-      // Reset transform before measuring natural size
-      inner.style.transform = "none";
-      inner.style.width = "auto";
-      const naturalW = inner.scrollWidth || inner.offsetWidth || 1;
-      const naturalH = inner.scrollHeight || inner.offsetHeight || 1;
-      const availW = outer.clientWidth || naturalW;
-      // Treat heightOverride as the desired box height (in px). When the
-      // user has not set one, content keeps its natural height (sy = 1).
-      const desiredH = el.heightOverride || naturalH;
-
-      const sx = availW > 0 && naturalW > 0 ? availW / naturalW : 1;
-      const sy = el.heightOverride && naturalH > 0 ? desiredH / naturalH : sx;
-
-      // Force the inner box to its natural width so the scale math works
-      // consistently on both axes.
-      inner.style.width = naturalW + "px";
-      setScale({ x: sx, y: sy, h: Math.max(naturalH * sy, 12) });
+      const outerW = outer.clientWidth || 0;
+      const naturalH = inner.scrollHeight || inner.offsetHeight || 0;
+      setDims((prev) =>
+        prev.outerW === outerW && prev.naturalH === naturalH
+          ? prev
+          : { outerW, naturalH }
+      );
     };
 
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(outer);
+    ro.observe(inner);
     return () => ro.disconnect();
   }, [el.widthOverride, el.heightOverride, el]);
+
+  // Compute scale factors relative to the baseline. The inner box is laid out
+  // at a fixed baseline width; the horizontal scale is outerW / baselineW. If
+  // the user set a heightOverride, scale vertically so the content fills it;
+  // otherwise scale Y to match X (uniform / proportional growth).
+  const widthPct = el.widthOverride ?? BASELINE_WIDTH_PCT;
+  const baselineWidthPx = dims.outerW > 0
+    ? (dims.outerW * BASELINE_WIDTH_PCT) / Math.max(1, widthPct)
+    : 0;
+  const sx = baselineWidthPx > 0 ? dims.outerW / baselineWidthPx : 1;
+  const desiredH = el.heightOverride;
+  const sy = desiredH && dims.naturalH > 0
+    ? Math.max(desiredH / dims.naturalH, sx)
+    : sx;
+  const containerH = dims.naturalH > 0 ? dims.naturalH * sy : null;
 
   return (
     <div
       ref={outerRef}
       style={{
         width: "100%",
-        height: scale.h != null ? scale.h + "px" : "auto",
+        height: containerH != null ? containerH + "px" : "auto",
         position: "relative",
         overflow: "hidden",
       }}
@@ -792,9 +810,9 @@ function ScaledContent({ el, children }) {
       <div
         ref={innerRef}
         style={{
-          transform: `scale(${scale.x}, ${scale.y})`,
+          transform: `scale(${sx}, ${sy})`,
           transformOrigin: "top left",
-          width: "100%",
+          width: baselineWidthPx > 0 ? baselineWidthPx + "px" : "100%",
         }}
       >
         {children}
@@ -918,7 +936,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
     const fillImgStyle = userSized && !floated
-      ? { width: "100%", height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto", maxWidth: "100%", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
+      ? { width: "100%", height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto", maxWidth: "none", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
       : { ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" };
     return (
       <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
