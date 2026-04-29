@@ -912,23 +912,25 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     </>
   );
 
-  if (el.type === "instruction") return (
-    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <ScaledContent el={el}>
-        <div style={{ fontSize: Math.max(fs - 6, 12), fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: "10px 16px", borderRadius: 8, borderLeft: `5px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
-      </ScaledContent>
-      <DeleteBtn /><ResizeHandles />
-    </div>
-  );
+  if (el.type === "instruction") {
+    const sc = resizeScaleFor(el);
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        <div style={{ fontSize: Math.max(fs - 6, 12) * sc.s, fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: `${10 * sc.s}px ${16 * sc.s}px`, borderRadius: 8, borderLeft: `${5 * sc.s}px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
 
-  if (el.type === "text") return (
-    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <ScaledContent el={el}>
-        <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
-      </ScaledContent>
-      <DeleteBtn /><ResizeHandles />
-    </div>
-  );
+  if (el.type === "text") {
+    const sc = resizeScaleFor(el);
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
 
   if (el.type === "image") {
     const isSmall = el.size === "small";
