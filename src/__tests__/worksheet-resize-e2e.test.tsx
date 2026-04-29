@@ -126,12 +126,15 @@ describe("worksheet element resizing scales inner content proportionally", () =>
     describe(`viewport: ${vp.label} (${vp.width}x${vp.height})`, () => {
       beforeEach(() => setViewport(vp.width, vp.height, vp.pointer));
 
-      it("Text Block: dragging the right handle grows wrapper width AND inner scale", async () => {
+      it("Text Block: dragging the right handle grows wrapper width AND inner font scales proportionally", async () => {
         openBuilder();
         const wrapper = addElement(/add text block element/i);
 
         const startPct = widthPctOf(wrapper);
-        primeScaledContent(wrapper, 192, 60);
+        const innerP = wrapper.querySelector<HTMLElement>("p");
+        expect(innerP, "text block renders a <p>").toBeTruthy();
+        const startFontSize = parseFloat(innerP!.style.fontSize) || 0;
+        expect(startFontSize).toBeGreaterThan(0);
 
         // Drag right handle 200px to the right → +~31.6 percentage points.
         await dragRightHandle(wrapper, 200);
@@ -139,20 +142,14 @@ describe("worksheet element resizing scales inner content proportionally", () =>
         const endPct = widthPctOf(wrapper);
         expect(endPct).toBeGreaterThan(startPct);
 
-        // After widthOverride changes, the ScaledContent effect re-runs (its
-        // dep array includes el.widthOverride). Re-prime stubs at the new
-        // outer width and dispatch a resize so the layout effect re-measures.
-        const newOuterW = Math.round(192 * (endPct / startPct));
-        primeScaledContent(wrapper, newOuterW, 60);
-        await act(async () => { window.dispatchEvent(new Event("resize")); });
-
-        const inner = wrapper.querySelector<HTMLElement>(":scope > div > div");
-        expect(inner).toBeTruthy();
-        const { sx, sy } = parseScale(inner!.style.transform);
-        // Inner content scales together with the box — both axes grow.
-        expect(sx).toBeGreaterThanOrEqual(1);
-        expect(sy).toBeGreaterThanOrEqual(1);
-        expect(sx).toBeCloseTo(sy, 5);
+        // With the reflow approach, the inner <p> font-size grows in proportion
+        // to widthOverride (no CSS scale transform). This lets text wrap
+        // naturally inside the bigger box instead of being rigidly transformed.
+        const innerP2 = wrapper.querySelector<HTMLElement>("p");
+        const endFontSize = parseFloat(innerP2!.style.fontSize) || 0;
+        expect(endFontSize).toBeGreaterThan(startFontSize);
+        // Inner content must NOT use a CSS scale transform anymore.
+        expect(innerP2!.style.transform || "").not.toMatch(/scale\(/);
       });
 
       it("Write Lines: each underline grows in lockstep with the wrapper width", async () => {
