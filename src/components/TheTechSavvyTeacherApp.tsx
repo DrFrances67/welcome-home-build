@@ -4444,7 +4444,58 @@ function LessonPlanGenerator() {
     setAiHelperResult("");
   };
 
-  // ── Exemplar handlers ──────────────────────────────────────────────
+  // ── DOK Questions helpers (mirror worksheet builder DOK structure) ──
+  const DOK_DEFS = [
+    { level: 1, label: "Recall & Reproduction" },
+    { level: 2, label: "Skills & Concepts" },
+    { level: 3, label: "Strategic Thinking" },
+    { level: 4, label: "Extended Thinking" },
+  ];
+  const DOK_LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
+
+  const dokOk = (arr) => Array.isArray(arr)
+    && arr.length >= 4
+    && DOK_DEFS.every(d => {
+      const lv = arr.find(x => Number(x?.level) === d.level);
+      return lv && Array.isArray(lv.items) && lv.items.filter(s => s && String(s).trim()).length >= 1;
+    });
+
+  const normalizeDok = (arr) => DOK_DEFS.map(d => {
+    const found = (Array.isArray(arr) ? arr : []).find(x => Number(x?.level) === d.level) || {};
+    const items = (Array.isArray(found.items) ? found.items : [])
+      .map(s => String(s || "").trim()).filter(Boolean);
+    return { level: d.level, label: found.label || d.label, items: items.length ? items : ["(Add a question)"] };
+  });
+
+  // Generate a fresh DOK question set aligned to the lesson's objectives.
+  // Mirrors the worksheet builder DOK generator: 2–3 student-facing questions
+  // per level, every level required, never "N/A".
+  const generateDokFromObjectives = async (objectives, lessonTitle) => {
+    const objsBlock = (objectives || []).filter(Boolean).map((o, i) => `${i + 1}. ${o}`).join("\n") || "(no objectives provided)";
+    const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty. Output ONLY a valid JSON array — no markdown, no fences. Start with [ and end with ].\n\nDOK levels:\n• DOK 1 — Recall & Reproduction (recall facts, define, identify, list)\n• DOK 2 — Skills & Concepts (summarize, compare, classify, explain relationships)\n• DOK 3 — Strategic Thinking (justify, cite evidence, draw conclusions, hypothesize)\n• DOK 4 — Extended Thinking (synthesize across sources, design, critique, transfer to new context)\n\nRules: EVERY level (1, 2, 3, 4) MUST have 2–3 non-empty student-facing questions. Use grade-appropriate language for ${form.grade}. Tie every question directly to the lesson objectives. NEVER write "N/A".`;
+    const user = `Lesson: ${lessonTitle || form.topic || form.subject}\nGrade: ${form.grade} | Subject: ${form.subject}\n\nLearning objectives:\n${objsBlock}\n\nReturn this JSON shape ONLY:\n[\n  {"level":1,"label":"Recall & Reproduction","items":["...","..."]},\n  {"level":2,"label":"Skills & Concepts","items":["...","..."]},\n  {"level":3,"label":"Strategic Thinking","items":["...","..."]},\n  {"level":4,"label":"Extended Thinking","items":["...","..."]}\n]`;
+    const raw = await callClaude(sys, user, 1400);
+    let clean = (raw || "").trim();
+    if (clean.startsWith("```")) clean = clean.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim();
+    const s = clean.indexOf("["), e = clean.lastIndexOf("]");
+    if (s === -1 || e === -1) throw new Error("DOK response was not valid JSON");
+    return JSON.parse(clean.slice(s, e + 1));
+  };
+
+  const [regeneratingDok, setRegeneratingDok] = useState(false);
+  const regenerateDok = async () => {
+    if (!result) return;
+    setRegeneratingDok(true);
+    try {
+      const dok = await generateDokFromObjectives(result.objectives || [], result.title);
+      setResult(prev => prev ? { ...prev, dokQuestions: normalizeDok(dok) } : prev);
+    } catch (e) {
+      setError(`DOK regeneration failed: ${e.message}`);
+    }
+    setRegeneratingDok(false);
+  };
+
+
   const readFileAsB64  = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(f); });
   const readFileAsText = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(f); });
 
