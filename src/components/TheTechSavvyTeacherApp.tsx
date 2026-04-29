@@ -877,12 +877,12 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     minHeight: el.heightOverride || undefined,
     height: el.heightOverride || undefined,
     boxSizing: "border-box",
-    // Keep inner content inside the resizable wrapper. Tables show a scrollbar
-    // so every row remains reachable even before the user enlarges the box.
-    // NOTE: Use overflow=visible so the resize handles (which sit slightly
-    // outside the wrapper edge for easier grabbing) are not clipped. Inner
-    // content is clipped by its own container styles where needed.
-    overflow: isTable ? "auto" : "visible",
+    // Clip ALL inner content to the resizable bounds so nothing renders
+    // outside the box on any worksheet element. Tables stay scrollable so
+    // every row remains reachable. Resize handles are repositioned to sit
+    // flush with the edges (see ResizeHandles below) so clipping does not
+    // hide them.
+    overflow: isTable ? "auto" : "hidden",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
