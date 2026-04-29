@@ -4906,6 +4906,7 @@ ${(result.sections||[]).map((s,i)=>`<div class="sec"><div class="sec-h" style="b
 <div class="box"><div class="box-l">Formative</div><p>${safeHtml(result.assessment?.formative)}</p></div>
 <div class="box"><div class="box-l">Exit Ticket</div><p>${safeHtml(result.assessment?.exitTicket)}</p></div>
 <div class="box"><div class="box-l">Summative</div><p>${safeHtml(result.assessment?.summative)}</p></div></div>
+${Array.isArray(result.dokQuestions) && result.dokQuestions.length ? `<h2>DOK Questions</h2><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">${result.dokQuestions.map((lv,li)=>{const c=["#10B981","#0EA5E9","#8B5CF6","#F59E0B"][(lv.level||li+1)-1]||"#374151";return `<div style="background:${c}10;border:1.5px solid ${c}55;border-left:5px solid ${c};border-radius:6px;padding:8px 10px"><p style="font-size:11px;font-weight:800;color:${c};margin:0 0 5px;text-transform:uppercase;letter-spacing:0.5px">DOK ${lv.level} · ${safeHtml(lv.label)}</p><ul style="padding-left:16px;margin:0">${(lv.items||[]).map(q=>`<li style="font-size:12px;color:#1F2937;margin-bottom:3px">${safeHtml(q)}</li>`).join("")}</ul></div>`;}).join("")}</div>` : ""}
 <h2>Differentiation</h2><div class="g2">
 <div class="box"><div class="box-l">ELL</div><p>${safeHtml(result.differentiation?.ell)}</p></div>
 <div class="box"><div class="box-l">IEP</div><p>${safeHtml(result.differentiation?.iep)}</p></div>
