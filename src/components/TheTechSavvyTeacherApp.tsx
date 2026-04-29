@@ -845,8 +845,8 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
     : { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
 
-  // The Table element is special: it must always be allowed to grow tall
-  // enough to contain its rows. Forcing an explicit height clips rows out.
+  // The Table element is special: cells must be allowed to wrap so the whole
+  // table (headers, rows, cells) actually fits inside the resizable box.
   const isTable = el.type === "table";
 
   const wrap = {
@@ -861,13 +861,10 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     background: "white",
     transition: "outline 0.1s",
     minHeight: el.heightOverride || undefined,
-    // Tables get min-height so the box can grow with content; other elements
-    // get an explicit height so vertical-only resize works even when content
-    // is shorter than the box.
-    height: isTable ? undefined : (el.heightOverride || undefined),
+    height: el.heightOverride || undefined,
     boxSizing: "border-box",
-    // Keep inner content visually inside the resizable wrapper so users can
-    // see the box edges they are dragging. Tables overflow to allow rows.
+    // Keep inner content inside the resizable wrapper. Tables show a scrollbar
+    // so every row remains reachable even before the user enlarges the box.
     overflow: isTable ? "auto" : "hidden",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
