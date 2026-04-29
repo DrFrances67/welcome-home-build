@@ -842,7 +842,7 @@ function ScaledContent({ el, children }) {
 }
 
 
-function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, oneLineOnly = true }) {
+function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, onReset, oneLineOnly = true }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
   const elFamily  = (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Nunito', sans-serif";
