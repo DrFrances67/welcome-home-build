@@ -3812,6 +3812,7 @@ Output ONLY the JSON array.`,
                         <ElView key={el.id} el={el} gv={gv} oneLineOnly={!!ws.oneLineOnly} selected={selId === el.id}
                           onClick={() => { setSelId(el.id); setRightTab("edit"); if (viewMode === "scroll") setCurrentPage(pIdx); }}
                           onResize={handleResizeStart}
+                          onReset={handleResetElement}
                           onDragStart={handleDragStart}
                           onDelete={(id) => delEl(id)} />
                       ))}
