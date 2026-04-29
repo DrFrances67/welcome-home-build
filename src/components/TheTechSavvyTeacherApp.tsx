@@ -750,12 +750,23 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 const BASELINE_WIDTH_PCT = 32; // matches default widthOverride for new elements
 const BASELINE_HEIGHT_PX = 80;
 
+// Compute proportional scale factors for an element. Scale is allowed to go
+// BELOW 1 when the user shrinks the box, so inner content (text, pills,
+// boxes, lines) stays inside the wrapper instead of overflowing. A floor of
+// 0.55 prevents content from becoming unreadable. Default widthOverride=32
+// gives sx=1 (no change at default size).
+const SCALE_MIN = 0.55;
+const SCALE_MAX = 4;
+const clampScale = (v) => Math.max(SCALE_MIN, Math.min(SCALE_MAX, v));
 const resizeScaleFor = (el) => {
-  const sx = Math.max(1, (el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
+  const sx = clampScale((el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
   const horizontalOnly = el.resizeAxis === "horizontal";
   const sy = el.heightOverride
-    ? (horizontalOnly && !el.verticalScale ? 1 : Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX))
+    ? (horizontalOnly && !el.verticalScale ? 1 : clampScale(el.heightOverride / BASELINE_HEIGHT_PX))
     : (horizontalOnly ? 1 : sx);
+  // `s` is the unified scale used for typography/spacing. For horizontal-only
+  // resize we follow sx (so widening a box scales text up too); otherwise the
+  // larger of the two so growth feels uniform.
   return { sx, sy, s: horizontalOnly ? sy : Math.max(sx, sy) };
 };
 
@@ -831,7 +842,7 @@ function ScaledContent({ el, children }) {
 }
 
 
-function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, oneLineOnly = true }) {
+function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, onReset, oneLineOnly = true }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
   const elFamily  = (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Nunito', sans-serif";
@@ -901,7 +912,35 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     >✕</button>
   );
 
-  // ── 4-sided resize handles — shown when element is selected ──
+  // ── Reset/refresh button — top-LEFT corner. Clears any resize overrides
+  // (width, height, axis) so the element snaps back to its default size and
+  // proportional content. Useful if a resize ever leaves an element looking
+  // off. Visible whenever the element is selected.
+  const ResetBtn = () => (
+    <button
+      data-reset-btn
+      className="el-reset-btn"
+      onPointerDown={e => e.stopPropagation()}
+      onClick={e => {
+        e.stopPropagation();
+        if (onReset) onReset(el.id);
+      }}
+      aria-label="Reset element size"
+      title="Reset element size"
+      style={{
+        position: "absolute", top: 4, left: 4,
+        width: 22, height: 22, borderRadius: "50%",
+        border: "none",
+        background: gv.color,
+        color: "white",
+        fontSize: 13, fontWeight: 900, lineHeight: 1,
+        cursor: "pointer", zIndex: 20,
+        display: selected ? "flex" : "none",
+        alignItems: "center", justifyContent: "center",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+      }}
+    >↻</button>
+  );
   const ResizeHandles = () => !selected ? null : (
     <>
       {/* Bottom — vertical resize */}
@@ -943,7 +982,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ fontSize: Math.max(fs - 6, 12) * sc.s, fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: `${10 * sc.s}px ${16 * sc.s}px`, borderRadius: 8, borderLeft: `${5 * sc.s}px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -953,7 +992,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -991,7 +1030,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         )}
         {!floated && el.caption && <p style={{ fontSize: Math.max(fs - 10, 11), color: "#6B7280", textAlign: "center", margin: "6px 0 0", fontFamily: F, fontWeight: 600 }}>{el.caption}</p>}
         {floated && <div style={{ clear: "both" }} />}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1000,7 +1039,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Write lines element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
       {el.label && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 10px 0", fontFamily: elFamily, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.label}</p>}
       {Array.from({ length: el.lines || 3 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH, borderBottom: "2px solid #D1D5DB", marginBottom: 6 }} />)}
-      <DeleteBtn /><ResizeHandles />
+      <DeleteBtn /><ResetBtn /><ResizeHandles />
     </div>
   );
 
@@ -1012,7 +1051,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         <div style={{ display: "flex", flexWrap: "wrap", alignContent: "flex-start", gap: 8 * scale.s, padding: `${10 * scale.s}px ${14 * scale.s}px`, background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25`, minHeight: el.heightOverride ? Math.max(24, el.heightOverride - 46) : undefined, boxSizing: "border-box" }}>
           {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs * scale.s, fontWeight: 600, fontFamily: elFamily, padding: `${4 * scale.s}px ${14 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827", lineHeight: 1.35 }}>{w}</span>)}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1031,7 +1070,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             </span>
           ))}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1050,7 +1089,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             </label>
           ))}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1068,7 +1107,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             </div>
           </div>
         ))}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1086,7 +1125,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{el.question}</p>
         {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9 * sc.s, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 * sc.s }} />)}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1101,7 +1140,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: Math.min(85, 60) * sc.s, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: `0 ${3 * sc.s}px` }} />}</span>
           ))}
         </p>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1124,7 +1163,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
           {el.points && <span style={{ fontSize: Math.max(fs - 6, 10) * sc.s, fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12 * sc.s, fontFamily: F, padding: `${3 * sc.s}px ${9 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
         </div>
         {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75 * sc.s, borderBottom: "1px solid #E5E7EB", marginBottom: 3 * sc.s }} />)}
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1152,7 +1191,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             ))}
           </ul>
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1190,7 +1229,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             })}
           </div>
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1210,7 +1249,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             ))}
           </tbody>
         </table>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -1261,7 +1300,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             );
           })}
         </div>
-        <DeleteBtn /><ResizeHandles />
+        <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
   }
@@ -3143,6 +3182,20 @@ export function WorksheetBuilder() {
     return { ...p, elements: els };
   });
 
+  // Reset an element's size/position overrides back to the default 32%-wide
+  // box with no height override, no resize axis lock, and no vertical scale
+  // flag. Useful as an "undo my last resize" escape hatch when something
+  // looks off after dragging — exposed via the ↻ button on the top-left of
+  // every selected element.
+  const handleResetElement = (elId) => {
+    updEl(elId, {
+      widthOverride: BASELINE_WIDTH_PCT,
+      heightOverride: undefined,
+      resizeAxis: undefined,
+      verticalScale: false,
+    });
+  };
+
   // ── 4-sided drag-to-resize ─────────────────────────────────────────
   const handleResizeStart = (e, elId, direction) => {
     e.preventDefault();
@@ -3759,6 +3812,7 @@ Output ONLY the JSON array.`,
                         <ElView key={el.id} el={el} gv={gv} oneLineOnly={!!ws.oneLineOnly} selected={selId === el.id}
                           onClick={() => { setSelId(el.id); setRightTab("edit"); if (viewMode === "scroll") setCurrentPage(pIdx); }}
                           onResize={handleResizeStart}
+                          onReset={handleResetElement}
                           onDragStart={handleDragStart}
                           onDelete={(id) => delEl(id)} />
                       ))}
