@@ -1302,8 +1302,14 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
       {el.type === "table" && (<>
         <label style={LBL}>Title</label>
         <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Table title" />
-        <label style={LBL}>Column Headers (one per line)</label>
-        <textarea value={(el.headers || []).join("\n")} spellCheck onChange={e => onChange({ headers: e.target.value.split("\n").map(h => h.trim()).filter(Boolean) })} style={{ ...inp, minHeight: 60, marginTop: 4 }} aria-label="Column headers" />
+        <label style={LBL}>Column Headers (one per line — press Enter for a new column)</label>
+        <textarea
+          value={el._headersRaw !== undefined ? el._headersRaw : (el.headers || []).join("\n")}
+          spellCheck
+          onChange={e => { const raw = e.target.value; onChange({ _headersRaw: raw, headers: raw.split("\n").map(h => h.trim()).filter(Boolean) }); }}
+          style={{ ...inp, minHeight: 60, marginTop: 4 }}
+          aria-label="Column headers"
+        />
         <label style={LBL}>Number of Rows</label>
         <input type="number" min={1} max={20} value={(el.rows || []).length || 3}
           onChange={e => { const n = Math.max(1, parseInt(e.target.value) || 1); const cols = (el.headers || []).length || 3; onChange({ rows: Array.from({ length: n }, (_, i) => el.rows?.[i] || Array(cols).fill("")) }); }} style={{ ...inp, marginTop: 4 }} aria-label="Number of rows" />
