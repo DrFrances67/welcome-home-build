@@ -912,7 +912,35 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     >✕</button>
   );
 
-  // ── 4-sided resize handles — shown when element is selected ──
+  // ── Reset/refresh button — top-LEFT corner. Clears any resize overrides
+  // (width, height, axis) so the element snaps back to its default size and
+  // proportional content. Useful if a resize ever leaves an element looking
+  // off. Visible whenever the element is selected.
+  const ResetBtn = () => (
+    <button
+      data-reset-btn
+      className="el-reset-btn"
+      onPointerDown={e => e.stopPropagation()}
+      onClick={e => {
+        e.stopPropagation();
+        if (onReset) onReset(el.id);
+      }}
+      aria-label="Reset element size"
+      title="Reset element size"
+      style={{
+        position: "absolute", top: 4, left: 4,
+        width: 22, height: 22, borderRadius: "50%",
+        border: "none",
+        background: gv.color,
+        color: "white",
+        fontSize: 13, fontWeight: 900, lineHeight: 1,
+        cursor: "pointer", zIndex: 20,
+        display: selected ? "flex" : "none",
+        alignItems: "center", justifyContent: "center",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+      }}
+    >↻</button>
+  );
   const ResizeHandles = () => !selected ? null : (
     <>
       {/* Bottom — vertical resize */}
