@@ -134,6 +134,28 @@ const ELEMENT_TYPES = [
   { name: "Short Answer",    label: /add short answer element/i },
 ];
 
+// Every addable element type — used to verify vertical-only resize is
+// available on EVERY worksheet item, not just a subset.
+const ALL_ELEMENT_TYPES = [
+  { name: "Instructions",    label: /add instructions element/i },
+  { name: "Text Block",      label: /add text block element/i },
+  { name: "Image",           label: /add image element/i },
+  { name: "Write Lines",     label: /add write lines element/i },
+  { name: "Word Bank",       label: /add word bank element/i },
+  { name: "Matching",        label: /add matching element/i },
+  { name: "Multiple Choice", label: /add multiple choice element/i },
+  { name: "True/False",      label: /add true \/ false element/i },
+  { name: "Short Answer",    label: /add short answer element/i },
+  { name: "Fill in Blank",   label: /add fill in blank element/i },
+  { name: "Essay Prompt",    label: /add essay prompt element/i },
+  { name: "Table / Chart",   label: /add table \/ chart element/i },
+  { name: "Custom Shapes",   label: /add custom shapes element/i },
+  { name: "Success Criteria",label: /add success criteria element/i },
+  { name: "Exit Ticket",     label: /add exit ticket element/i },
+  { name: "DOK Questions",   label: /add dok questions element/i },
+  { name: "Section Break",   label: /add section break element/i },
+];
+
 describe("worksheet builder: multi-element back-to-back resize E2E", () => {
   beforeEach(() => {
     (globalThis as any).ResizeObserver = class {
