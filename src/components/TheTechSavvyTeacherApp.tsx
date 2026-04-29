@@ -851,6 +851,15 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
   const elDecor   = el.underline ? "underline" : undefined;
   const elAlign   = el.textAlign || undefined;
 
+  // Font-size lock: when the user picks a specific text-size preset (or
+  // custom pt) we treat that pt value as the FINAL rendered size and do NOT
+  // multiply it by the resize scale. Box paddings/spacing still scale with
+  // the box so the layout breathes; only the text stays exactly at the
+  // chosen size. When no override is set, text scales with the box like
+  // before (auto mode).
+  const fsLocked = !!el.fontSizeOverride;
+  const tScale = (sc) => fsLocked ? 1 : sc.s;
+
   // Helper: per-item single-line vs wrap styling. Used by list-style elements
   // (Success Criteria, Exit Ticket, DOK Questions). When oneLineOnly is on,
   // each item stays on a single line and clips with ellipsis — encouraging
