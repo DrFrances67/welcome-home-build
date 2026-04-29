@@ -752,8 +752,11 @@ const BASELINE_HEIGHT_PX = 80;
 
 const resizeScaleFor = (el) => {
   const sx = Math.max(1, (el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
-  const sy = el.heightOverride ? Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX) : sx;
-  return { sx, sy, s: Math.max(sx, sy) };
+  const horizontalOnly = el.resizeAxis === "horizontal";
+  const sy = el.heightOverride
+    ? (horizontalOnly && !el.verticalScale ? 1 : Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX))
+    : (horizontalOnly ? 1 : sx);
+  return { sx, sy, s: horizontalOnly ? sy : Math.max(sx, sy) };
 };
 
 function ScaledContent({ el, children }) {
@@ -3144,7 +3147,8 @@ export function WorksheetBuilder() {
     const startX = e.clientX;
     const startY = e.clientY;
     const el = ws.elements.find(x => x.id === elId);
-    const startH = el?.heightOverride || BASELINE_HEIGHT_PX;
+    const measuredH = e.currentTarget?.closest?.(".ws-element")?.getBoundingClientRect?.().height || 0;
+    const startH = el?.heightOverride || Math.max(BASELINE_HEIGHT_PX, Math.round(measuredH));
     const startW = el?.widthOverride ?? BASELINE_WIDTH_PCT; // percent of container
     const startElX = el?.x || 0;
     const startElY = el?.y || 0;
@@ -3161,20 +3165,22 @@ export function WorksheetBuilder() {
       const dxPct = (dx / paperWidth) * 100;
 
       if (direction === "bottom") {
-        updEl(elId, { heightOverride: Math.max(48, startH + dy) });
+        updEl(elId, { heightOverride: Math.max(48, startH + dy), resizeAxis: "vertical", verticalScale: true });
       } else if (direction === "top") {
         const nextH = Math.max(48, startH - dy);
-        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)) });
+        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)), resizeAxis: "vertical", verticalScale: true });
       } else if (direction === "right") {
         const newW = Math.min(100, Math.max(20, startW + dxPct));
-        updEl(elId, { widthOverride: Math.round(newW) });
+        updEl(elId, { widthOverride: Math.round(newW), heightOverride: startH, resizeAxis: "horizontal", verticalScale: !!el?.verticalScale });
       } else if (direction === "left") {
         const newW = Math.min(100, Math.max(20, startW - dxPct));
-        updEl(elId, { widthOverride: Math.round(newW), x: Math.max(0, startElX + startW - newW) });
+        updEl(elId, { widthOverride: Math.round(newW), heightOverride: startH, x: Math.max(0, startElX + startW - newW), resizeAxis: "horizontal", verticalScale: !!el?.verticalScale });
       } else if (direction === "corner") {
         updEl(elId, {
           heightOverride: Math.max(48, startH + dy),
           widthOverride:  Math.min(100, Math.max(20, startW + dxPct)),
+          resizeAxis: "both",
+          verticalScale: true,
         });
       }
     };
