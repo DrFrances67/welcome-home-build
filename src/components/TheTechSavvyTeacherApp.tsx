@@ -4821,6 +4821,14 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       `  Formative: ${result.assessment?.formative||""}`,
       `  Exit Ticket: ${result.assessment?.exitTicket||""}`,
       `  Summative: ${result.assessment?.summative||""}`, "",
+      ...(Array.isArray(result.dokQuestions) && result.dokQuestions.length ? [
+        "DOK QUESTIONS (aligned to objectives):",
+        ...result.dokQuestions.flatMap(lv => [
+          `  -- DOK ${lv.level} · ${lv.label} --`,
+          ...((lv.items || []).map(q => `    • ${q}`)),
+        ]),
+        "",
+      ] : []),
       "DIFFERENTIATION:",
       `  ELL: ${result.differentiation?.ell||""}`,
       `  IEP: ${result.differentiation?.iep||""}`,
