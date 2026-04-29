@@ -272,10 +272,9 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         const wrapper = addElement(/add true \/ false element/i);
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
-        // The True / False chips are spans inside the wrapper; their compact
-        // T / F labels keep the row narrow so the statement gets more room.
+        // The True / False chips show full TRUE / FALSE labels for clarity.
         const chips = Array.from(wrapper.querySelectorAll("span")).filter(
-          s => /^T$|^F$/.test((s.textContent || "").trim()),
+          s => /^TRUE$|^FALSE$/.test((s.textContent || "").trim()),
         );
         expect(chips.length).toBeGreaterThanOrEqual(2);
         expect(contentTransformsOf(wrapper)).toEqual([]);
