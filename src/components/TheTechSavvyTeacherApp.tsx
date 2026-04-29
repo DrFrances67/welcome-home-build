@@ -1468,9 +1468,8 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
           aria-label="Word bank words"
           placeholder={"cat\ndog\nfish"}
         />
+        <TypographySection />
       </>)}
-
-      {el.type === "matching" && (<>
         <label style={LBL}>Title</label>
         <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Matching title" />
         <label style={LBL}>Left Column (one per line — press Enter for a new item)</label>
