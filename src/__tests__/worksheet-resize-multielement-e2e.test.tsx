@@ -360,3 +360,6 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           expect(contentTransformsOf(wrapper), `${t.name}: no leaked transforms`).toEqual([]);
         }
       });
+    });
+  }
+});
