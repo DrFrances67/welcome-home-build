@@ -828,7 +828,7 @@ function ScaledContent({ el, children }) {
 }
 
 
-function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) {
+function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, oneLineOnly = true }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
   const elFamily  = (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Nunito', sans-serif";
@@ -836,6 +836,18 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   const elStyle   = el.italic ? "italic" : undefined;
   const elDecor   = el.underline ? "underline" : undefined;
   const elAlign   = el.textAlign || undefined;
+
+  // Helper: per-item single-line vs wrap styling. Used by list-style elements
+  // (Success Criteria, Exit Ticket, DOK Questions). When oneLineOnly is on,
+  // each item stays on a single line and clips with ellipsis — encouraging
+  // the user to widen the box. When off, items wrap naturally.
+  const lineStyle = oneLineOnly
+    ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+    : { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
+
+  // The Table element is special: it must always be allowed to grow tall
+  // enough to contain its rows. Forcing an explicit height clips rows out.
+  const isTable = el.type === "table";
 
   const wrap = {
     position: "absolute",
@@ -849,8 +861,14 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     background: "white",
     transition: "outline 0.1s",
     minHeight: el.heightOverride || undefined,
-    height: el.heightOverride || undefined,
+    // Tables get min-height so the box can grow with content; other elements
+    // get an explicit height so vertical-only resize works even when content
+    // is shorter than the box.
+    height: isTable ? undefined : (el.heightOverride || undefined),
     boxSizing: "border-box",
+    // Keep inner content visually inside the resizable wrapper so users can
+    // see the box edges they are dragging. Tables overflow to allow rows.
+    overflow: isTable ? "auto" : "hidden",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
