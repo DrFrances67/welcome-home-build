@@ -828,7 +828,7 @@ function ScaledContent({ el, children }) {
 }
 
 
-function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) {
+function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, oneLineOnly = true }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
   const elFamily  = (el.fontFamily && el.fontFamily !== "default") ? el.fontFamily : "'Nunito', sans-serif";
@@ -836,6 +836,18 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
   const elStyle   = el.italic ? "italic" : undefined;
   const elDecor   = el.underline ? "underline" : undefined;
   const elAlign   = el.textAlign || undefined;
+
+  // Helper: per-item single-line vs wrap styling. Used by list-style elements
+  // (Success Criteria, Exit Ticket, DOK Questions). When oneLineOnly is on,
+  // each item stays on a single line and clips with ellipsis — encouraging
+  // the user to widen the box. When off, items wrap naturally.
+  const lineStyle = oneLineOnly
+    ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+    : { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
+
+  // The Table element is special: cells must be allowed to wrap so the whole
+  // table (headers, rows, cells) actually fits inside the resizable box.
+  const isTable = el.type === "table";
 
   const wrap = {
     position: "absolute",
@@ -851,6 +863,9 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     minHeight: el.heightOverride || undefined,
     height: el.heightOverride || undefined,
     boxSizing: "border-box",
+    // Keep inner content inside the resizable wrapper. Tables show a scrollbar
+    // so every row remains reachable even before the user enlarges the box.
+    overflow: isTable ? "auto" : "hidden",
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
@@ -1050,10 +1065,17 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
 
   if (el.type === "shortAnswer") {
     const sc = resizeScaleFor(el);
+    // Grow the answer-line count to fill the wrapper height when the user
+    // resizes vertically, so the box never has empty space below the lines.
+    const lineUnit = (gv.lineH * 0.9 * sc.s) + 5;
+    const reserved = 48 * sc.s;
+    const fitLines = el.heightOverride
+      ? Math.max(el.lines || 4, Math.floor((el.heightOverride - reserved) / Math.max(8, lineUnit)))
+      : (el.lines || 4);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
-        {Array.from({ length: el.lines || 4 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9 * sc.s, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 * sc.s }} />)}
+        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{el.question}</p>
+        {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9 * sc.s, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 * sc.s }} />)}
         <DeleteBtn /><ResizeHandles />
       </div>
     );
@@ -1064,9 +1086,9 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         {el.note && <p style={{ fontSize: Math.max(fs - 7, 11) * sc.s, fontWeight: 500, color: "#6B7280", margin: `0 0 ${8 * sc.s}px 0`, fontFamily: F }}>{el.note}</p>}
-        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign }}>
+        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign, wordBreak: "break-word", overflowWrap: "anywhere", maxWidth: "100%" }}>
           {(el.text || "").split("______").map((part, i, arr) => (
-            <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: 85 * sc.s, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: `0 ${3 * sc.s}px` }} />}</span>
+            <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: Math.min(85, 60) * sc.s, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: `0 ${3 * sc.s}px` }} />}</span>
           ))}
         </p>
         <DeleteBtn /><ResizeHandles />
@@ -1076,13 +1098,22 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
 
   if (el.type === "essay") {
     const sc = resizeScaleFor(el);
+    // When the user resizes the box vertically, grow the writing-line count to
+    // fill the new height. Each ruled line is roughly gv.lineH * 0.75 px tall
+    // (matches the renderer below) plus a 3px gap. We reserve ~64px for the
+    // prompt + points header so the lines actually sit underneath it.
+    const lineUnit = (gv.lineH * 0.75 * sc.s) + 3;
+    const reserved = 64 * sc.s;
+    const fitLines = el.heightOverride
+      ? Math.max(el.lines || 14, Math.floor((el.heightOverride - reserved) / Math.max(8, lineUnit)))
+      : (el.lines || 14);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 * sc.s }}>
-          <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.prompt}</p>
+          <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{el.prompt}</p>
           {el.points && <span style={{ fontSize: Math.max(fs - 6, 10) * sc.s, fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12 * sc.s, fontFamily: F, padding: `${3 * sc.s}px ${9 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
         </div>
-        {Array.from({ length: el.lines || 14 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75 * sc.s, borderBottom: "1px solid #E5E7EB", marginBottom: 3 * sc.s }} />)}
+        {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75 * sc.s, borderBottom: "1px solid #E5E7EB", marginBottom: 3 * sc.s }} />)}
         <DeleteBtn /><ResizeHandles />
       </div>
     );
@@ -1101,7 +1132,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
             {(el.items || []).map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 * sc.s }}>
                 <span aria-hidden="true" style={{ flexShrink: 0, width: 18 * sc.s, height: 18 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
-                <span style={{ fontSize: fs * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{item}</span>
+                <span style={{ fontSize: fs * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, flex: 1, minWidth: 0, ...lineStyle }}>{item}</span>
               </li>
             ))}
           </ul>
@@ -1131,7 +1162,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
                     {(lv.items || []).map((q, qi) => (
                       <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 * sc.s }}>
                         <span aria-hidden="true" style={{ flexShrink: 0, width: 16 * sc.s, height: 16 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
-                        <span style={{ fontSize: Math.max(fs - 1, 12) * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{q}</span>
+                        <span style={{ fontSize: Math.max(fs - 1, 12) * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, ...lineStyle }}>{q}</span>
                       </li>
                     ))}
                   </ul>
@@ -3007,7 +3038,7 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [] });
+  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [], oneLineOnly: true });
   const [currentPage, setCurrentPage] = useState(0);
   const [viewMode, setViewMode] = useState("single"); // "single" | "scroll"
   const [selId, setSelId] = useState(null);
@@ -3522,6 +3553,9 @@ Output ONLY the JSON array.`,
               <input type="checkbox" checked={ws[k]} onChange={e => setF(k, e.target.checked)} aria-label={`Show ${l} on worksheet`} style={{ accentColor: gv.color, width: 14, height: 14 }} /> {l}
             </label>
           ))}
+          <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer", borderLeft: "1px solid #E5E7EB", paddingLeft: 10 }} title="When on, list items in Success Criteria, Exit Ticket, DOK and other multi-item elements stay on a single line (resize the box wider to reveal more text). When off, items wrap to multiple lines.">
+            <input type="checkbox" checked={ws.oneLineOnly !== false} onChange={e => setF("oneLineOnly", e.target.checked)} aria-label="Force list items to a single line" style={{ accentColor: gv.color, width: 14, height: 14 }} /> 1-line items
+          </label>
         </fieldset>
 
         <button onClick={() => setShowHelp(true)} aria-label="Open help documentation"
@@ -3700,7 +3734,7 @@ Output ONLY the JSON array.`,
                       minHeight: Math.max(700, ...els.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
                     }}>
                       {els.map(el => (
-                        <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
+                        <ElView key={el.id} el={el} gv={gv} oneLineOnly={ws.oneLineOnly !== false} selected={selId === el.id}
                           onClick={() => { setSelId(el.id); setRightTab("edit"); if (viewMode === "scroll") setCurrentPage(pIdx); }}
                           onResize={handleResizeStart}
                           onDragStart={handleDragStart}
