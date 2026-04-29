@@ -1039,7 +1039,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
           <div key={i} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: 10 * scale.s, rowGap: 6 * scale.s, marginBottom: 10 * scale.s, padding: `${8 * scale.s}px ${12 * scale.s}px`, background: gv.light, borderRadius: 8, minHeight: el.heightOverride ? Math.max(34, (el.heightOverride - 42) / Math.max(1, (el.statements || []).length)) : undefined, boxSizing: "border-box" }}>
             <span style={{ fontSize: fs * scale.s, fontWeight: 500, fontFamily: elFamily, flex: "1 1 70%", minWidth: 0, lineHeight: 1.45, wordBreak: "break-word" }}>{stmt}</span>
             <div style={{ display: "flex", gap: 6 * scale.s, flexShrink: 0, marginLeft: "auto" }}>
-              {["T", "F"].map(t => <span key={t} aria-hidden="true" title={t === "T" ? "TRUE" : "FALSE"} style={{ fontSize: Math.max(fs - 6, 10) * scale.s, fontWeight: 700, padding: `${3 * scale.s}px ${9 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color, minWidth: 22 * scale.s, textAlign: "center" }}>{t}</span>)}
+              {["TRUE", "FALSE"].map(t => <span key={t} style={{ fontSize: Math.max(fs - 6, 10) * scale.s, fontWeight: 700, padding: `${3 * scale.s}px ${10 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color, textAlign: "center", whiteSpace: "nowrap" }}>{t}</span>)}
             </div>
           </div>
         ))}
@@ -1101,7 +1101,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
             {(el.items || []).map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 * sc.s }}>
                 <span aria-hidden="true" style={{ flexShrink: 0, width: 18 * sc.s, height: 18 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
-                <span style={{ fontSize: fs * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{item}</span>
+                <span style={{ fontSize: fs * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{item}</span>
               </li>
             ))}
           </ul>
@@ -1131,7 +1131,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
                     {(lv.items || []).map((q, qi) => (
                       <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 * sc.s }}>
                         <span aria-hidden="true" style={{ flexShrink: 0, width: 16 * sc.s, height: 16 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
-                        <span style={{ fontSize: Math.max(fs - 1, 12) * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45 }}>{q}</span>
+                        <span style={{ fontSize: Math.max(fs - 1, 12) * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{q}</span>
                       </li>
                     ))}
                   </ul>
