@@ -991,23 +991,43 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     );
   }
 
-  if (el.type === "matching") return (
-    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <ScaledContent el={el}>
-        {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily }}>{el.title}</p>}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 6, alignItems: "center" }}>
+  if (el.type === "matching") {
+    const sc = resizeScaleFor(el);
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        {el.title && <p style={{ fontSize: Math.max(fs - 3, 12) * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: elFamily }}>{el.title}</p>}
+        <div style={{ display: "grid", gridTemplateColumns: `1fr ${40 * sc.s}px 1fr`, gap: 6 * sc.s, alignItems: "center" }}>
           {(el.left || []).map((item, i) => (
             <span key={i} style={{ display: "contents" }}>
-              <div style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "6px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{item}</div>
-              <div aria-hidden="true" style={{ borderBottom: "1.5px dashed #9CA3AF", margin: "0 4px" }} />
-              <div style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "6px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{(el.right || [])[i] || ""}</div>
+              <div style={{ fontSize: fs * sc.s, fontWeight: 600, fontFamily: elFamily, padding: `${6 * sc.s}px ${10 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{item}</div>
+              <div aria-hidden="true" style={{ borderBottom: "1.5px dashed #9CA3AF", margin: `0 ${4 * sc.s}px` }} />
+              <div style={{ fontSize: fs * sc.s, fontWeight: 600, fontFamily: elFamily, padding: `${6 * sc.s}px ${10 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{(el.right || [])[i] || ""}</div>
             </span>
           ))}
         </div>
-      </ScaledContent>
-      <DeleteBtn /><ResizeHandles />
-    </div>
-  );
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
+
+  if (el.type === "multipleChoice") {
+    const sc = resizeScaleFor(el);
+    return (
+      <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
+        <p style={{ fontSize: fs * sc.s, fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${5 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
+        {el.note && <p style={{ fontSize: Math.max(fs - 7, 11) * sc.s, fontWeight: 500, color: "#6B7280", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: F }}>{el.note}</p>}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 * sc.s }}>
+          {(el.choices || []).map((c, i) => (
+            <label key={i} style={{ display: "flex", alignItems: "center", gap: 8 * sc.s }}>
+              <div aria-hidden="true" style={{ width: Math.min(22, fs) * sc.s, height: Math.min(22, fs) * sc.s, borderRadius: "50%", border: `2px solid ${gv.color}`, flexShrink: 0, background: "white" }} />
+              <span style={{ fontSize: fs * sc.s, fontWeight: 500, fontFamily: elFamily }}>{c}</span>
+            </label>
+          ))}
+        </div>
+        <DeleteBtn /><ResizeHandles />
+      </div>
+    );
+  }
 
   if (el.type === "multipleChoice") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
