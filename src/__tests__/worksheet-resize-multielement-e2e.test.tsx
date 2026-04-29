@@ -243,14 +243,16 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         const wrapper = addElement(/add word bank element/i);
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
-        // Pills are <span> children of the inner flex row; they must remain
-        // descendants of the same wrapper (no DOM detachment), and the inner
-        // transform must scale them together.
+        // Pills are direct reflowing content now — they must stay descendants
+        // of the wrapper, grow in font size, and NOT be trapped in a fixed
+        // transformed baseline order/width.
         const pills = wrapper.querySelectorAll("span");
         expect(pills.length).toBeGreaterThan(0);
-        const { sx, sy } = innerScaleOf(wrapper);
-        expect(sx).toBeGreaterThanOrEqual(1);
-        expect(sy).toBeGreaterThanOrEqual(1);
+        expect(contentTransformsOf(wrapper)).toEqual([]);
+        expect(parseFloat((pills[0] as HTMLElement).style.fontSize)).toBeGreaterThan(14);
+        const wordBox = wrapper.querySelector<HTMLElement>("div[style*='flex-wrap']");
+        expect(wordBox?.style.flexWrap).toBe("wrap");
+        expect(wordBox?.style.alignContent).toBe("flex-start");
       });
 
       it("True/False specifically: each statement row stays inside the scaled wrapper after enlarging", async () => {
@@ -264,10 +266,55 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           s => /^TRUE$|^FALSE$/.test((s.textContent || "").trim()),
         );
         expect(chips.length).toBeGreaterThanOrEqual(2);
-        const { sx, sy, raw } = innerScaleOf(wrapper);
-        expect(sx).toBeGreaterThanOrEqual(1);
-        expect(sy).toBeGreaterThanOrEqual(1);
-        expect(raw).not.toMatch(/rotate|skew|translate|matrix/);
+        expect(contentTransformsOf(wrapper)).toEqual([]);
+        expect(parseFloat((chips[0] as HTMLElement).style.fontSize)).toBeGreaterThan(10);
+        const statement = Array.from(wrapper.querySelectorAll<HTMLElement>("span")).find(
+          s => (s.textContent || "").includes("Plants need water"),
+        );
+        expect(statement?.style.flex).toBe("1 1 0%");
+      });
+
+      it("Word Bank and True/False reflow on right-side resize and support vertical-only resize", async () => {
+        openBuilder();
+        for (const label of [/add word bank element/i, /add true \/ false element/i]) {
+          const wrapper = addElement(label);
+          const startW = widthPctOf(wrapper);
+          await dragHandle(getHandles(wrapper).right, 220, 0);
+          expect(widthPctOf(wrapper)).toBeGreaterThan(startW);
+          expect(contentTransformsOf(wrapper)).toEqual([]);
+
+          const afterWidthOnly = widthPctOf(wrapper);
+          const startH = heightPxOf(wrapper);
+          await dragHandle(getHandles(wrapper).bottom, 0, 140);
+          expect(heightPxOf(wrapper)).toBeGreaterThan(startH);
+          expect(widthPctOf(wrapper)).toBe(afterWidthOnly);
+        }
+      });
+
+      it("top and left handles resize from one side by moving that edge, not freezing the element", async () => {
+        openBuilder();
+        const wrapper = addElement(/add word bank element/i);
+        await dragHandle(getHandles(wrapper).bottom, 0, 120);
+        const beforeTop = topPxOf(wrapper);
+        const beforeH = heightPxOf(wrapper);
+        await dragHandle(getHandles(wrapper).top, 0, -50);
+        expect(heightPxOf(wrapper)).toBeGreaterThan(beforeH);
+        expect(topPxOf(wrapper)).toBeLessThanOrEqual(beforeTop);
+
+        await dragHandle(getHandles(wrapper).right, 140, 0);
+        const beforeLeft = leftPctOf(wrapper);
+        const beforeW = widthPctOf(wrapper);
+        await dragHandle(getHandles(wrapper).left, -50, 0);
+        expect(widthPctOf(wrapper)).toBeGreaterThan(beforeW);
+        expect(leftPctOf(wrapper)).toBeLessThanOrEqual(beforeLeft);
+
+        await act(async () => {
+          fireEvent.pointerDown(wrapper, { clientX: 200, clientY: 300, target: wrapper });
+          fireEvent.pointerMove(window, { clientX: 240, clientY: 340 });
+          fireEvent.pointerUp(window, { clientX: 240, clientY: 340 });
+        });
+        expect(topPxOf(wrapper)).toBeGreaterThanOrEqual(0);
+        expect(contentTransformsOf(wrapper)).toEqual([]);
       });
     });
   }
