@@ -1323,17 +1323,56 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
 
   const paletteItem = PALETTE.find(p => p.type === el.type);
 
-  // ── Typography section (shared by most text elements) ──
+  // Preset text-size buttons. These map to absolute pt values that work well
+  // across all worksheet element types and stay readable when boxes are
+  // resized. Selecting a preset writes el.fontSizeOverride; the numeric input
+  // below remains available for fine-tuning. "Default" clears the override
+  // and falls back to the grade-band default (gv.fontSize).
+  const SIZE_PRESETS = [
+    { key: "xs",      label: "XS",      pt: 10 },
+    { key: "s",       label: "S",       pt: 12 },
+    { key: "m",       label: "M",       pt: 14 },
+    { key: "l",       label: "L",       pt: 18 },
+    { key: "xl",      label: "XL",      pt: 22 },
+    { key: "xxl",     label: "XXL",     pt: 28 },
+  ];
+  const activeSizePt = el.fontSizeOverride || null;
+
+  // ── Typography section (shared by ALL worksheet element types) ──
   const TypographySection = () => (
     <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #F3F4F6" }}>
       <p style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.8, margin: "0 0 10px 0" }}>Typography</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      <label style={LBL}>Text Size</label>
+      <div role="group" aria-label="Text size preset" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 4 }}>
+        <button
+          key="default"
+          onClick={() => onChange({ fontSizeOverride: null })}
+          aria-label="Use grade-default text size"
+          aria-pressed={activeSizePt === null}
+          title={`Default (${gv.fontSize}pt)`}
+          style={{ padding: "6px 0", borderRadius: 6, border: `1.5px solid ${activeSizePt === null ? gv.color : "#E5E7EB"}`, background: activeSizePt === null ? gv.light : "white", fontFamily: F, fontSize: 11, fontWeight: 700, cursor: "pointer", color: activeSizePt === null ? gv.color : "#374151" }}
+        >Auto</button>
+        {SIZE_PRESETS.map(p => {
+          const sel = activeSizePt === p.pt;
+          return (
+            <button key={p.key}
+              onClick={() => onChange({ fontSizeOverride: p.pt })}
+              aria-label={`Set text size ${p.label} (${p.pt}pt)`}
+              aria-pressed={sel}
+              title={`${p.label} — ${p.pt}pt`}
+              style={{ padding: "6px 0", borderRadius: 6, border: `1.5px solid ${sel ? gv.color : "#E5E7EB"}`, background: sel ? gv.light : "white", fontFamily: F, fontSize: 11, fontWeight: 700, cursor: "pointer", color: sel ? gv.color : "#374151" }}
+            >{p.label}</button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
         <div>
-          <label style={LBL}>Font Size (pt)</label>
-          <input type="number" min={8} max={72} value={el.fontSizeOverride || ""} placeholder={`${gv.fontSize} (grade default)`}
+          <label style={LBL}>Custom (pt)</label>
+          <input type="number" min={8} max={72} value={el.fontSizeOverride || ""} placeholder={`${gv.fontSize}`}
             onChange={e => onChange({ fontSizeOverride: e.target.value ? parseInt(e.target.value) : null })}
-            style={{ ...inp, marginTop: 4 }} aria-label="Override font size" />
+            style={{ ...inp, marginTop: 4 }} aria-label="Custom font size in points" />
         </div>
         <div>
           <label style={LBL}>Text Align</label>
@@ -1401,6 +1440,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
             </select>
           </div>
         </div>
+        <TypographySection />
       </>)}
 
       {el.type === "blank" && (<>
@@ -1429,6 +1469,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
           aria-label="Word bank words"
           placeholder={"cat\ndog\nfish"}
         />
+        <TypographySection />
       </>)}
 
       {el.type === "matching" && (<>
@@ -1450,6 +1491,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
           style={{ ...inp, minHeight: 80, marginTop: 4 }}
           aria-label="Right column items"
         />
+        <TypographySection />
       </>)}
 
       {el.type === "multipleChoice" && (<>
@@ -1526,17 +1568,23 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
         <label style={LBL}>Number of Rows</label>
         <input type="number" min={1} max={20} value={(el.rows || []).length || 3}
           onChange={e => { const n = Math.max(1, parseInt(e.target.value) || 1); const cols = (el.headers || []).length || 3; onChange({ rows: Array.from({ length: n }, (_, i) => el.rows?.[i] || Array(cols).fill("")) }); }} style={{ ...inp, marginTop: 4 }} aria-label="Number of rows" />
+        <TypographySection />
       </>)}
 
-      {el.type === "customShape" && <CustomShapeEditor el={el} onChange={onChange} gv={gv} inp={inp} />}
+      {el.type === "customShape" && (<>
+        <CustomShapeEditor el={el} onChange={onChange} gv={gv} inp={inp} />
+        <TypographySection />
+      </>)}
 
-      {(el.type === "successCriteria" || el.type === "exitTicket") && (
+      {(el.type === "successCriteria" || el.type === "exitTicket") && (<>
         <ChecklistEditor el={el} onChange={onChange} gv={gv} inp={inp} />
-      )}
+        <TypographySection />
+      </>)}
 
-      {el.type === "dokQuestions" && (
+      {el.type === "dokQuestions" && (<>
         <DokEditor el={el} onChange={onChange} gv={gv} inp={inp} />
-      )}
+        <TypographySection />
+      </>)}
     </div>
   );
 }
