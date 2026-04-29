@@ -120,11 +120,11 @@ const VIEWPORTS = [
 
 const ELEMENT_TYPES = [
   { name: "Word Bank",       label: /add word bank element/i },
-  { name: "True/False",      label: /add true or false activity/i },
-  { name: "Matching",        label: /add matching activity/i },
-  { name: "Multiple Choice", label: /add multiple choice question/i },
+  { name: "True/False",      label: /add true \/ false element/i },
+  { name: "Matching",        label: /add matching element/i },
+  { name: "Multiple Choice", label: /add multiple choice element/i },
   { name: "Text Block",      label: /add text block element/i },
-  { name: "Short Answer",    label: /add short answer question/i },
+  { name: "Short Answer",    label: /add short answer element/i },
 ];
 
 describe("worksheet builder: multi-element back-to-back resize E2E", () => {
