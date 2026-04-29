@@ -946,25 +946,25 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
       {/* Bottom — vertical resize */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "bottom"); }}
         title="Drag to resize height"
-        style={{ position:"absolute", bottom:-3, left:"50%", transform:"translateX(-50%)", width:56, height:18, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:56, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:44, height:6, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Top — vertical resize */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "top"); }}
         title="Drag to resize height"
-        style={{ position:"absolute", top:-3, left:"50%", transform:"translateX(-50%)", width:56, height:18, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:56, height:14, cursor:"ns-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:44, height:6, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Right — horizontal resize (drag this edge to make the box WIDER) */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "right"); }}
         title="Drag to resize width"
-        style={{ position:"absolute", right:-3, top:"50%", transform:"translateY(-50%)", width:18, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:14, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:6, height:44, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Left — horizontal resize (drag this edge to make the box WIDER) */}
       <div data-resize-handle onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onResize && onResize(e, el.id, "left"); }}
         title="Drag to resize width"
-        style={{ position:"absolute", left:-3, top:"50%", transform:"translateY(-50%)", width:18, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
+        style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:14, height:56, cursor:"ew-resize", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center", touchAction:"none" }}>
         <div style={{ width:6, height:44, borderRadius:3, background:gv.color, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
       </div>
       {/* Bottom-right corner */}
