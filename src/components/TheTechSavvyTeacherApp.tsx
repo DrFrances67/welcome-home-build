@@ -4720,7 +4720,18 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         }
       }
 
-      // Final guard: if the AI ignored instructions and emitted a CCLS / Common Core code,
+      // Ensure dokQuestions exists and has all 4 levels populated. If missing
+      // or incomplete, ask the AI to generate them from the objectives.
+      if (!dokOk(parsed.dokQuestions)) {
+        try {
+          const objsForDok = (Array.isArray(parsed.objectives) ? parsed.objectives : []).filter(Boolean);
+          const dok = await generateDokFromObjectives(objsForDok, parsed.title || form.topic);
+          if (dokOk(dok)) parsed.dokQuestions = dok;
+        } catch(_) { /* keep whatever the model gave */ }
+      }
+      parsed.dokQuestions = normalizeDok(parsed.dokQuestions);
+
+
       // or invented a code not in NY_STANDARDS, fall back to the closest entry from candidateStds.
       if (!form.standard) {
         const stdStr = String(parsed.standard || "");
