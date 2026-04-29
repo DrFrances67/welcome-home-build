@@ -1208,28 +1208,32 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
   if (el.type === "dokQuestions") {
     const LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
     const sc = resizeScaleFor(el);
-    const levelCount = Math.max(1, (el.levels || []).length);
-    const horizontalOnly = el.resizeAxis === "horizontal";
-    const extraV = (el.heightOverride && !horizontalOnly) ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
-    const levelGap = (10 * sc.s) + (extraV / (levelCount + 1));
+    // DOK cards contain multiple nested text boxes. Tie their internal scale to
+    // width only and cap it so vertical resizing does not balloon type/gaps and
+    // push most questions out of view.
+    const dokS = Math.max(SCALE_MIN, Math.min(1.35, sc.sx));
+    const dokTextScale = fsLocked ? 1 : dokS;
+    const levelGap = 10;
+    const itemGap = 6;
+    const dokLineStyle = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `${6 * sc.s}px solid ${gv.color}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * tScale(sc), fontWeight: 800, color: gv.color, margin: `0 0 ${6 * sc.s}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
-          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * tScale(sc), fontWeight: 600, color: "#374151", margin: `0 0 ${10 * sc.s}px 0`, fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
-          <div style={{ display: "flex", flexDirection: "column", gap: levelGap, flex: 1, justifyContent: extraV > 0 ? "space-around" : "flex-start" }}>
+        <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `${6 * dokS}px solid ${gv.color}`, borderRadius: 10, padding: `${12 * dokS}px ${16 * dokS}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column", overflowY: el.heightOverride ? "auto" : "visible", minHeight: 0 }}>
+          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * dokTextScale, fontWeight: 800, color: gv.color, margin: `0 0 ${6 * dokS}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
+          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * dokTextScale, fontWeight: 600, color: "#374151", margin: `0 0 ${10 * dokS}px 0`, fontFamily: F, lineHeight: 1.45, ...dokLineStyle }}>{el.intro}</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: levelGap, flex: 1, justifyContent: "flex-start", minHeight: 0 }}>
             {(el.levels || []).map((lv, li) => {
               const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
               return (
-                <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderRadius: 8, padding: `${8 * sc.s}px ${10 * sc.s}px` }}>
-                  <p style={{ fontSize: Math.max(fs - 4, 11) * tScale(sc), fontWeight: 800, color: c, margin: `0 0 ${6 * sc.s}px 0`, fontFamily: FF }}>
+                <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderRadius: 8, padding: `${8 * dokS}px ${10 * dokS}px` }}>
+                  <p style={{ fontSize: Math.max(fs - 4, 11) * dokTextScale, fontWeight: 800, color: c, margin: `0 0 ${6 * dokS}px 0`, fontFamily: FF }}>
                     DOK {lv.level} · {lv.label}
                   </p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 * sc.s }}>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: itemGap }}>
                     {(lv.items || []).map((q, qi) => (
-                      <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 * sc.s }}>
-                        <span aria-hidden="true" style={{ flexShrink: 0, width: 16 * sc.s, height: 16 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
-                        <span style={{ fontSize: Math.max(fs - 1, 12) * tScale(sc), fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, ...lineStyle }}>{q}</span>
+                      <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 * dokS }}>
+                        <span aria-hidden="true" style={{ flexShrink: 0, width: 16 * dokS, height: 16 * dokS, marginTop: 2 * dokS, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
+                        <span style={{ fontSize: Math.max(fs - 1, 12) * dokTextScale, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...dokLineStyle }}>{q}</span>
                       </li>
                     ))}
                   </ul>

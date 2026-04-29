@@ -116,7 +116,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
     expect(after2.gap).toBeLessThan(before.gap + 4);
   });
 
-  it("DOK Questions: vertical resize STILL distributes extra space (regression guard)", async () => {
+  it("DOK Questions: vertical resize keeps spacing compact and content readable", async () => {
     openBuilder();
     const wrapper = addElement(/add dok questions element/i);
     const before = getDokLevelLayout(wrapper);
@@ -124,10 +124,16 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
     await dragHandle(getHandles(wrapper).bottom, 0, 240);
     const after = getDokLevelLayout(wrapper);
 
-    // After a meaningful vertical drag, gap should grow and justify becomes
-    // space-around so the level boxes fill the taller box.
-    expect(after.gap).toBeGreaterThan(before.gap);
-    expect(after.justify).toBe("space-around");
+    // Vertical resize must not distribute leftover height into huge gaps.
+    expect(after.justify).toBe("flex-start");
+    expect(after.gap).toBeLessThanOrEqual(before.gap + 4);
+
+    const card = wrapper.querySelector<HTMLElement>(":scope > div");
+    expect(card?.style.overflowY).toBe("auto");
+    const questionText = Array.from(wrapper.querySelectorAll<HTMLElement>("span"))
+      .find(node => node.textContent?.includes("?"));
+    expect(questionText?.style.whiteSpace).toBe("normal");
+    expect(questionText?.style.wordBreak).toBe("break-word");
   });
 
   it("Success Criteria: horizontal-only resize keeps list item gap tight", async () => {
