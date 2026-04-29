@@ -1724,37 +1724,6 @@ No markdown, no preamble, no commentary.`;
   );
       }
 
-      // Ensure dokQuestions exists and has all 4 levels populated. If missing
-      // or incomplete, ask the AI to generate them from the objectives.
-      const DOK_DEFS = [
-        { level: 1, label: "Recall & Reproduction" },
-        { level: 2, label: "Skills & Concepts" },
-        { level: 3, label: "Strategic Thinking" },
-        { level: 4, label: "Extended Thinking" },
-      ];
-      const dokOk = (arr) => Array.isArray(arr)
-        && arr.length >= 4
-        && DOK_DEFS.every(d => {
-          const lv = arr.find(x => Number(x?.level) === d.level);
-          return lv && Array.isArray(lv.items) && lv.items.filter(s => s && String(s).trim()).length >= 1;
-        });
-      if (!dokOk(parsed.dokQuestions)) {
-        try {
-          const objsForDok = (Array.isArray(parsed.objectives) ? parsed.objectives : []).filter(Boolean);
-          const dok = await generateDokFromObjectives(objsForDok, parsed.title || form.topic);
-          if (dokOk(dok)) parsed.dokQuestions = dok;
-        } catch(_) { /* keep whatever the model gave */ }
-      }
-      // Normalize: ensure exactly 4 levels in order with the canonical labels.
-      if (Array.isArray(parsed.dokQuestions)) {
-        parsed.dokQuestions = DOK_DEFS.map(d => {
-          const found = parsed.dokQuestions.find(x => Number(x?.level) === d.level) || {};
-          const items = (Array.isArray(found.items) ? found.items : [])
-            .map(s => String(s || "").trim()).filter(Boolean);
-          return { level: d.level, label: found.label || d.label, items: items.length ? items : ["(Add a question)"] };
-        });
-      }
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CHECKLIST EDITOR (Success Criteria & Exit Ticket)
