@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* eslint-disable */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
@@ -737,6 +737,73 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 // ELEMENT VIEW
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ScaledContent: wraps an element's inner content and scales it (via CSS
+// transform) so that boxes, text, lines, and other inner elements grow or
+// shrink together when the user resizes the outer wrapper. It measures the
+// content's natural size and the available wrapper space, then applies
+// transform: scale(sx, sy) with top-left origin. The outer wrapper keeps
+// absolute positioning so resize handles stay anchored to its edges.
+function ScaledContent({ el, children }) {
+  const outerRef = useRef(null);
+  const innerRef = useRef(null);
+  const [scale, setScale] = useState({ x: 1, y: 1, h: null });
+
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+
+    const measure = () => {
+      // Reset transform before measuring natural size
+      inner.style.transform = "none";
+      inner.style.width = "auto";
+      const naturalW = inner.scrollWidth || inner.offsetWidth || 1;
+      const naturalH = inner.scrollHeight || inner.offsetHeight || 1;
+      const availW = outer.clientWidth || naturalW;
+      // Treat heightOverride as the desired box height (in px). When the
+      // user has not set one, content keeps its natural height (sy = 1).
+      const desiredH = el.heightOverride || naturalH;
+
+      const sx = availW > 0 && naturalW > 0 ? availW / naturalW : 1;
+      const sy = el.heightOverride && naturalH > 0 ? desiredH / naturalH : sx;
+
+      // Force the inner box to its natural width so the scale math works
+      // consistently on both axes.
+      inner.style.width = naturalW + "px";
+      setScale({ x: sx, y: sy, h: Math.max(naturalH * sy, 12) });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, [el.widthOverride, el.heightOverride, el]);
+
+  return (
+    <div
+      ref={outerRef}
+      style={{
+        width: "100%",
+        height: scale.h != null ? scale.h + "px" : "auto",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        ref={innerRef}
+        style={{
+          transform: `scale(${scale.x}, ${scale.y})`,
+          transformOrigin: "top left",
+          width: "100%",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+
 function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) {
   // Per-element typography overrides
   const fs        = el.fontSizeOverride || gv.fontSize;
@@ -823,14 +890,18 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
 
   if (el.type === "instruction") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Instructions element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <div style={{ fontSize: Math.max(fs - 6, 12), fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: "10px 16px", borderRadius: 8, borderLeft: `5px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
+      <ScaledContent el={el}>
+        <div style={{ fontSize: Math.max(fs - 6, 12), fontWeight: elWeight || 600, color: "#1F2937", background: "#FEFCE8", padding: "10px 16px", borderRadius: 8, borderLeft: `5px solid ${gv.color}`, fontFamily: elFamily, lineHeight: 1.6, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</div>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "text") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
+      <ScaledContent el={el}>
+        <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
@@ -883,88 +954,102 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
 
   if (el.type === "wordBank") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Word bank element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF, letterSpacing: 0.3 }}>{el.title}</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 14px", background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25` }}>
-        {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "4px 14px", border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827" }}>{w}</span>)}
-      </div>
+      <ScaledContent el={el}>
+        <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF, letterSpacing: 0.3 }}>{el.title}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 14px", background: gv.light, borderRadius: 8, border: `1.5px solid ${gv.color}25` }}>
+          {(el.words || []).map((w, i) => <span key={i} style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "4px 14px", border: `1.5px solid ${gv.color}`, borderRadius: 40, background: "white", color: "#111827" }}>{w}</span>)}
+        </div>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "matching") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Matching activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily }}>{el.title}</p>}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 6, alignItems: "center" }}>
-        {(el.left || []).map((item, i) => (
-          <span key={i} style={{ display: "contents" }}>
-            <div style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "6px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{item}</div>
-            <div aria-hidden="true" style={{ borderBottom: "1.5px dashed #9CA3AF", margin: "0 4px" }} />
-            <div style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "6px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{(el.right || [])[i] || ""}</div>
-          </span>
-        ))}
-      </div>
+      <ScaledContent el={el}>
+        {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily }}>{el.title}</p>}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 6, alignItems: "center" }}>
+          {(el.left || []).map((item, i) => (
+            <span key={i} style={{ display: "contents" }}>
+              <div style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "6px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{item}</div>
+              <div aria-hidden="true" style={{ borderBottom: "1.5px dashed #9CA3AF", margin: "0 4px" }} />
+              <div style={{ fontSize: fs, fontWeight: 600, fontFamily: elFamily, padding: "6px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{(el.right || [])[i] || ""}</div>
+            </span>
+          ))}
+        </div>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "multipleChoice") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 5px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
-      {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 12px 0", fontFamily: F }}>{el.note}</p>}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-        {(el.choices || []).map((c, i) => (
-          <label key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div aria-hidden="true" style={{ width: Math.min(22, fs), height: Math.min(22, fs), borderRadius: "50%", border: `2px solid ${gv.color}`, flexShrink: 0, background: "white" }} />
-            <span style={{ fontSize: fs, fontWeight: 500, fontFamily: elFamily }}>{c}</span>
-          </label>
-        ))}
-      </div>
+      <ScaledContent el={el}>
+        <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 5px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
+        {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 12px 0", fontFamily: F }}>{el.note}</p>}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          {(el.choices || []).map((c, i) => (
+            <label key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div aria-hidden="true" style={{ width: Math.min(22, fs), height: Math.min(22, fs), borderRadius: "50%", border: `2px solid ${gv.color}`, flexShrink: 0, background: "white" }} />
+              <span style={{ fontSize: fs, fontWeight: 500, fontFamily: elFamily }}>{c}</span>
+            </label>
+          ))}
+        </div>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "truefalse") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="True or false activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
-      {(el.statements || []).map((stmt, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, padding: "8px 12px", background: gv.light, borderRadius: 8 }}>
-          <span style={{ fontSize: fs, fontWeight: 500, fontFamily: elFamily, flex: 1, lineHeight: 1.45 }}>{stmt}</span>
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            {["TRUE", "FALSE"].map(t => <span key={t} aria-hidden="true" style={{ fontSize: Math.max(fs - 7, 10), fontWeight: 700, padding: "3px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color }}>{t}</span>)}
+      <ScaledContent el={el}>
+        <p style={{ fontSize: Math.max(fs - 4, 12), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
+        {(el.statements || []).map((stmt, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, padding: "8px 12px", background: gv.light, borderRadius: 8 }}>
+            <span style={{ fontSize: fs, fontWeight: 500, fontFamily: elFamily, flex: 1, lineHeight: 1.45 }}>{stmt}</span>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              {["TRUE", "FALSE"].map(t => <span key={t} aria-hidden="true" style={{ fontSize: Math.max(fs - 7, 10), fontWeight: 700, padding: "3px 10px", border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color }}>{t}</span>)}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "shortAnswer") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Short answer question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
-      {Array.from({ length: el.lines || 4 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 }} />)}
+      <ScaledContent el={el}>
+        <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 12px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
+        {Array.from({ length: el.lines || 4 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.9, borderBottom: "1.5px solid #D1D5DB", marginBottom: 5 }} />)}
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "fillBlank") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Fill in the blank activity — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 8px 0", fontFamily: F }}>{el.note}</p>}
-      <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign }}>
-        {(el.text || "").split("______").map((part, i, arr) => (
-          <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: 85, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: "0 3px" }} />}</span>
-        ))}
-      </p>
+      <ScaledContent el={el}>
+        {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 8px 0", fontFamily: F }}>{el.note}</p>}
+        <p style={{ fontSize: fs, fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.9, fontStyle: elStyle, textAlign: elAlign }}>
+          {(el.text || "").split("______").map((part, i, arr) => (
+            <span key={i}>{part}{i < arr.length - 1 && <span aria-label="blank" style={{ display: "inline-block", width: 85, borderBottom: `2px solid ${gv.color}`, verticalAlign: "bottom", margin: "0 3px" }} />}</span>
+          ))}
+        </p>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
 
   if (el.type === "essay") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-        <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.prompt}</p>
-        {el.points && <span style={{ fontSize: Math.max(fs - 6, 10), fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12, fontFamily: F, padding: "3px 9px", border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
-      </div>
-      {Array.from({ length: el.lines || 14 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75, borderBottom: "1px solid #E5E7EB", marginBottom: 3 }} />)}
+      <ScaledContent el={el}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.prompt}</p>
+          {el.points && <span style={{ fontSize: Math.max(fs - 6, 10), fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12, fontFamily: F, padding: "3px 9px", border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
+        </div>
+        {Array.from({ length: el.lines || 14 }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75, borderBottom: "1px solid #E5E7EB", marginBottom: 3 }} />)}
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
@@ -974,18 +1059,20 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const bg = el.type === "successCriteria" ? gv.light : "#EFF6FF";
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
-        <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `6px solid ${accent}`, borderRadius: 10, padding: "12px 16px" }}>
-          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: accent, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
-          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-            {(el.items || []).map((item, i) => (
-              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <span aria-hidden="true" style={{ flexShrink: 0, width: 18, height: 18, marginTop: 2, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
-                <span style={{ fontSize: fs, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ScaledContent el={el}>
+          <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `6px solid ${accent}`, borderRadius: 10, padding: "12px 16px" }}>
+            {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: accent, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
+            {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+              {(el.items || []).map((item, i) => (
+                <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <span aria-hidden="true" style={{ flexShrink: 0, width: 18, height: 18, marginTop: 2, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
+                  <span style={{ fontSize: fs, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </ScaledContent>
         <DeleteBtn /><ResizeHandles />
       </div>
     );
@@ -995,30 +1082,32 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     const LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `6px solid ${gv.color}`, borderRadius: 10, padding: "12px 16px" }}>
-          {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: gv.color, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
-          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {(el.levels || []).map((lv, li) => {
-              const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
-              return (
-                <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderRadius: 8, padding: "8px 10px" }}>
-                  <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 800, color: c, margin: "0 0 6px 0", fontFamily: FF }}>
-                    DOK {lv.level} · {lv.label}
-                  </p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                    {(lv.items || []).map((q, qi) => (
-                      <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                        <span aria-hidden="true" style={{ flexShrink: 0, width: 16, height: 16, marginTop: 2, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
-                        <span style={{ fontSize: Math.max(fs - 1, 12), fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45 }}>{q}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
+        <ScaledContent el={el}>
+          <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `6px solid ${gv.color}`, borderRadius: 10, padding: "12px 16px" }}>
+            {el.title && <p style={{ fontSize: Math.max(fs - 2, 13), fontWeight: 800, color: gv.color, margin: "0 0 6px 0", fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
+            {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 600, color: "#374151", margin: "0 0 10px 0", fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(el.levels || []).map((lv, li) => {
+                const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
+                return (
+                  <div key={li} style={{ background: c + "10", border: `1.5px solid ${c}55`, borderRadius: 8, padding: "8px 10px" }}>
+                    <p style={{ fontSize: Math.max(fs - 4, 11), fontWeight: 800, color: c, margin: "0 0 6px 0", fontFamily: FF }}>
+                      DOK {lv.level} · {lv.label}
+                    </p>
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                      {(lv.items || []).map((q, qi) => (
+                        <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                          <span aria-hidden="true" style={{ flexShrink: 0, width: 16, height: 16, marginTop: 2, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
+                          <span style={{ fontSize: Math.max(fs - 1, 12), fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45 }}>{q}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </ScaledContent>
         <DeleteBtn /><ResizeHandles />
       </div>
     );
@@ -1026,17 +1115,19 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
 
   if (el.type === "table") return (
     <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Table element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: Math.max(fs - 4, 11), fontFamily: elFamily }} role="table">
-        <thead>
-          <tr>{(el.headers || []).map((h, i) => <th key={i} scope="col" style={{ padding: "7px 10px", border: `1.5px solid ${gv.color}`, background: gv.color, color: "white", fontWeight: 700, textAlign: "center", fontFamily: F }}>{h}</th>)}</tr>
-        </thead>
-        <tbody>
-          {(el.rows || []).map((row, ri) => (
-            <tr key={ri}>{(row || []).map((cell, ci) => <td key={ci} style={{ padding: "5px 9px", border: "1px solid #D1D5DB", height: gv.lineH, verticalAlign: "top" }}>{cell || " "}</td>)}</tr>
-          ))}
-        </tbody>
-      </table>
+      <ScaledContent el={el}>
+        {el.title && <p style={{ fontSize: Math.max(fs - 3, 12), fontWeight: elWeight || 700, color: "#111827", margin: "0 0 8px 0", fontFamily: elFamily }}>{el.title}</p>}
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: Math.max(fs - 4, 11), fontFamily: elFamily }} role="table">
+          <thead>
+            <tr>{(el.headers || []).map((h, i) => <th key={i} scope="col" style={{ padding: "7px 10px", border: `1.5px solid ${gv.color}`, background: gv.color, color: "white", fontWeight: 700, textAlign: "center", fontFamily: F }}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {(el.rows || []).map((row, ri) => (
+              <tr key={ri}>{(row || []).map((cell, ci) => <td key={ci} style={{ padding: "5px 9px", border: "1px solid #D1D5DB", height: gv.lineH, verticalAlign: "top" }}>{cell || " "}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+      </ScaledContent>
       <DeleteBtn /><ResizeHandles />
     </div>
   );
