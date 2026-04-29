@@ -134,6 +134,29 @@ const ELEMENT_TYPES = [
   { name: "Short Answer",    label: /add short answer element/i },
 ];
 
+// Every addable element type — used to verify vertical-only resize is
+// available on EVERY worksheet item, not just a subset.
+const ALL_ELEMENT_TYPES = [
+  { name: "Instructions",    label: /add instructions element/i },
+  { name: "Text Block",      label: /add text block element/i },
+  { name: "Image",           label: /add image element/i },
+  { name: "Write Lines",     label: /add write lines element/i },
+  { name: "Word Bank",       label: /add word bank element/i },
+  { name: "Matching",        label: /add matching element/i },
+  { name: "Multiple Choice", label: /add multiple choice element/i },
+  { name: "True/False",      label: /add true \/ false element/i },
+  { name: "Short Answer",    label: /add short answer element/i },
+  { name: "Fill in Blank",   label: /add fill in blank element/i },
+  { name: "Essay Prompt",    label: /add essay prompt element/i },
+  { name: "Table / Chart",   label: /add table \/ chart element/i },
+  { name: "Custom Shapes",   label: /add custom shapes element/i },
+  { name: "Success Criteria",label: /add success criteria element/i },
+  { name: "Exit Ticket",     label: /add exit ticket element/i },
+  { name: "DOK Questions",   label: /add dok questions element/i },
+  // Note: "Section Break" (divider) intentionally has no resize handles — it
+  // is a fixed-height visual separator, not a resizable content element.
+];
+
 describe("worksheet builder: multi-element back-to-back resize E2E", () => {
   beforeEach(() => {
     (globalThis as any).ResizeObserver = class {
@@ -306,6 +329,37 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         });
         expect(topPxOf(wrapper)).toBeGreaterThanOrEqual(0);
         expect(contentTransformsOf(wrapper)).toEqual([]);
+      });
+
+      it("EVERY worksheet element type supports vertical-only resize (bottom + top handles, width unchanged)", async () => {
+        openBuilder();
+        for (const t of ALL_ELEMENT_TYPES) {
+          const wrapper = addElement(t.label);
+
+          // Bottom handle: drag down → height grows, width is untouched.
+          const startW = widthPctOf(wrapper);
+          const startH = heightPxOf(wrapper);
+          await dragHandle(getHandles(wrapper).bottom, 0, 120);
+          const afterBottomH = heightPxOf(wrapper);
+          const afterBottomW = widthPctOf(wrapper);
+          expect(afterBottomH, `${t.name}: bottom-drag must grow height`).toBeGreaterThan(startH);
+          expect(afterBottomW, `${t.name}: bottom-drag must NOT change width`).toBe(startW);
+
+          // Top handle: drag up → height grows further, width is still untouched.
+          await dragHandle(getHandles(wrapper).top, 0, -60);
+          const afterTopH = heightPxOf(wrapper);
+          const afterTopW = widthPctOf(wrapper);
+          expect(afterTopH, `${t.name}: top-drag must grow height`).toBeGreaterThan(afterBottomH);
+          expect(afterTopW, `${t.name}: top-drag must NOT change width`).toBe(afterBottomW);
+
+          // The wrapper must apply the heightOverride explicitly so vertical
+          // resize works even when natural content is shorter than the box.
+          expect(wrapper.style.height, `${t.name}: explicit height must be set`).toMatch(/px$/);
+          expect(wrapper.style.minHeight, `${t.name}: minHeight must be set`).toMatch(/px$/);
+
+          // No leaked CSS scale transforms on inner content after vertical resize.
+          expect(contentTransformsOf(wrapper), `${t.name}: no leaked transforms`).toEqual([]);
+        }
       });
     });
   }
