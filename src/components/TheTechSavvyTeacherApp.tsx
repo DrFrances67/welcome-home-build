@@ -4672,7 +4672,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
 }`;
 
     try {
-      const raw = await callClaude(systemPrompt, userPrompt, 4500);
+      const raw = await callClaude(systemPrompt, userPrompt, 5500);
       if (!raw || !raw.trim()) throw new Error("No response received. Please try again.");
 
       // Strip any accidental fences
