@@ -3703,7 +3703,7 @@ Output ONLY the JSON array.`,
                       minHeight: Math.max(700, ...els.map(e => (e.y || 0) + (e.heightOverride || 180) + 40)),
                     }}>
                       {els.map(el => (
-                        <ElView key={el.id} el={el} gv={gv} selected={selId === el.id}
+                        <ElView key={el.id} el={el} gv={gv} oneLineOnly={ws.oneLineOnly !== false} selected={selId === el.id}
                           onClick={() => { setSelId(el.id); setRightTab("edit"); if (viewMode === "scroll") setCurrentPage(pIdx); }}
                           onResize={handleResizeStart}
                           onDragStart={handleDragStart}
