@@ -750,13 +750,24 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 const BASELINE_WIDTH_PCT = 32; // matches default widthOverride for new elements
 const BASELINE_HEIGHT_PX = 80;
 
+// Compute proportional scale factors for an element. Scale is allowed to go
+// BELOW 1 when the user shrinks the box, so inner content (text, pills,
+// boxes, lines) stays inside the wrapper instead of overflowing. A floor of
+// 0.55 prevents content from becoming unreadable. Default widthOverride=32
+// gives sx=1 (no change at default size).
+const SCALE_MIN = 0.55;
+const SCALE_MAX = 4;
+const clampScale = (v) => Math.max(SCALE_MIN, Math.min(SCALE_MAX, v));
 const resizeScaleFor = (el) => {
-  const sx = Math.max(1, (el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
+  const sx = clampScale((el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
   const horizontalOnly = el.resizeAxis === "horizontal";
   const sy = el.heightOverride
-    ? (horizontalOnly && !el.verticalScale ? 1 : Math.max(1, el.heightOverride / BASELINE_HEIGHT_PX))
+    ? (horizontalOnly && !el.verticalScale ? 1 : clampScale(el.heightOverride / BASELINE_HEIGHT_PX))
     : (horizontalOnly ? 1 : sx);
-  return { sx, sy, s: horizontalOnly ? sy : Math.max(sx, sy) };
+  // `s` is the unified scale used for typography/spacing. For horizontal-only
+  // resize we follow sx (so widening a box scales text up too); otherwise the
+  // larger of the two so growth feels uniform.
+  return { sx, sy, s: horizontalOnly ? sx : Math.max(sx, sy) };
 };
 
 function ScaledContent({ el, children }) {
