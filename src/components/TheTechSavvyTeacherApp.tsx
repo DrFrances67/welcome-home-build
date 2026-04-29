@@ -1029,24 +1029,6 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
     );
   }
 
-  if (el.type === "multipleChoice") return (
-    <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-      <ScaledContent el={el}>
-        <p style={{ fontSize: fs, fontWeight: elWeight || 700, color: "#111827", margin: "0 0 5px 0", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
-        {el.note && <p style={{ fontSize: Math.max(fs - 7, 11), fontWeight: 500, color: "#6B7280", margin: "0 0 12px 0", fontFamily: F }}>{el.note}</p>}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          {(el.choices || []).map((c, i) => (
-            <label key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div aria-hidden="true" style={{ width: Math.min(22, fs), height: Math.min(22, fs), borderRadius: "50%", border: `2px solid ${gv.color}`, flexShrink: 0, background: "white" }} />
-              <span style={{ fontSize: fs, fontWeight: 500, fontFamily: elFamily }}>{c}</span>
-            </label>
-          ))}
-        </div>
-      </ScaledContent>
-      <DeleteBtn /><ResizeHandles />
-    </div>
-  );
-
   if (el.type === "truefalse") {
     const scale = resizeScaleFor(el);
     return (
