@@ -3164,20 +3164,21 @@ export function WorksheetBuilder() {
       const dxPct = (dx / paperWidth) * 100;
 
       if (direction === "bottom") {
-        updEl(elId, { heightOverride: Math.max(48, startH + dy) });
+        updEl(elId, { heightOverride: Math.max(48, startH + dy), resizeAxis: "vertical" });
       } else if (direction === "top") {
         const nextH = Math.max(48, startH - dy);
-        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)) });
+        updEl(elId, { heightOverride: nextH, y: Math.max(0, startElY + (startH - nextH)), resizeAxis: "vertical" });
       } else if (direction === "right") {
         const newW = Math.min(100, Math.max(20, startW + dxPct));
-        updEl(elId, { widthOverride: Math.round(newW) });
+        updEl(elId, { widthOverride: Math.round(newW), resizeAxis: "horizontal" });
       } else if (direction === "left") {
         const newW = Math.min(100, Math.max(20, startW - dxPct));
-        updEl(elId, { widthOverride: Math.round(newW), x: Math.max(0, startElX + startW - newW) });
+        updEl(elId, { widthOverride: Math.round(newW), x: Math.max(0, startElX + startW - newW), resizeAxis: "horizontal" });
       } else if (direction === "corner") {
         updEl(elId, {
           heightOverride: Math.max(48, startH + dy),
           widthOverride:  Math.min(100, Math.max(20, startW + dxPct)),
+          resizeAxis: "both",
         });
       }
     };
