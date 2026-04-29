@@ -1131,7 +1131,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart }) 
                     {(lv.items || []).map((q, qi) => (
                       <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 * sc.s }}>
                         <span aria-hidden="true" style={{ flexShrink: 0, width: 16 * sc.s, height: 16 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
-                        <span style={{ fontSize: Math.max(fs - 1, 12) * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45 }}>{q}</span>
+                        <span style={{ fontSize: Math.max(fs - 1, 12) * sc.s, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>{q}</span>
                       </li>
                     ))}
                   </ul>
