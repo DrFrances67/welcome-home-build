@@ -3256,6 +3256,67 @@ export function WorksheetBuilder() {
     setWs(p => ({ ...p, elements: p.elements.filter(e => e.id !== id) }));
     setSelId(null); announce("Element deleted");
   };
+
+  // ━━ Copy / paste / duplicate ━━
+  // Clipboard holds a deep copy of the source element's data (sans id/page/x/y).
+  // Lives in a ref so React re-renders don't reset it; survives selection changes.
+  const clipboardRef = useRef<any>(null);
+  const stripPositional = (el) => {
+    if (!el) return null;
+    // Drop fields that must be unique or page/position-specific on paste.
+    const { id, page, x, y, ...rest } = el;
+    return JSON.parse(JSON.stringify(rest));
+  };
+  /** Place a clone of `data` on the current page, slightly offset from source. */
+  const cloneOnto = (data, sourceEl, opts: { offset?: boolean } = { offset: true }) => {
+    if (!data) return null;
+    const onPage = ws.elements.filter(e => (e.page || 0) === currentPage).length;
+    const slot = nextSlot(onPage);
+    // If source has a custom x/y, paste with a small +20/+20 offset so the new
+    // element is visible (and not perfectly stacked on the original).
+    const off = opts.offset !== false ? 20 : 0;
+    const useSourcePos = sourceEl && (sourceEl.x != null || sourceEl.y != null) && (sourceEl.page === currentPage);
+    const pos = useSourcePos
+      ? { x: (sourceEl.x || 0) + off, y: (sourceEl.y || 0) + off }
+      : { x: slot.x, y: slot.y };
+    const newEl = {
+      ...mkEl(data.type, slot),
+      ...data,
+      id: uid(),
+      page: currentPage,
+      x: pos.x,
+      y: pos.y,
+      // Preserve user-resized dimensions from source if present.
+      widthOverride: data.widthOverride ?? slot.widthOverride,
+      heightOverride: data.heightOverride,
+    };
+    setWs(p => ({ ...p, elements: [...p.elements, newEl] }));
+    setSelId(newEl.id);
+    setRightTab("edit");
+    return newEl;
+  };
+  const copyEl = (id) => {
+    const src = ws.elements.find(e => e.id === id);
+    if (!src) return;
+    clipboardRef.current = stripPositional(src);
+    announce("Element copied");
+  };
+  const pasteEl = () => {
+    const data = clipboardRef.current;
+    if (!data) { announce("Nothing to paste"); return; }
+    // For paste, we don't have a source element on the page necessarily; place
+    // at the next free slot (no source-position offset).
+    cloneOnto(data, null, { offset: false });
+    announce("Element pasted");
+  };
+  const dupEl = (id) => {
+    const src = ws.elements.find(e => e.id === id);
+    if (!src) return;
+    const data = stripPositional(src);
+    cloneOnto(data, src, { offset: true });
+    announce("Element duplicated");
+  };
+
   const addPage = () => {
     setWs(p => ({ ...p, pageCount: (p.pageCount || 1) + 1 }));
     setCurrentPage(pageCount); // jump to the new page
