@@ -1447,6 +1447,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
         <div style={{ display: "flex", gap: 4 }}>
           <button onClick={onMoveUp}   aria-label="Move element up"   style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#374151" }}>↑</button>
           <button onClick={onMoveDown} aria-label="Move element down" style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#374151" }}>↓</button>
+          <button onClick={onDuplicate} aria-label="Duplicate element" title="Duplicate (Ctrl/Cmd+D)" style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #BFDBFE", background: "#EFF6FF", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1D4ED8" }}>⧉ Duplicate</button>
           <button onClick={onDelete}   aria-label="Delete element"    style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #FCA5A5", background: "#FEF2F2", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#DC2626" }}>Delete</button>
         </div>
       </div>
