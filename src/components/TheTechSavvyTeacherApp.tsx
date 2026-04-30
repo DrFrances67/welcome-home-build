@@ -1095,7 +1095,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
           {(el.choices || []).map((c, i) => (
             <label key={i} style={{ display: "flex", alignItems: "center", gap: 8 * sc.s }}>
               <div aria-hidden="true" style={{ width: Math.min(22, fs) * sc.s, height: Math.min(22, fs) * sc.s, borderRadius: "50%", border: `2px solid ${gv.color}`, flexShrink: 0, background: "white" }} />
-              <span style={{ fontSize: fs * tScale(sc), fontWeight: 500, fontFamily: elFamily }}>{c}</span>
+              <span style={{ fontSize: fs * tScale(sc), fontWeight: 500, fontFamily: elFamily }}>{renderInlineMarkdown(c)}</span>
             </label>
           ))}
         </div>
