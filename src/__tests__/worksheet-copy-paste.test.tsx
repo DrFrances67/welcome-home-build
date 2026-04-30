@@ -20,6 +20,7 @@ describe("Worksheet element copy / paste / duplicate", () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
