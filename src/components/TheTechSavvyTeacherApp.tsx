@@ -1001,7 +1001,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const sc = resizeScaleFor(el);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Text block — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <p style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.text}</p>
+        <p style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 500, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.75, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{renderInlineMarkdown(el.text)}</p>
         <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
     );
