@@ -1234,7 +1234,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
                     {(lv.items || []).map((q, qi) => (
                       <li key={qi} style={{ display: "flex", alignItems: "flex-start", gap: 8 * dokS }}>
                         <span aria-hidden="true" style={{ flexShrink: 0, width: 16 * dokS, height: 16 * dokS, marginTop: 2 * dokS, border: `2px solid ${c}`, borderRadius: 3, background: "white" }} />
-                        <span style={{ fontSize: Math.max(fs - 1, 12) * dokTextScale, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...dokLineStyle }}>{q}</span>
+                        <span style={{ fontSize: Math.max(fs - 1, 12) * dokTextScale, fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...dokLineStyle }}>{renderInlineMarkdown(q)}</span>
                       </li>
                     ))}
                   </ul>
