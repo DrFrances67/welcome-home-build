@@ -1111,7 +1111,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         <p style={{ fontSize: Math.max(fs - 4, 12) * tScale(scale), fontWeight: 700, color: gv.color, margin: "0 0 10px 0", fontFamily: FF }}>True or False? Circle your answer.</p>
         {(el.statements || []).map((stmt, i) => (
           <div key={i} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: 10 * scale.s, rowGap: 6 * scale.s, marginBottom: 10 * scale.s, padding: `${8 * scale.s}px ${12 * scale.s}px`, background: gv.light, borderRadius: 8, minHeight: el.heightOverride ? Math.max(34, (el.heightOverride - 42) / Math.max(1, (el.statements || []).length)) : undefined, boxSizing: "border-box" }}>
-            <span style={{ fontSize: fs * tScale(scale), fontWeight: 500, fontFamily: elFamily, flex: "1 1 70%", minWidth: 0, lineHeight: 1.45, wordBreak: "break-word" }}>{stmt}</span>
+            <span style={{ fontSize: fs * tScale(scale), fontWeight: 500, fontFamily: elFamily, flex: "1 1 70%", minWidth: 0, lineHeight: 1.45, wordBreak: "break-word" }}>{renderInlineMarkdown(stmt)}</span>
             <div style={{ display: "flex", gap: 6 * scale.s, flexShrink: 0, marginLeft: "auto" }}>
               {["TRUE", "FALSE"].map(t => <span key={t} style={{ fontSize: Math.max(fs - 6, 10) * tScale(scale), fontWeight: 700, padding: `${3 * scale.s}px ${10 * scale.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40, fontFamily: F, color: gv.color, textAlign: "center", whiteSpace: "nowrap" }}>{t}</span>)}
             </div>
