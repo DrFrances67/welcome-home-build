@@ -3790,6 +3790,27 @@ Output ONLY the JSON array.`,
       insertAiElementsMultiPage(parsed);
       const pageSpan = (Math.max(...parsed.map((e: any) => parseInt(e.page) || 0)) + 1) || 1;
       setLpMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} across ${pageSpan} page${pageSpan === 1 ? "" : "s"}.`);
+
+      // Save run to history with a snapshot of the resulting worksheet (taken on next tick so setWs has applied)
+      setTimeout(() => {
+        setWs(curr => {
+          const entry: LpHistoryEntry = {
+            id: uid(),
+            ts: Date.now(),
+            fileName: lpFile.name,
+            fileRaw: lpFile.raw,
+            typeId: lpType,
+            typeLabel,
+            notes: lpNotes,
+            gradeId: ws.gradeId,
+            elementCount: parsed.length,
+            pageCount: pageSpan,
+            snapshot: JSON.parse(JSON.stringify(curr)),
+          };
+          setLpHistory(h => [entry, ...h].slice(0, 25));
+          return curr;
+        });
+      }, 0);
     } catch (e: any) {
       setLpMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
     }
