@@ -3197,6 +3197,12 @@ export function WorksheetBuilder() {
   const [wsFile, setWsFile] = useState(null);          // { name, raw }
   const [wsFileBusy, setWsFileBusy] = useState(false);
   const [wsFileMsg, setWsFileMsg] = useState("");
+  // Lesson Plan uploader → AI generates a worksheet
+  const [lpFile, setLpFile] = useState<null | { name: string; raw: string }>(null);
+  const [lpBusy, setLpBusy] = useState(false);
+  const [lpMsg, setLpMsg] = useState("");
+  const [lpType, setLpType] = useState("practice");
+  const [lpNotes, setLpNotes] = useState("");
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
@@ -3665,10 +3671,110 @@ Output ONLY the JSON array.`,
     setWsFileBusy(false);
   };
 
+  // ── Lesson Plan upload → generate worksheet ───────────────────────────
+  const WORKSHEET_TYPES = [
+    { id: "practice",         label: "Practice / Skill Reinforcement" },
+    { id: "assessment",       label: "Assessment / Quiz" },
+    { id: "exitTicket",       label: "Exit Ticket" },
+    { id: "review",           label: "Review / Study Guide" },
+    { id: "vocabulary",       label: "Vocabulary Builder" },
+    { id: "reading",          label: "Reading Comprehension" },
+    { id: "writing",          label: "Writing Prompts" },
+    { id: "graphicOrganizer", label: "Graphic Organizer" },
+    { id: "homework",         label: "Homework" },
+    { id: "centers",          label: "Centers / Stations" },
+  ];
+
+  const readLessonPlanFile = async (file: File): Promise<string> => {
+    const isPdf  = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isDocx = /\.docx$/i.test(file.name) || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const isDoc  = /\.doc$/i.test(file.name) && !isDocx;
+    const isText = /\.(txt|md|rtf)$/i.test(file.name) || file.type === "text/plain" || file.type === "text/markdown";
+    if (isPdf) {
+      const r = await extractPdfTextLocal(file);
+      return r.text;
+    }
+    if (isDocx) {
+      const mammoth: any = await import("mammoth/mammoth.browser");
+      const buf = await file.arrayBuffer();
+      const out = await mammoth.extractRawText({ arrayBuffer: buf });
+      return (out?.value || "").trim();
+    }
+    if (isDoc)  throw new Error("Legacy .doc files aren't supported — please save as .docx, PDF, or .txt.");
+    if (isText) return await file.text();
+    throw new Error("Unsupported file type. Use PDF, DOCX, TXT, or MD.");
+  };
+
+  const handleLessonPlanUpload = async (file: File) => {
+    setLpMsg(""); setLpBusy(true);
+    try {
+      const raw = (await readLessonPlanFile(file) || "").slice(0, 16000);
+      if (!raw.trim()) throw new Error("Could not read any text from that file.");
+      setLpFile({ name: file.name, raw });
+      setLpMsg("✓ Lesson plan loaded. Choose a worksheet type below, then Generate.");
+    } catch (e: any) {
+      setLpMsg(`⚠ ${e?.message || "Failed to read file."}`);
+      setLpFile(null);
+    }
+    setLpBusy(false);
+  };
+
+  const generateWorksheetFromLessonPlan = async () => {
+    if (!lpFile?.raw) return;
+    setLpBusy(true); setLpMsg("Reading lesson plan…");
+    try {
+      const g = gInfo(ws.gradeId);
+      const typeLabel = WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType;
+      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".`;
+
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 3200,
+          system: `You are an expert curriculum designer. The teacher has uploaded a lesson plan and wants a "${typeLabel}" worksheet for ${g.name} students that is directly aligned to the lesson's objectives, vocabulary, and content. Respond with VALID JSON ONLY — a single JSON array of worksheet element objects. No markdown, no preamble.
+
+Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element):
+{"type":"instruction","text":"<directions>","page":0}
+{"type":"text","text":"<passage or content>","page":0}
+{"type":"blank","label":"<prompt>","lines":3,"page":0}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"],"page":0}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"],"page":0}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"],"page":0}
+{"type":"truefalse","statements":["s1","s2","s3"],"page":0}
+{"type":"shortAnswer","question":"<q>","lines":4,"page":0}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>","page":0}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14,"page":0}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]],"page":0}
+{"type":"image","imagePrompt":"<short visual description>","caption":"<optional>","size":"small","align":"center","page":0}
+
+Output ONLY the JSON array.`,
+          messages: [{ role: "user", content: userPrompt }],
+        })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
+      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
+
+      setLpMsg("✓ Got blocks. Generating images…");
+      await fillImageElements(parsed, "cartoon");
+      insertAiElementsMultiPage(parsed);
+      const pageSpan = (Math.max(...parsed.map((e: any) => parseInt(e.page) || 0)) + 1) || 1;
+      setLpMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} across ${pageSpan} page${pageSpan === 1 ? "" : "s"}.`);
+    } catch (e: any) {
+      setLpMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
+    }
+    setLpBusy(false);
+  };
 
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
+
 
       {/* Skip navigation */}
       <a href="#worksheet-canvas" className="skip-nav no-print">Skip to worksheet</a>
@@ -3742,25 +3848,69 @@ Output ONLY the JSON array.`,
             </button>
           </div>
 
-          {/* Reference Upload — image or PDF preview, AI describes the style */}
+          {/* Lesson Plan Upload — DOC/PDF/TXT → AI builds aligned worksheet */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Exemplar</p>
-            {refImg ? (
-              <div style={{ position: "relative" }}>
-                <img src={refImg} alt="Uploaded reference worksheet" style={{ width: "100%", borderRadius: 7, border: "1px solid #E5E7EB", maxHeight: 88, objectFit: "cover" }} />
-                {analyzing && <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 7, fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>Analyzing…</div>}
-                <button onClick={() => { setRefImg(null); setRefDesc(""); }} aria-label="Remove reference worksheet"
-                  style={{ position: "absolute", top: 4, right: 4, background: "rgba(255,255,255,0.92)", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#6B7280" }}>✕</button>
-              </div>
-            ) : (
-              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: gv.light, cursor: "pointer", textAlign: "center" }}>
-                <span style={{ fontSize: 20 }} aria-hidden="true">📎</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Exemplar</span>
-                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image or PDF · style reference</span>
-                <input type="file" accept="image/*,.pdf" aria-label="Upload reference worksheet" onChange={e => e.target.files[0] && handleRefUpload(e.target.files[0])} style={{ display: "none" }} />
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Lesson Plan</p>
+
+            {!lpFile ? (
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: gv.light, cursor: lpBusy ? "wait" : "pointer", textAlign: "center", opacity: lpBusy ? 0.6 : 1 }}>
+                <span style={{ fontSize: 20 }} aria-hidden="true">📘</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Lesson Plan</span>
+                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>PDF · DOCX · TXT · MD</span>
+                <input type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                  aria-label="Upload lesson plan"
+                  disabled={lpBusy}
+                  onChange={e => e.target.files?.[0] && handleLessonPlanUpload(e.target.files[0])}
+                  style={{ display: "none" }} />
               </label>
+            ) : (
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 7, padding: 8, position: "relative" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: 0, fontFamily: F, paddingRight: 18, wordBreak: "break-all" }}>📘 {lpFile.name}</p>
+                <button onClick={() => { setLpFile(null); setLpMsg(""); setLpNotes(""); }} aria-label="Remove lesson plan"
+                  style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#9CA3AF" }}>✕</button>
+
+                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.4, margin: "10px 0 4px", fontFamily: F }}>
+                  Worksheet Type
+                </label>
+                <select
+                  value={lpType}
+                  onChange={e => setLpType(e.target.value)}
+                  disabled={lpBusy}
+                  aria-label="Worksheet type"
+                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", fontFamily: F, fontSize: 11, color: "#374151", cursor: "pointer" }}
+                >
+                  {WORKSHEET_TYPES.map(t => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                  ))}
+                </select>
+
+                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.4, margin: "10px 0 4px", fontFamily: F }}>
+                  Additional Info <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, color: "#9CA3AF" }}>(optional)</span>
+                </label>
+                <textarea
+                  value={lpNotes}
+                  onChange={e => setLpNotes(e.target.value)}
+                  disabled={lpBusy}
+                  rows={3}
+                  placeholder="e.g. focus on vocabulary, include 5 short answers, scaffold for ELL students…"
+                  aria-label="Additional instructions"
+                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", fontFamily: F, fontSize: 11, color: "#374151", resize: "vertical", lineHeight: 1.4 }}
+                />
+
+                <button
+                  disabled={lpBusy}
+                  onClick={generateWorksheetFromLessonPlan}
+                  style={{ width: "100%", marginTop: 8, padding: "8px 10px", borderRadius: 6, border: "none", background: gv.color, color: "white", fontFamily: F, fontWeight: 700, fontSize: 12, cursor: lpBusy ? "wait" : "pointer", opacity: lpBusy ? 0.7 : 1 }}>
+                  {lpBusy ? "Working…" : "✨ Generate Worksheet"}
+                </button>
+              </div>
             )}
-            {refDesc && !analyzing && <p style={{ fontSize: 10, color: "#6B7280", margin: "6px 0 0", lineHeight: 1.45, fontFamily: F }}>{refDesc}</p>}
+
+            {lpMsg && (
+              <p style={{ fontSize: 10, color: lpMsg.startsWith("⚠") ? "#B91C1C" : "#6B7280", margin: "6px 0 0", lineHeight: 1.45, fontFamily: F }}>
+                {lpMsg}
+              </p>
+            )}
           </div>
 
           {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
