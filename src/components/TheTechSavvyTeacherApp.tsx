@@ -1089,7 +1089,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const sc = resizeScaleFor(el);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Multiple choice question — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        <p style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${5 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{el.question}</p>
+        <p style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 700, color: "#111827", margin: `0 0 ${5 * sc.s}px 0`, fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign }}>{renderInlineMarkdown(el.question)}</p>
         {el.note && <p style={{ fontSize: Math.max(fs - 7, 11) * tScale(sc), fontWeight: 500, color: "#6B7280", margin: `0 0 ${12 * sc.s}px 0`, fontFamily: F }}>{el.note}</p>}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 * sc.s }}>
           {(el.choices || []).map((c, i) => (
