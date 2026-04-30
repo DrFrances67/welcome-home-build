@@ -3817,6 +3817,44 @@ Output ONLY the JSON array.`,
     setLpBusy(false);
   };
 
+  // Restore a previous lesson-plan run (replaces the current worksheet with the saved snapshot).
+  const restoreLpHistory = (entry: LpHistoryEntry) => {
+    if (!entry?.snapshot) return;
+    if (!window.confirm(`Switch to "${entry.fileName}" (${entry.typeLabel})? Your current worksheet will be replaced — previous runs stay in history.`)) return;
+    // Snapshot the current state too, so the user can switch back.
+    setWs(curr => {
+      const backup: LpHistoryEntry = {
+        id: uid(), ts: Date.now(),
+        fileName: lpFile?.name || curr.title || "Current worksheet",
+        fileRaw: lpFile?.raw || "",
+        typeId: lpType, typeLabel: WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType,
+        notes: lpNotes, gradeId: curr.gradeId,
+        elementCount: curr.elements?.length || 0,
+        pageCount: curr.pageCount || 1,
+        snapshot: JSON.parse(JSON.stringify(curr)),
+      };
+      setLpHistory(h => [backup, ...h.filter(x => x.id !== entry.id)].slice(0, 25));
+      return JSON.parse(JSON.stringify(entry.snapshot));
+    });
+    setLpFile({ name: entry.fileName, raw: entry.fileRaw });
+    setLpType(entry.typeId);
+    setLpNotes(entry.notes);
+    setLpMsg(`✓ Restored "${entry.fileName}" (${entry.typeLabel}).`);
+    setSelId(null);
+  };
+
+  // Re-run generation against the same lesson plan + settings.
+  const regenerateLpHistory = (entry: LpHistoryEntry) => {
+    setLpFile({ name: entry.fileName, raw: entry.fileRaw });
+    setLpType(entry.typeId);
+    setLpNotes(entry.notes);
+    setLpMsg("Re-running generation…");
+    setTimeout(() => { generateWorksheetFromLessonPlan(); }, 50);
+  };
+
+  const removeLpHistory = (id: string) => setLpHistory(h => h.filter(x => x.id !== id));
+  const clearLpHistory = () => { if (window.confirm("Clear all worksheet history?")) setLpHistory([]); };
+
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
