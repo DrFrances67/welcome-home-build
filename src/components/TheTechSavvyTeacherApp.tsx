@@ -3997,6 +3997,55 @@ Output ONLY the JSON array.`,
             )}
           </div>
 
+          {/* Lesson Plan History — saved generation runs */}
+          {lpHistory.length > 0 && (
+            <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 6px 0" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: 0, fontFamily: F }}>
+                  History ({lpHistory.length})
+                </p>
+                <button onClick={clearLpHistory} aria-label="Clear all history"
+                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 10, color: "#9CA3AF", fontFamily: F, padding: 0 }}>
+                  Clear
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 240, overflowY: "auto" }}>
+                {lpHistory.map(h => {
+                  const d = new Date(h.ts);
+                  const when = `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+                  return (
+                    <div key={h.id} style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 7, padding: 7, position: "relative" }}>
+                      <button onClick={() => removeLpHistory(h.id)} aria-label="Remove from history"
+                        style={{ position: "absolute", top: 3, right: 4, background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#9CA3AF", padding: 0 }}>✕</button>
+                      <p title={h.fileName} style={{ fontSize: 10.5, fontWeight: 700, color: "#374151", margin: 0, fontFamily: F, paddingRight: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        📘 {h.fileName}
+                      </p>
+                      <p style={{ fontSize: 9.5, color: "#6B7280", margin: "2px 0 0", fontFamily: F, lineHeight: 1.35 }}>
+                        {h.typeLabel} · {h.elementCount} blk · {h.pageCount} pg
+                      </p>
+                      {h.notes && (
+                        <p title={h.notes} style={{ fontSize: 9.5, color: "#9CA3AF", margin: "2px 0 0", fontFamily: F, lineHeight: 1.35, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          “{h.notes}”
+                        </p>
+                      )}
+                      <p style={{ fontSize: 9, color: "#9CA3AF", margin: "2px 0 6px", fontFamily: F }}>{when}</p>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button onClick={() => restoreLpHistory(h)} disabled={lpBusy} aria-label="Switch to this version"
+                          style={{ flex: 1, padding: "5px 6px", borderRadius: 5, border: `1.5px solid ${gv.color}`, background: gv.light, color: gv.color, fontFamily: F, fontWeight: 700, fontSize: 10.5, cursor: lpBusy ? "wait" : "pointer" }}>
+                          ↺ Switch
+                        </button>
+                        <button onClick={() => regenerateLpHistory(h)} disabled={lpBusy} aria-label="Regenerate from this lesson plan"
+                          style={{ flex: 1, padding: "5px 6px", borderRadius: 5, border: "1.5px solid #E5E7EB", background: "white", color: "#374151", fontFamily: F, fontWeight: 700, fontSize: 10.5, cursor: lpBusy ? "wait" : "pointer" }}>
+                          ✨ Regen
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Worksheet</p>
