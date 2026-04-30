@@ -3203,6 +3203,31 @@ export function WorksheetBuilder() {
   const [lpMsg, setLpMsg] = useState("");
   const [lpType, setLpType] = useState("practice");
   const [lpNotes, setLpNotes] = useState("");
+
+  // Lesson-plan generation history (persisted in localStorage)
+  type LpHistoryEntry = {
+    id: string;
+    ts: number;
+    fileName: string;
+    fileRaw: string;
+    typeId: string;
+    typeLabel: string;
+    notes: string;
+    gradeId: string;
+    elementCount: number;
+    pageCount: number;
+    snapshot: any; // full ws snapshot for restore
+  };
+  const LP_HISTORY_KEY = "tts.lpHistory.v1";
+  const [lpHistory, setLpHistory] = useState<LpHistoryEntry[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(LP_HISTORY_KEY) : null;
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(LP_HISTORY_KEY, JSON.stringify(lpHistory.slice(0, 25))); } catch {}
+  }, [lpHistory]);
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
@@ -3765,11 +3790,70 @@ Output ONLY the JSON array.`,
       insertAiElementsMultiPage(parsed);
       const pageSpan = (Math.max(...parsed.map((e: any) => parseInt(e.page) || 0)) + 1) || 1;
       setLpMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} across ${pageSpan} page${pageSpan === 1 ? "" : "s"}.`);
+
+      // Save run to history with a snapshot of the resulting worksheet (taken on next tick so setWs has applied)
+      setTimeout(() => {
+        setWs(curr => {
+          const entry: LpHistoryEntry = {
+            id: uid(),
+            ts: Date.now(),
+            fileName: lpFile.name,
+            fileRaw: lpFile.raw,
+            typeId: lpType,
+            typeLabel,
+            notes: lpNotes,
+            gradeId: ws.gradeId,
+            elementCount: parsed.length,
+            pageCount: pageSpan,
+            snapshot: JSON.parse(JSON.stringify(curr)),
+          };
+          setLpHistory(h => [entry, ...h].slice(0, 25));
+          return curr;
+        });
+      }, 0);
     } catch (e: any) {
       setLpMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
     }
     setLpBusy(false);
   };
+
+  // Restore a previous lesson-plan run (replaces the current worksheet with the saved snapshot).
+  const restoreLpHistory = (entry: LpHistoryEntry) => {
+    if (!entry?.snapshot) return;
+    if (!window.confirm(`Switch to "${entry.fileName}" (${entry.typeLabel})? Your current worksheet will be replaced — previous runs stay in history.`)) return;
+    // Snapshot the current state too, so the user can switch back.
+    setWs(curr => {
+      const backup: LpHistoryEntry = {
+        id: uid(), ts: Date.now(),
+        fileName: lpFile?.name || curr.title || "Current worksheet",
+        fileRaw: lpFile?.raw || "",
+        typeId: lpType, typeLabel: WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType,
+        notes: lpNotes, gradeId: curr.gradeId,
+        elementCount: curr.elements?.length || 0,
+        pageCount: curr.pageCount || 1,
+        snapshot: JSON.parse(JSON.stringify(curr)),
+      };
+      setLpHistory(h => [backup, ...h.filter(x => x.id !== entry.id)].slice(0, 25));
+      return JSON.parse(JSON.stringify(entry.snapshot));
+    });
+    setLpFile({ name: entry.fileName, raw: entry.fileRaw });
+    setLpType(entry.typeId);
+    setLpNotes(entry.notes);
+    setLpMsg(`✓ Restored "${entry.fileName}" (${entry.typeLabel}).`);
+    setSelId(null);
+  };
+
+  // Re-run generation against the same lesson plan + settings.
+  const regenerateLpHistory = (entry: LpHistoryEntry) => {
+    setLpFile({ name: entry.fileName, raw: entry.fileRaw });
+    setLpType(entry.typeId);
+    setLpNotes(entry.notes);
+    setLpMsg("Re-running generation…");
+    setTimeout(() => { generateWorksheetFromLessonPlan(); }, 50);
+  };
+
+  const removeLpHistory = (id: string) => setLpHistory(h => h.filter(x => x.id !== id));
+  const clearLpHistory = () => { if (window.confirm("Clear all worksheet history?")) setLpHistory([]); };
 
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
@@ -3912,6 +3996,55 @@ Output ONLY the JSON array.`,
               </p>
             )}
           </div>
+
+          {/* Lesson Plan History — saved generation runs */}
+          {lpHistory.length > 0 && (
+            <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 6px 0" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: 0, fontFamily: F }}>
+                  History ({lpHistory.length})
+                </p>
+                <button onClick={clearLpHistory} aria-label="Clear all history"
+                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 10, color: "#9CA3AF", fontFamily: F, padding: 0 }}>
+                  Clear
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 240, overflowY: "auto" }}>
+                {lpHistory.map(h => {
+                  const d = new Date(h.ts);
+                  const when = `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+                  return (
+                    <div key={h.id} style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 7, padding: 7, position: "relative" }}>
+                      <button onClick={() => removeLpHistory(h.id)} aria-label="Remove from history"
+                        style={{ position: "absolute", top: 3, right: 4, background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#9CA3AF", padding: 0 }}>✕</button>
+                      <p title={h.fileName} style={{ fontSize: 10.5, fontWeight: 700, color: "#374151", margin: 0, fontFamily: F, paddingRight: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        📘 {h.fileName}
+                      </p>
+                      <p style={{ fontSize: 9.5, color: "#6B7280", margin: "2px 0 0", fontFamily: F, lineHeight: 1.35 }}>
+                        {h.typeLabel} · {h.elementCount} blk · {h.pageCount} pg
+                      </p>
+                      {h.notes && (
+                        <p title={h.notes} style={{ fontSize: 9.5, color: "#9CA3AF", margin: "2px 0 0", fontFamily: F, lineHeight: 1.35, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          “{h.notes}”
+                        </p>
+                      )}
+                      <p style={{ fontSize: 9, color: "#9CA3AF", margin: "2px 0 6px", fontFamily: F }}>{when}</p>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button onClick={() => restoreLpHistory(h)} disabled={lpBusy} aria-label="Switch to this version"
+                          style={{ flex: 1, padding: "5px 6px", borderRadius: 5, border: `1.5px solid ${gv.color}`, background: gv.light, color: gv.color, fontFamily: F, fontWeight: 700, fontSize: 10.5, cursor: lpBusy ? "wait" : "pointer" }}>
+                          ↺ Switch
+                        </button>
+                        <button onClick={() => regenerateLpHistory(h)} disabled={lpBusy} aria-label="Regenerate from this lesson plan"
+                          style={{ flex: 1, padding: "5px 6px", borderRadius: 5, border: "1.5px solid #E5E7EB", background: "white", color: "#374151", fontFamily: F, fontWeight: 700, fontSize: 10.5, cursor: lpBusy ? "wait" : "pointer" }}>
+                          ✨ Regen
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
