@@ -1221,7 +1221,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label="DOK Questions — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ background: "#FFFFFF", border: `2px solid ${gv.color}45`, borderLeft: `${6 * dokS}px solid ${gv.color}`, borderRadius: 10, padding: `${12 * dokS}px ${16 * dokS}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column", overflowY: el.heightOverride ? "auto" : "visible", minHeight: 0 }}>
           {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * dokTextScale, fontWeight: 800, color: gv.color, margin: `0 0 ${6 * dokS}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
-          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * dokTextScale, fontWeight: 600, color: "#374151", margin: `0 0 ${10 * dokS}px 0`, fontFamily: F, lineHeight: 1.45, ...dokLineStyle }}>{el.intro}</p>}
+          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * dokTextScale, fontWeight: 600, color: "#374151", margin: `0 0 ${10 * dokS}px 0`, fontFamily: F, lineHeight: 1.45, ...dokLineStyle }}>{renderInlineMarkdown(el.intro)}</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: levelGap, flex: 1, justifyContent: "flex-start", minHeight: 0 }}>
             {(el.levels || []).map((lv, li) => {
               const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
