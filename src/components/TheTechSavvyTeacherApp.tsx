@@ -1326,7 +1326,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
 // ELEMENT EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
+function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }) {
   const inp = { ...INP(), marginTop: 4 };
   if (!el) return (
     <div style={{ padding: 32, textAlign: "center", fontFamily: F, animation: "fadeIn 0.3s ease" }}>
