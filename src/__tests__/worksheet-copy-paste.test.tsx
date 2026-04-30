@@ -7,8 +7,8 @@ const isMac = /Mac|iPad|iPhone/.test(typeof navigator !== "undefined" ? navigato
 const modKey = isMac ? { metaKey: true } : { ctrlKey: true };
 
 function addInstruction() {
-  const btn = screen.getByRole("listitem", { name: /Add Instructions element/i });
-  fireEvent.click(btn);
+  const btns = screen.getAllByRole("listitem", { name: /Add Instructions element/i });
+  fireEvent.click(btns[0]);
 }
 
 describe("Worksheet element copy / paste / duplicate", () => {
