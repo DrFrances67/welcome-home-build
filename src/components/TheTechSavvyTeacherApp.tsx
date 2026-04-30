@@ -3197,6 +3197,12 @@ export function WorksheetBuilder() {
   const [wsFile, setWsFile] = useState(null);          // { name, raw }
   const [wsFileBusy, setWsFileBusy] = useState(false);
   const [wsFileMsg, setWsFileMsg] = useState("");
+  // Lesson Plan uploader → AI generates a worksheet
+  const [lpFile, setLpFile] = useState<null | { name: string; raw: string }>(null);
+  const [lpBusy, setLpBusy] = useState(false);
+  const [lpMsg, setLpMsg] = useState("");
+  const [lpType, setLpType] = useState("practice");
+  const [lpNotes, setLpNotes] = useState("");
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
