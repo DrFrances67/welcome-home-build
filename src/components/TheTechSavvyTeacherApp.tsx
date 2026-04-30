@@ -1191,12 +1191,12 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `${6 * sc.s}px solid ${accent}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
           {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * tScale(sc), fontWeight: 800, color: accent, margin: `0 0 ${6 * sc.s}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
-          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * tScale(sc), fontWeight: 600, color: "#374151", margin: `0 0 ${10 * sc.s}px 0`, fontFamily: F, lineHeight: 1.5 }}>{el.intro}</p>}
+          {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * tScale(sc), fontWeight: 600, color: "#374151", margin: `0 0 ${10 * sc.s}px 0`, fontFamily: F, lineHeight: 1.5 }}>{renderInlineMarkdown(el.intro)}</p>}
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: itemGap, flex: 1, justifyContent: extraV > 0 ? "space-around" : "flex-start" }}>
             {(el.items || []).map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 * sc.s }}>
                 <span aria-hidden="true" style={{ flexShrink: 0, width: 18 * sc.s, height: 18 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
-                <span style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, flex: 1, minWidth: 0, ...lineStyle }}>{item}</span>
+                <span style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 600, color: "#111827", fontFamily: elFamily, lineHeight: 1.45, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, flex: 1, minWidth: 0, ...lineStyle }}>{renderInlineMarkdown(item)}</span>
               </li>
             ))}
           </ul>
