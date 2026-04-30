@@ -1074,9 +1074,9 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         <div style={{ display: "grid", gridTemplateColumns: `1fr ${40 * sc.s}px 1fr`, gap: 6 * sc.s, alignItems: "center" }}>
           {(el.left || []).map((item, i) => (
             <span key={i} style={{ display: "contents" }}>
-              <div style={{ fontSize: fs * tScale(sc), fontWeight: 600, fontFamily: elFamily, padding: `${6 * sc.s}px ${10 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{item}</div>
+              <div style={{ fontSize: fs * tScale(sc), fontWeight: 600, fontFamily: elFamily, padding: `${6 * sc.s}px ${10 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{renderInlineMarkdown(item)}</div>
               <div aria-hidden="true" style={{ borderBottom: "1.5px dashed #9CA3AF", margin: `0 ${4 * sc.s}px` }} />
-              <div style={{ fontSize: fs * tScale(sc), fontWeight: 600, fontFamily: elFamily, padding: `${6 * sc.s}px ${10 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{(el.right || [])[i] || ""}</div>
+              <div style={{ fontSize: fs * tScale(sc), fontWeight: 600, fontFamily: elFamily, padding: `${6 * sc.s}px ${10 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 8, background: gv.light, textAlign: "center" }}>{renderInlineMarkdown((el.right || [])[i] || "")}</div>
             </span>
           ))}
         </div>
