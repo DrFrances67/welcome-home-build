@@ -3671,8 +3671,107 @@ Output ONLY the JSON array.`,
     setWsFileBusy(false);
   };
 
+  // ── Lesson Plan upload → generate worksheet ───────────────────────────
+  const WORKSHEET_TYPES = [
+    { id: "practice",         label: "Practice / Skill Reinforcement" },
+    { id: "assessment",       label: "Assessment / Quiz" },
+    { id: "exitTicket",       label: "Exit Ticket" },
+    { id: "review",           label: "Review / Study Guide" },
+    { id: "vocabulary",       label: "Vocabulary Builder" },
+    { id: "reading",          label: "Reading Comprehension" },
+    { id: "writing",          label: "Writing Prompts" },
+    { id: "graphicOrganizer", label: "Graphic Organizer" },
+    { id: "homework",         label: "Homework" },
+    { id: "centers",          label: "Centers / Stations" },
+  ];
 
-  return (
+  const readLessonPlanFile = async (file: File): Promise<string> => {
+    const isPdf  = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isDocx = /\.docx$/i.test(file.name) || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const isDoc  = /\.doc$/i.test(file.name) && !isDocx;
+    const isText = /\.(txt|md|rtf)$/i.test(file.name) || file.type === "text/plain" || file.type === "text/markdown";
+    if (isPdf) {
+      const r = await extractPdfTextLocal(file);
+      return r.text;
+    }
+    if (isDocx) {
+      const mammoth: any = await import("mammoth/mammoth.browser");
+      const buf = await file.arrayBuffer();
+      const out = await mammoth.extractRawText({ arrayBuffer: buf });
+      return (out?.value || "").trim();
+    }
+    if (isDoc)  throw new Error("Legacy .doc files aren't supported — please save as .docx, PDF, or .txt.");
+    if (isText) return await file.text();
+    throw new Error("Unsupported file type. Use PDF, DOCX, TXT, or MD.");
+  };
+
+  const handleLessonPlanUpload = async (file: File) => {
+    setLpMsg(""); setLpBusy(true);
+    try {
+      const raw = (await readLessonPlanFile(file) || "").slice(0, 16000);
+      if (!raw.trim()) throw new Error("Could not read any text from that file.");
+      setLpFile({ name: file.name, raw });
+      setLpMsg("✓ Lesson plan loaded. Choose a worksheet type below, then Generate.");
+    } catch (e: any) {
+      setLpMsg(`⚠ ${e?.message || "Failed to read file."}`);
+      setLpFile(null);
+    }
+    setLpBusy(false);
+  };
+
+  const generateWorksheetFromLessonPlan = async () => {
+    if (!lpFile?.raw) return;
+    setLpBusy(true); setLpMsg("Reading lesson plan…");
+    try {
+      const g = gInfo(ws.gradeId);
+      const typeLabel = WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType;
+      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".`;
+
+      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 3200,
+          system: `You are an expert curriculum designer. The teacher has uploaded a lesson plan and wants a "${typeLabel}" worksheet for ${g.name} students that is directly aligned to the lesson's objectives, vocabulary, and content. Respond with VALID JSON ONLY — a single JSON array of worksheet element objects. No markdown, no preamble.
+
+Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element):
+{"type":"instruction","text":"<directions>","page":0}
+{"type":"text","text":"<passage or content>","page":0}
+{"type":"blank","label":"<prompt>","lines":3,"page":0}
+{"type":"wordBank","title":"📚 Word Bank","words":["w1","w2","w3"],"page":0}
+{"type":"matching","title":"<title>","left":["a","b","c"],"right":["1","2","3"],"page":0}
+{"type":"multipleChoice","question":"<q>","note":"Circle the correct answer.","choices":["A. …","B. …","C. …","D. …"],"page":0}
+{"type":"truefalse","statements":["s1","s2","s3"],"page":0}
+{"type":"shortAnswer","question":"<q>","lines":4,"page":0}
+{"type":"fillBlank","text":"The ______ is a ______.","note":"<hint>","page":0}
+{"type":"essay","prompt":"<prompt>","points":10,"lines":14,"page":0}
+{"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]],"page":0}
+{"type":"image","imagePrompt":"<short visual description>","caption":"<optional>","size":"small","align":"center","page":0}
+
+Output ONLY the JSON array.`,
+          messages: [{ role: "user", content: userPrompt }],
+        })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || "AI error");
+      const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
+      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+      const parsed = JSON.parse(slice);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
+
+      setLpMsg("✓ Got blocks. Generating images…");
+      await fillImageElements(parsed, "cartoon");
+      insertAiElementsMultiPage(parsed);
+      const pageSpan = (Math.max(...parsed.map((e: any) => parseInt(e.page) || 0)) + 1) || 1;
+      setLpMsg(`✓ Added ${parsed.length} block${parsed.length === 1 ? "" : "s"} across ${pageSpan} page${pageSpan === 1 ? "" : "s"}.`);
+    } catch (e: any) {
+      setLpMsg(`⚠ ${e?.message || "Failed to build worksheet."}`);
+    }
+    setLpBusy(false);
+  };
+
+
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
 
