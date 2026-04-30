@@ -1169,7 +1169,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Essay prompt — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 * sc.s }}>
-          <p style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{el.prompt}</p>
+          <p style={{ fontSize: fs * tScale(sc), fontWeight: elWeight || 700, color: "#111827", margin: 0, fontFamily: elFamily, lineHeight: 1.45, flex: 1, minWidth: 0, fontStyle: elStyle, textDecoration: elDecor, textAlign: elAlign, ...lineStyle }}>{renderInlineMarkdown(el.prompt)}</p>
           {el.points && <span style={{ fontSize: Math.max(fs - 6, 10) * tScale(sc), fontWeight: 700, color: gv.color, whiteSpace: "nowrap", marginLeft: 12 * sc.s, fontFamily: F, padding: `${3 * sc.s}px ${9 * sc.s}px`, border: `1.5px solid ${gv.color}`, borderRadius: 40 }}>{el.points} pts</span>}
         </div>
         {Array.from({ length: fitLines }).map((_, i) => <div key={i} aria-hidden="true" style={{ height: gv.lineH * 0.75 * sc.s, borderBottom: "1px solid #E5E7EB", marginBottom: 3 * sc.s }} />)}
