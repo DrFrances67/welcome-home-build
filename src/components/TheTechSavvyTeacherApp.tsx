@@ -3919,6 +3919,20 @@ Output ONLY the JSON array.`,
   const removeLpHistory = (id: string) => setLpHistory(h => h.filter(x => x.id !== id));
   const clearLpHistory = () => { if (window.confirm("Clear all worksheet history?")) setLpHistory([]); };
 
+  // ━━ Worksheet-scoped keyboard shortcuts ━━
+  // Cmd/Ctrl+C copies the selected element, Cmd/Ctrl+V pastes the clipboard,
+  // Cmd/Ctrl+D duplicates the selected element. We deliberately skip when
+  // focus is in an input/textarea so users keep native text copy/paste.
+  useGlobalShortcuts([
+    { key: "c", mods: ["mod"], description: "Copy selected element", group: "Worksheet",
+      run: () => { if (selId) copyEl(selId); } },
+    { key: "v", mods: ["mod"], description: "Paste copied element", group: "Worksheet",
+      run: () => pasteEl() },
+    { key: "d", mods: ["mod"], description: "Duplicate selected element", group: "Worksheet",
+      run: () => { if (selId) dupEl(selId); } },
+  ]);
+
+
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
