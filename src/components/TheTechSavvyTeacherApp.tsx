@@ -3848,25 +3848,69 @@ Output ONLY the JSON array.`,
             </button>
           </div>
 
-          {/* Reference Upload — image or PDF preview, AI describes the style */}
+          {/* Lesson Plan Upload — DOC/PDF/TXT → AI builds aligned worksheet */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Exemplar</p>
-            {refImg ? (
-              <div style={{ position: "relative" }}>
-                <img src={refImg} alt="Uploaded reference worksheet" style={{ width: "100%", borderRadius: 7, border: "1px solid #E5E7EB", maxHeight: 88, objectFit: "cover" }} />
-                {analyzing && <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 7, fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>Analyzing…</div>}
-                <button onClick={() => { setRefImg(null); setRefDesc(""); }} aria-label="Remove reference worksheet"
-                  style={{ position: "absolute", top: 4, right: 4, background: "rgba(255,255,255,0.92)", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#6B7280" }}>✕</button>
-              </div>
-            ) : (
-              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: gv.light, cursor: "pointer", textAlign: "center" }}>
-                <span style={{ fontSize: 20 }} aria-hidden="true">📎</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Exemplar</span>
-                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image or PDF · style reference</span>
-                <input type="file" accept="image/*,.pdf" aria-label="Upload reference worksheet" onChange={e => e.target.files[0] && handleRefUpload(e.target.files[0])} style={{ display: "none" }} />
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Lesson Plan</p>
+
+            {!lpFile ? (
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: gv.light, cursor: lpBusy ? "wait" : "pointer", textAlign: "center", opacity: lpBusy ? 0.6 : 1 }}>
+                <span style={{ fontSize: 20 }} aria-hidden="true">📘</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Lesson Plan</span>
+                <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>PDF · DOCX · TXT · MD</span>
+                <input type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                  aria-label="Upload lesson plan"
+                  disabled={lpBusy}
+                  onChange={e => e.target.files?.[0] && handleLessonPlanUpload(e.target.files[0])}
+                  style={{ display: "none" }} />
               </label>
+            ) : (
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 7, padding: 8, position: "relative" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", margin: 0, fontFamily: F, paddingRight: 18, wordBreak: "break-all" }}>📘 {lpFile.name}</p>
+                <button onClick={() => { setLpFile(null); setLpMsg(""); setLpNotes(""); }} aria-label="Remove lesson plan"
+                  style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#9CA3AF" }}>✕</button>
+
+                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.4, margin: "10px 0 4px", fontFamily: F }}>
+                  Worksheet Type
+                </label>
+                <select
+                  value={lpType}
+                  onChange={e => setLpType(e.target.value)}
+                  disabled={lpBusy}
+                  aria-label="Worksheet type"
+                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", fontFamily: F, fontSize: 11, color: "#374151", cursor: "pointer" }}
+                >
+                  {WORKSHEET_TYPES.map(t => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                  ))}
+                </select>
+
+                <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.4, margin: "10px 0 4px", fontFamily: F }}>
+                  Additional Info <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, color: "#9CA3AF" }}>(optional)</span>
+                </label>
+                <textarea
+                  value={lpNotes}
+                  onChange={e => setLpNotes(e.target.value)}
+                  disabled={lpBusy}
+                  rows={3}
+                  placeholder="e.g. focus on vocabulary, include 5 short answers, scaffold for ELL students…"
+                  aria-label="Additional instructions"
+                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", fontFamily: F, fontSize: 11, color: "#374151", resize: "vertical", lineHeight: 1.4 }}
+                />
+
+                <button
+                  disabled={lpBusy}
+                  onClick={generateWorksheetFromLessonPlan}
+                  style={{ width: "100%", marginTop: 8, padding: "8px 10px", borderRadius: 6, border: "none", background: gv.color, color: "white", fontFamily: F, fontWeight: 700, fontSize: 12, cursor: lpBusy ? "wait" : "pointer", opacity: lpBusy ? 0.7 : 1 }}>
+                  {lpBusy ? "Working…" : "✨ Generate Worksheet"}
+                </button>
+              </div>
             )}
-            {refDesc && !analyzing && <p style={{ fontSize: 10, color: "#6B7280", margin: "6px 0 0", lineHeight: 1.45, fontFamily: F }}>{refDesc}</p>}
+
+            {lpMsg && (
+              <p style={{ fontSize: 10, color: lpMsg.startsWith("⚠") ? "#B91C1C" : "#6B7280", margin: "6px 0 0", lineHeight: 1.45, fontFamily: F }}>
+                {lpMsg}
+              </p>
+            )}
           </div>
 
           {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
