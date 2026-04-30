@@ -3771,9 +3771,10 @@ Output ONLY the JSON array.`,
     setLpBusy(false);
   };
 
-
+  return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
+
 
       {/* Skip navigation */}
       <a href="#worksheet-canvas" className="skip-nav no-print">Skip to worksheet</a>
