@@ -1326,7 +1326,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
 // ELEMENT EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
+function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }) {
   const inp = { ...INP(), marginTop: 4 };
   if (!el) return (
     <div style={{ padding: 32, textAlign: "center", fontFamily: F, animation: "fadeIn 0.3s ease" }}>
@@ -1447,6 +1447,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown }) {
         <div style={{ display: "flex", gap: 4 }}>
           <button onClick={onMoveUp}   aria-label="Move element up"   style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#374151" }}>↑</button>
           <button onClick={onMoveDown} aria-label="Move element down" style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#374151" }}>↓</button>
+          <button onClick={onDuplicate} aria-label="Duplicate element" title="Duplicate (Ctrl/Cmd+D)" style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #BFDBFE", background: "#EFF6FF", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1D4ED8" }}>⧉ Duplicate</button>
           <button onClick={onDelete}   aria-label="Delete element"    style={{ padding: "4px 9px", borderRadius: 6, border: "1.5px solid #FCA5A5", background: "#FEF2F2", cursor: "pointer", fontFamily: F, fontSize: 13, color: "#DC2626" }}>Delete</button>
         </div>
       </div>
@@ -3256,6 +3257,67 @@ export function WorksheetBuilder() {
     setWs(p => ({ ...p, elements: p.elements.filter(e => e.id !== id) }));
     setSelId(null); announce("Element deleted");
   };
+
+  // ━━ Copy / paste / duplicate ━━
+  // Clipboard holds a deep copy of the source element's data (sans id/page/x/y).
+  // Lives in a ref so React re-renders don't reset it; survives selection changes.
+  const clipboardRef = useRef<any>(null);
+  const stripPositional = (el) => {
+    if (!el) return null;
+    // Drop fields that must be unique or page/position-specific on paste.
+    const { id, page, x, y, ...rest } = el;
+    return JSON.parse(JSON.stringify(rest));
+  };
+  /** Place a clone of `data` on the current page, slightly offset from source. */
+  const cloneOnto = (data, sourceEl, opts: { offset?: boolean } = { offset: true }) => {
+    if (!data) return null;
+    const onPage = ws.elements.filter(e => (e.page || 0) === currentPage).length;
+    const slot = nextSlot(onPage);
+    // If source has a custom x/y, paste with a small +20/+20 offset so the new
+    // element is visible (and not perfectly stacked on the original).
+    const off = opts.offset !== false ? 20 : 0;
+    const useSourcePos = sourceEl && (sourceEl.x != null || sourceEl.y != null) && (sourceEl.page === currentPage);
+    const pos = useSourcePos
+      ? { x: (sourceEl.x || 0) + off, y: (sourceEl.y || 0) + off }
+      : { x: slot.x, y: slot.y };
+    const newEl = {
+      ...mkEl(data.type, slot),
+      ...data,
+      id: uid(),
+      page: currentPage,
+      x: pos.x,
+      y: pos.y,
+      // Preserve user-resized dimensions from source if present.
+      widthOverride: data.widthOverride ?? slot.widthOverride,
+      heightOverride: data.heightOverride,
+    };
+    setWs(p => ({ ...p, elements: [...p.elements, newEl] }));
+    setSelId(newEl.id);
+    setRightTab("edit");
+    return newEl;
+  };
+  const copyEl = (id) => {
+    const src = ws.elements.find(e => e.id === id);
+    if (!src) return;
+    clipboardRef.current = stripPositional(src);
+    announce("Element copied");
+  };
+  const pasteEl = () => {
+    const data = clipboardRef.current;
+    if (!data) { announce("Nothing to paste"); return; }
+    // For paste, we don't have a source element on the page necessarily; place
+    // at the next free slot (no source-position offset).
+    cloneOnto(data, null, { offset: false });
+    announce("Element pasted");
+  };
+  const dupEl = (id) => {
+    const src = ws.elements.find(e => e.id === id);
+    if (!src) return;
+    const data = stripPositional(src);
+    cloneOnto(data, src, { offset: true });
+    announce("Element duplicated");
+  };
+
   const addPage = () => {
     setWs(p => ({ ...p, pageCount: (p.pageCount || 1) + 1 }));
     setCurrentPage(pageCount); // jump to the new page
@@ -3858,6 +3920,20 @@ Output ONLY the JSON array.`,
   const removeLpHistory = (id: string) => setLpHistory(h => h.filter(x => x.id !== id));
   const clearLpHistory = () => { if (window.confirm("Clear all worksheet history?")) setLpHistory([]); };
 
+  // ━━ Worksheet-scoped keyboard shortcuts ━━
+  // Cmd/Ctrl+C copies the selected element, Cmd/Ctrl+V pastes the clipboard,
+  // Cmd/Ctrl+D duplicates the selected element. We deliberately skip when
+  // focus is in an input/textarea so users keep native text copy/paste.
+  useGlobalShortcuts([
+    { key: "c", mods: ["mod"], description: "Copy selected element", group: "Worksheet",
+      run: () => { if (selId) copyEl(selId); } },
+    { key: "v", mods: ["mod"], description: "Paste copied element", group: "Worksheet",
+      run: () => pasteEl() },
+    { key: "d", mods: ["mod"], description: "Duplicate selected element", group: "Worksheet",
+      run: () => { if (selId) dupEl(selId); } },
+  ]);
+
+
   return (
     <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: F, background: "#F8F9FA", overflow: "hidden" }}>
       <style>{PRINT_CSS}</style>
@@ -4255,7 +4331,7 @@ Output ONLY the JSON array.`,
             ))}
           </div>
           <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }} role="tabpanel">
-            {rightTab === "edit"  && <ElEditor el={selEl} gv={gv} onChange={u => selEl && updEl(selEl.id, u)} onDelete={() => selEl && delEl(selEl.id)} onMoveUp={() => selEl && movEl(selEl.id, "up")} onMoveDown={() => selEl && movEl(selEl.id, "down")} />}
+            {rightTab === "edit"  && <ElEditor el={selEl} gv={gv} onChange={u => selEl && updEl(selEl.id, u)} onDelete={() => selEl && delEl(selEl.id)} onMoveUp={() => selEl && movEl(selEl.id, "up")} onMoveDown={() => selEl && movEl(selEl.id, "down")} onDuplicate={() => selEl && dupEl(selEl.id)} />}
             {rightTab === "image" && <AIImageGen gv={gv} onAddImage={addGeneratedImage} />}
             {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} onInsertElements={insertAiElements} />}
           </div>
