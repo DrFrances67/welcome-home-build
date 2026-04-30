@@ -3203,6 +3203,31 @@ export function WorksheetBuilder() {
   const [lpMsg, setLpMsg] = useState("");
   const [lpType, setLpType] = useState("practice");
   const [lpNotes, setLpNotes] = useState("");
+
+  // Lesson-plan generation history (persisted in localStorage)
+  type LpHistoryEntry = {
+    id: string;
+    ts: number;
+    fileName: string;
+    fileRaw: string;
+    typeId: string;
+    typeLabel: string;
+    notes: string;
+    gradeId: string;
+    elementCount: number;
+    pageCount: number;
+    snapshot: any; // full ws snapshot for restore
+  };
+  const LP_HISTORY_KEY = "tts.lpHistory.v1";
+  const [lpHistory, setLpHistory] = useState<LpHistoryEntry[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(LP_HISTORY_KEY) : null;
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(LP_HISTORY_KEY, JSON.stringify(lpHistory.slice(0, 25))); } catch {}
+  }, [lpHistory]);
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
