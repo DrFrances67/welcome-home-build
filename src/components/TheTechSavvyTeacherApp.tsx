@@ -7108,7 +7108,7 @@ function TheTechSavvyTeacherAppRoot() {
             The Tech Savvy Teacher
           </h1>
           <p style={{ fontFamily:"'Inter',sans-serif", fontSize:10.5, fontWeight:700, color:"rgba(255,255,255,0.78)", letterSpacing:3, textTransform:"uppercase", margin:"0 0 0" }}>
-            AI TOOLS FOR EDUCATORS
+            TOOLS FOR EDUCATORS
           </p>
         </div>
 
