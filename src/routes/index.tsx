@@ -4,7 +4,7 @@ import { TheTechSavvyTeacherApp } from "@/components/TheTechSavvyTeacherApp";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "The Tech Savvy Teacher — AI Tools for Educators" },
+      { title: "The Tech Savvy Teacher — Tools For Educators" },
       {
         name: "description",
         content:
