@@ -33,6 +33,7 @@ describe("Branding: no 'AI Tools for Educators' anywhere", () => {
           if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
           walk(full, hits);
         } else if (/\.(tsx?|jsx?|css|html|md)$/.test(entry.name)) {
+          if (full.endsWith("header-no-ai-branding.test.tsx")) continue;
           const content = fs.readFileSync(full, "utf8");
           if (/AI\s+Tools\s+for\s+Educators/i.test(content)) hits.push(full);
         }
