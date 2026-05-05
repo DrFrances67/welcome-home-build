@@ -6878,24 +6878,6 @@ document.addEventListener('keydown',e=>{
             {/* Header */}
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, color:BRAND, margin:"0 0 4px" }}>{result.title}</h2>
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#6B7280", margin:"0 0 16px" }}>{result.gradeSubject} &nbsp;|&nbsp; {result.duration}</p>
-            {onBuildWorksheets && (
-              <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
-                <button
-                  onClick={() => {
-                    const raw = buildPlanText();
-                    const safeTitle = (result?.title || "Lesson Plan").replace(/[^\w\s-]+/g, "").trim() || "Lesson Plan";
-                    onBuildWorksheets({
-                      name: `${safeTitle}.txt`,
-                      raw,
-                      topic: result?.title || form.topic || "",
-                      gradeId: form.grade || "k",
-                    });
-                  }}
-                  style={{ padding:"10px 18px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#F59E0B,#D97706)", color:"white", fontFamily:"'Inter',sans-serif", fontWeight:800, fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 2px 8px rgba(217,119,6,0.4)" }}>
-                  📄 Build Worksheets from this Lesson →
-                </button>
-              </div>
-            )}
             <div style={{ background:LIGHT, borderLeft:`4px solid ${BRAND}`, borderRadius:"0 7px 7px 0", padding:"9px 14px", marginBottom:20, fontSize:12, color:"#374151", lineHeight:1.5 }}>
               <strong style={{ color:BRAND }}>Standard:</strong> {result.standard}
             </div>
@@ -7043,6 +7025,26 @@ document.addEventListener('keydown',e=>{
               </div>
             )}
 
+            {/* Build Worksheets CTA — placed directly above the Slide Deck builder */}
+            {onBuildWorksheets && (
+              <div style={{ marginTop:18, display:"flex", justifyContent:"center" }}>
+                <button
+                  onClick={() => {
+                    const raw = buildPlanText();
+                    const safeTitle = (result?.title || "Lesson Plan").replace(/[^\w\s-]+/g, "").trim() || "Lesson Plan";
+                    onBuildWorksheets({
+                      name: `${safeTitle}.txt`,
+                      raw,
+                      topic: result?.title || form.topic || "",
+                      gradeId: form.grade || "k",
+                    });
+                  }}
+                  style={{ padding:"12px 22px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#F59E0B,#D97706)", color:"white", fontFamily:"'Inter',sans-serif", fontWeight:800, fontSize:14, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 3px 10px rgba(217,119,6,0.4)" }}>
+                  📄 Build Worksheets from this Lesson →
+                </button>
+              </div>
+            )}
+
             {/* Generate Slide Deck CTA — multi-format export */}
             <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10 }}>
               <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px", textAlign:"center" }}>🎞️ Build a slide deck for this lesson</p>
@@ -7052,8 +7054,7 @@ document.addEventListener('keydown',e=>{
                   { id:"html",   label:"🌐 Interactive HTML", desc:"Open in browser",        onClick: exportSlidesHTML },
                   { id:"text",   label:"📝 Plain Text",       desc:"Outline (.txt)",         onClick: exportSlidesText },
                   { id:"pdf",    label:"📄 PDF",              desc:"Print-ready",            onClick: exportSlidesPDF },
-                  { id:"google", label:"🟡 Google Slides",    desc:"Upload .pptx to Slides", onClick: exportSlidesGoogle },
-                  { id:"pptx",   label:"🟧 PowerPoint",       desc:"Download .pptx",         onClick: exportSlidesPPTX },
+                  { id:"pptx",   label:"🟧 PowerPoint / Google Slides", desc:".pptx (works in both)", onClick: exportSlidesPPTX },
                 ];
                 return (
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8 }}>
