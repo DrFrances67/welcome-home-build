@@ -6559,7 +6559,7 @@ document.addEventListener('keydown',e=>{
                   </button>
                   <span style={{ fontSize:10, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
                 </div>
-                <div style={{ maxHeight:200, overflowY:"auto" }}>
+                <div style={{ maxHeight:380, overflowY:"auto" }}>
                   {stdList.map((s,i) => (
                     <button key={i} onClick={() => { setF("standard", `${s.code}: ${s.desc}`); setShowStdPicker(false); setStdSearch(""); }}
                       style={{ display:"block", width:"100%", textAlign:"left", padding:"9px 12px", border:"none", borderBottom:"1px solid #F3F4F6", background:"white", cursor:"pointer", transition:"background 0.1s" }}
