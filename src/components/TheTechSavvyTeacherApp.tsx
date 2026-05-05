@@ -5691,24 +5691,54 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
   const toggleDiff = (d) => setF("diff", form.diff.includes(d) ? form.diff.filter(x=>x!==d) : [...form.diff, d]);
 
   // ── Shared Claude call ─────────────────────────────────────────────
+  // Network-resilient: retries once on transient "Failed to fetch" / abort,
+  // uses an AbortController with a generous timeout, and surfaces clear errors.
   const callClaude = async (system, userContent, maxTokens = 600) => {
-    const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: maxTokens,
-        system,
-        messages: [{ role: "user", content: userContent }],
-      }),
+    const url = "https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy";
+    const payload = JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userContent }],
     });
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      throw new Error(e?.error?.message || `API error ${res.status}`);
+    const doFetch = async () => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 120000); // 2 min
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: payload,
+          signal: ctrl.signal,
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e?.error?.message || `API error ${res.status}`);
+        }
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message || "AI error");
+        return data.content?.map(b => b.text || "").join("") || "";
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    try {
+      return await doFetch();
+    } catch (e) {
+      const msg = String(e?.message || e);
+      const transient = /Failed to fetch|NetworkError|aborted|timeout|ECONN|fetch failed/i.test(msg);
+      if (!transient) throw e;
+      // brief backoff then one retry
+      await new Promise(r => setTimeout(r, 800));
+      try {
+        return await doFetch();
+      } catch (e2) {
+        throw new Error(
+          "Network request to the AI service failed. Please check your internet connection and try again. " +
+          `(${String(e2?.message || e2)})`
+        );
+      }
     }
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data.content?.map(b => b.text || "").join("") || "";
   };
 
   // ── AI Idea Helper ─────────────────────────────────────────────────
