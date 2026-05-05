@@ -6544,13 +6544,18 @@ document.addEventListener('keydown',e=>{
             {showStdPicker && !form.standard && (
               <div style={{ marginTop:10, border:"1.5px solid #E5E7EB", borderRadius:8, overflow:"hidden" }}>
                 <div style={{ padding:"10px 12px", background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", display:"flex", gap:8, flexWrap:"wrap" }}>
-                  <select value={stdSubj} onChange={e => { const s = e.target.value; setStdSubj(s); setStdBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s]||{})[0]||""); }} style={{ ...inp, flex:1, padding:"6px 8px", fontSize:12 }}>
+                  <select value={stdSubj} onChange={e => { const s = e.target.value; setStdSubj(s); setStdBand(gradeIdToStdBand(form.grade, s) || (s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s]||{})[0]||"")); }} style={{ ...inp, flex:1, padding:"6px 8px", fontSize:12 }}>
                     {Object.keys(NY_STANDARDS).map(s => <option key={s}>{s}</option>)}
                   </select>
                   <select value={stdBand} onChange={e => setStdBand(e.target.value)} style={{ ...inp, flex:1, padding:"6px 8px", fontSize:12 }}>
                     {stdBands.map(b => <option key={b}>{b}</option>)}
                   </select>
                   <input type="text" value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder="Search…" style={{ ...inp, flex:2, padding:"6px 8px", fontSize:12 }} />
+                  <button type="button" onClick={() => setStdBand(gradeIdToStdBand(form.grade, stdSubj))}
+                    style={{ padding:"5px 11px", borderRadius:14, border:`1.5px solid ${BRAND}`, background:LIGHT, color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                    🎯 Match grade ({GRADES.find(g => g.id === form.grade)?.name || form.grade})
+                  </button>
+                  <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
                 </div>
                 <div style={{ maxHeight:200, overflowY:"auto" }}>
                   {stdList.map((s,i) => (
