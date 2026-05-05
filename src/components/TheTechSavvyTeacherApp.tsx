@@ -4996,7 +4996,8 @@ Output ONLY the JSON array.`,
       </div>
 
       {showHelp     && <HelpModal     onClose={() => setShowHelp(false)}     gv={gv} />}
-      {showStds     && <StandardsModal gv={gv} onClose={() => setShowStds(false)} onInsert={insertStandard} onGenerate={handleGenerateFromStd} />}
+      {showStds     && <StandardsModal gv={gv} gradeId={ws.gradeId} onClose={() => setShowStds(false)} onInsert={insertStandard} onGenerate={handleGenerateFromStd} />}
+      {showAlignment && <AlignmentModal gv={gv} ws={ws} onClose={() => setShowAlignment(false)} onSetMapping={(elId, codes) => updEl(elId, { stdCodes: codes })} />}
       {showVersions && <VersionsModal  gv={gv} ws={ws} onClose={() => setShowVersions(false)} />}
       {showExport   && <ExportModal    gv={gv} ws={ws} onClose={() => setShowExport(false)} />}
     </div>
