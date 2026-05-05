@@ -3688,6 +3688,27 @@ function ExportModal({ gv, ws, onClose }) {
       pageEls.forEach((el, i) => renderEl(el, i));
       if (p < totalPages - 1) { lines.push("\f"); lines.push(""); }
     }
+    // Standards Citations section
+    const stds = ws.standards || [];
+    if (stds.length > 0) {
+      lines.push("");
+      lines.push("═══════════════════════════════════════");
+      lines.push("STANDARDS CITATIONS");
+      lines.push("═══════════════════════════════════════");
+      lines.push("Aligned to the New York State Next Generation Learning Standards.");
+      lines.push("");
+      stds.forEach(s => {
+        lines.push(`• ${s.code}: ${s.desc}`);
+        // Show items aligned to this standard
+        const aligned = (ws.elements || [])
+          .map((el, i) => ({ el, i }))
+          .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+        if (aligned.length) {
+          aligned.forEach(({ el, i }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
+        }
+        lines.push("");
+      });
+    }
     return lines.join("\n");
   };
 
