@@ -6783,6 +6783,21 @@ document.addEventListener('keydown',e=>{
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6" fill="none" stroke="white" strokeWidth="2"/><line x1="8" y1="13" x2="16" y2="13" stroke="white" strokeWidth="2"/><line x1="8" y1="17" x2="16" y2="17" stroke="white" strokeWidth="2"/></svg>
                 Export for Google Docs
               </button>
+              {onBuildWorksheets && (
+                <button onClick={() => {
+                  const raw = buildPlanText();
+                  const safeTitle = (result?.title || "Lesson Plan").replace(/[^\w\s-]+/g, "").trim() || "Lesson Plan";
+                  onBuildWorksheets({
+                    name: `${safeTitle}.txt`,
+                    raw,
+                    topic: result?.title || form.topic || "",
+                    gradeId: form.grade || "k",
+                  });
+                }}
+                style={{ padding:"6px 12px", borderRadius:6, border:"none", background:"#FDE68A", color:"#7C2D12", fontFamily:"'Inter',sans-serif", fontWeight:800, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", gap:5, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }}>
+                  📄 Build Worksheets
+                </button>
+              )}
             </div>
           )}
         </div>
