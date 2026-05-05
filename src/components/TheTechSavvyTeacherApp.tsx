@@ -4084,19 +4084,24 @@ export function WorksheetBuilder() {
   const [generating, setGenerating] = useState(false);
 
   const insertStandard = (std, showHeader = true) => {
-    if (!showHeader) return; // standard used for context only — no element inserted
-    // Header spans full width at top of page
-    const el = { id: uid(), type: "instruction", text: `📌 NYS Standard ${std.code}: ${std.desc}`, x: 0, y: 0, widthOverride: 100 };
-    // Push existing elements down to make room
-    setWs(p => ({ ...p, elements: [el, ...p.elements.map(e => ({ ...e, y: (e.y || 0) + ROW_HEIGHT }))] }));
-    setSelId(el.id);
+    setWs(p => {
+      const exists = (p.standards || []).some(s => s.code === std.code);
+      const standards = exists ? p.standards : [...(p.standards || []), { code: std.code, desc: std.desc }];
+      if (!showHeader) return { ...p, standards };
+      const el = { id: uid(), type: "instruction", text: `📌 NYS Standard ${std.code}: ${std.desc}`, x: 0, y: 0, widthOverride: 100, stdCodes: [std.code] };
+      return { ...p, standards, elements: [el, ...p.elements.map(e => ({ ...e, y: (e.y || 0) + ROW_HEIGHT }))] };
+    });
   };
 
   const handleGenerateFromStd = async (std, showHeader) => {
     setGenerating(true);
-    // Optionally insert header first
     if (showHeader) {
       insertStandard(std, true);
+    } else {
+      setWs(p => {
+        const exists = (p.standards || []).some(s => s.code === std.code);
+        return exists ? p : { ...p, standards: [...(p.standards || []), { code: std.code, desc: std.desc }] };
+      });
     }
     const g = gInfo(ws.gradeId);
     const bandLabel = BANDS[g.band]?.label || g.name;
@@ -4137,10 +4142,10 @@ Include a variety of activity types. Make the content directly address the stand
       const raw = data.content?.map(b => b.text || "").join("") || "[]";
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      const startIdx = showHeader ? 1 : 0; // reserve slot 0 for header row
+      const startIdx = showHeader ? 1 : 0;
       const newEls = parsed.map((el, i) => {
         const slot = nextSlot(startIdx + i);
-        return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride };
+        return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride, stdCodes: [std.code] };
       });
       setWs(p => ({
         ...p,
