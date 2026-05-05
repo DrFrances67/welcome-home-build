@@ -6014,7 +6014,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
 }`;
 
     try {
-      const raw = await callClaude(systemPrompt, userPrompt, 5500);
+      const raw = await callClaude(systemPrompt, userPrompt, 8000);
       if (!raw || !raw.trim()) throw new Error("No response received. Please try again.");
 
       // Strip any accidental fences
@@ -6026,10 +6026,16 @@ Return this JSON (replace all placeholder text with real content, keep values co
       // Find the JSON object boundaries
       const start = clean.indexOf("{");
       const end   = clean.lastIndexOf("}");
-      if (start === -1 || end === -1) throw new Error("Response was not valid JSON. Please try again.");
-      clean = clean.slice(start, end + 1);
+      if (start === -1) throw new Error("Response was not valid JSON. Please try again.");
+      clean = end > start ? clean.slice(start, end + 1) : clean.slice(start);
 
-      const parsed = JSON.parse(clean);
+      // Use defensive parser that repairs truncation, trailing commas, control chars.
+      let parsed: any;
+      try {
+        parsed = JSON.parse(clean);
+      } catch {
+        parsed = repairAndParse(clean, { container: "object" });
+      }
 
       // Scrub "N/A"-style answers from homework/extension and ask AI to retry just those if needed
       const isEmpty = v => !v || /^(n\/?a|none|not applicable|tbd|n\.a\.?)\.?$/i.test(String(v).trim());
