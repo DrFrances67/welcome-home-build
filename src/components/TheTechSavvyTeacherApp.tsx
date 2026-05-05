@@ -4710,6 +4710,32 @@ Output ONLY the JSON array.`,
   const removeLpHistory = (id: string) => setLpHistory(h => h.filter(x => x.id !== id));
   const clearLpHistory = () => { if (window.confirm("Clear all worksheet history?")) setLpHistory([]); };
 
+  // ━━ Pending lesson handoff from Lesson Plan Generator ━━
+  // When the user clicks "Build Worksheets" on a generated lesson, we stash a
+  // payload on window and switch tabs. On mount, consume it, set state, and
+  // flag a pending auto-run that fires once lpFile has actually committed.
+  const [pendingAutoRun, setPendingAutoRun] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const payload = (window as any).__pendingLessonForWorksheet;
+    if (!payload?.raw) return;
+    (window as any).__pendingLessonForWorksheet = null;
+    const gradeId = payload.gradeId && GRADES.some(g => g.id === payload.gradeId) ? payload.gradeId : ws.gradeId;
+    setWs(p => ({ ...p, gradeId, title: payload.topic ? `${payload.topic} — Worksheet` : p.title }));
+    setLpFile({ name: payload.name || "Lesson Plan.txt", raw: payload.raw });
+    setLpType("practice");
+    setLpNotes("");
+    setLpMsg("✓ Lesson plan received. Auto-generating worksheet…");
+    setPendingAutoRun(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!pendingAutoRun || !lpFile?.raw) return;
+    setPendingAutoRun(false);
+    generateWorksheetFromLessonPlan();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoRun, lpFile]);
+
   // ━━ Worksheet-scoped keyboard shortcuts ━━
   // Cmd/Ctrl+C copies the selected element, Cmd/Ctrl+V pastes the clipboard,
   // Cmd/Ctrl+D duplicates the selected element. We deliberately skip when
@@ -5615,7 +5641,7 @@ const LP_DURATIONS = ["30 minutes","45 minutes","60 minutes","75 minutes","90 mi
 const LP_MODELS    = ["Direct Instruction","Gradual Release (I Do / We Do / You Do)","5E Model (Engage, Explore, Explain, Elaborate, Evaluate)","Project-Based Learning","Inquiry / Discovery","Flipped Classroom","Cooperative Learning","Workshop Model","Socratic Seminar"];
 const LP_DIFF      = ["ELL / Language Learners","Students with IEPs","Gifted & Advanced","504 Accommodations","Multiple Learning Styles","Neurodiverse Students (Autism / Multiple Disabilities)"];
 
-function LessonPlanGenerator() {
+function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (payload: { name: string; raw: string; topic: string; gradeId: string }) => void } = {}) {
   const BRAND = "#CF27F5";
   const LIGHT  = "#FDF4FF";
 
@@ -6783,6 +6809,21 @@ document.addEventListener('keydown',e=>{
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6" fill="none" stroke="white" strokeWidth="2"/><line x1="8" y1="13" x2="16" y2="13" stroke="white" strokeWidth="2"/><line x1="8" y1="17" x2="16" y2="17" stroke="white" strokeWidth="2"/></svg>
                 Export for Google Docs
               </button>
+              {onBuildWorksheets && (
+                <button onClick={() => {
+                  const raw = buildPlanText();
+                  const safeTitle = (result?.title || "Lesson Plan").replace(/[^\w\s-]+/g, "").trim() || "Lesson Plan";
+                  onBuildWorksheets({
+                    name: `${safeTitle}.txt`,
+                    raw,
+                    topic: result?.title || form.topic || "",
+                    gradeId: form.grade || "k",
+                  });
+                }}
+                style={{ padding:"6px 12px", borderRadius:6, border:"none", background:"#FDE68A", color:"#7C2D12", fontFamily:"'Inter',sans-serif", fontWeight:800, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", gap:5, boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }}>
+                  📄 Build Worksheets
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -7946,7 +7987,12 @@ function TheTechSavvyTeacherAppRoot() {
             <WorksheetBuilder />
           </div>
         )}
-        {activeTool === "lesson"    && <LessonPlanGenerator />}
+        {activeTool === "lesson"    && <LessonPlanGenerator onBuildWorksheets={(payload) => {
+          if (typeof window !== "undefined") {
+            (window as any).__pendingLessonForWorksheet = payload;
+          }
+          setActiveTool("worksheet");
+        }} />}
         {activeTool === "danielson" && <DanielsonReview />}
         {activeTool === "email"     && <EmailAssistant />}
       </main>
