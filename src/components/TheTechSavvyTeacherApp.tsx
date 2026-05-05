@@ -4640,8 +4640,10 @@ Output ONLY the JSON array.`,
       const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
       const clean = text.replace(/```json|```/g, "").trim();
       const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
-      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
-      const parsed = JSON.parse(slice);
+      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : (start >= 0 ? clean.slice(start) : clean);
+      let parsed: any;
+      try { parsed = JSON.parse(slice); }
+      catch { parsed = repairAndParse(slice, { container: "array" }); }
       if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
 
       setLpMsg("✓ Got blocks. Generating images…");
