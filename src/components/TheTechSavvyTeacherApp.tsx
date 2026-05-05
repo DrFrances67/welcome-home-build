@@ -3833,8 +3833,96 @@ function HelpModal({ onClose, gv }) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MAIN APP
+// ALIGNMENT MODAL — shows which standard each question/activity maps to
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function elSummary(el, idx) {
+  const n = `${idx + 1}.`;
+  if (!el) return n;
+  if (el.type === "instruction") return `${n} 📋 Directions — ${(el.text || "").slice(0, 70)}`;
+  if (el.type === "text")        return `${n} 📄 Passage — ${(el.text || "").slice(0, 70)}`;
+  if (el.type === "multipleChoice") return `${n} 🔘 MC — ${(el.question || "").slice(0, 70)}`;
+  if (el.type === "truefalse")   return `${n} ✅ True/False (${(el.statements||[]).length} items)`;
+  if (el.type === "shortAnswer") return `${n} ✍️ Short Answer — ${(el.question || "").slice(0, 70)}`;
+  if (el.type === "fillBlank")   return `${n} ✏️ Fill-in — ${(el.text || "").slice(0, 70)}`;
+  if (el.type === "blank")       return `${n} 📝 Response — ${(el.label || "").slice(0, 70)}`;
+  if (el.type === "essay")       return `${n} 📖 Essay — ${(el.prompt || "").slice(0, 70)}`;
+  if (el.type === "matching")    return `${n} 🔗 Matching — ${(el.title || "")}`;
+  if (el.type === "wordBank")    return `${n} 📚 ${el.title || "Word Bank"}`;
+  if (el.type === "successCriteria") return `${n} 🎯 Success Criteria`;
+  if (el.type === "exitTicket")  return `${n} 🎟️ Exit Ticket`;
+  if (el.type === "dokQuestions") return `${n} 🧠 DOK Questions`;
+  if (el.type === "image")       return `${n} 🖼️ Image`;
+  if (el.type === "table")       return `${n} 📊 Table`;
+  if (el.type === "divider")     return `${n} ─── Divider`;
+  return `${n} ${el.type}`;
+}
+
+function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
+  const standards = ws.standards || [];
+  const items = (ws.elements || []).filter(e => !["divider"].includes(e.type));
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
+      <div style={{ background: "white", borderRadius: 18, maxWidth: 760, width: "100%", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: "20px 24px 14px", borderBottom: "2px solid #F0F0F0", background: gv.light, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h2 style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}>🎯 Standards Alignment</h2>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#666", fontFamily: F }}>See which NYS standard each worksheet item maps to. Click a standard chip to assign or remove it.</p>
+          </div>
+          <button onClick={onClose} style={{ background: "white", border: "none", borderRadius: "50%", width: 34, height: 34, cursor: "pointer", fontSize: 16, color: "#888", fontWeight: 800 }}>✕</button>
+        </div>
+
+        <div style={{ overflowY: "auto", padding: "16px 24px 22px" }}>
+          {standards.length === 0 && (
+            <div style={{ padding: 16, background: "#FFF7ED", border: "1.5px dashed #FDBA74", borderRadius: 10, fontFamily: F, fontSize: 13, color: "#9A3412", marginBottom: 14 }}>
+              No standards have been added yet. Use the <strong>🗽 NY Standards</strong> button in the left panel to add one or more standards. Items will then map to those standards here.
+            </div>
+          )}
+
+          {standards.length > 0 && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ ...LBL, marginTop: 0 }}>Cited Standards ({standards.length})</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {standards.map(s => (
+                    <span key={s.code} title={s.desc} style={{ padding: "4px 10px", borderRadius: 14, background: gv.light, border: `1.5px solid ${gv.color}`, color: gv.color, fontFamily: F, fontSize: 11.5, fontWeight: 800 }}>{s.code}</span>
+                  ))}
+                </div>
+              </div>
+
+              <p style={{ ...LBL, marginTop: 0 }}>Item-by-Item Mapping</p>
+              {items.map((el, i) => {
+                const mapped = el.stdCodes || [];
+                return (
+                  <div key={el.id} style={{ padding: "10px 12px", border: "1.5px solid #EEE", borderRadius: 10, marginBottom: 8, background: mapped.length ? "white" : "#FAFAFA" }}>
+                    <div style={{ fontFamily: F, fontSize: 12.5, color: "#374151", marginBottom: 6, lineHeight: 1.4 }}>{elSummary(el, i)}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {standards.map(s => {
+                        const on = mapped.includes(s.code);
+                        return (
+                          <button key={s.code} onClick={() => {
+                            const next = on ? mapped.filter(c => c !== s.code) : [...mapped, s.code];
+                            onSetMapping(el.id, next);
+                          }} style={{ padding: "3px 9px", borderRadius: 12, border: `1.5px solid ${on ? gv.color : "#DDD"}`, background: on ? gv.color : "white", color: on ? "white" : "#666", fontFamily: F, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            {on ? "✓ " : ""}{s.code}
+                          </button>
+                        );
+                      })}
+                      {mapped.length === 0 && <span style={{ fontFamily: F, fontSize: 11, color: "#9CA3AF", padding: "3px 4px" }}>Unaligned</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {items.length === 0 && <p style={{ fontFamily: F, color: "#9CA3AF", fontSize: 13, textAlign: "center", padding: 20 }}>No items on the worksheet yet.</p>}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export function WorksheetBuilder() {
   const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [], oneLineOnly: false, standards: [] });
