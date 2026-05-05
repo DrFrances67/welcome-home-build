@@ -3846,6 +3846,7 @@ export function WorksheetBuilder() {
   const [showStds, setShowStds]       = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showExport, setShowExport]   = useState(false);
+  const [showAlignment, setShowAlignment] = useState(false);
   const [refImg, setRefImg] = useState(null);
   const [refDesc, setRefDesc] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
