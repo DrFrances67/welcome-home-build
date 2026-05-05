@@ -4649,6 +4649,8 @@ Output ONLY the JSON array.`,
           style={{ padding: "6px 12px", borderRadius: 7, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 13, color: "#374151" }}>Help</button>
         <button onClick={() => setShowVersions(true)} aria-label="Create quiz versions with randomized questions"
           style={{ padding: "6px 12px", borderRadius: 7, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 13, color: "#374151" }}>🔀 Versions</button>
+        <button onClick={() => setShowAlignment(true)} aria-label="View standards alignment for each question"
+          style={{ padding: "6px 12px", borderRadius: 7, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 13, color: "#374151" }}>🎯 Alignment</button>
         <button onClick={() => setShowExport(true)} aria-label="Export or print worksheet"
           style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: gv.color, color: "white", cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 13 }}>📤 Export</button>
       </header>
