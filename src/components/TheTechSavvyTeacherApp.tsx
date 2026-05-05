@@ -4575,7 +4575,11 @@ Output ONLY the JSON array.`,
       return r.text;
     }
     if (isDocx) {
-      const mammoth: any = await import("mammoth/mammoth.browser");
+      const mod: any = await import("mammoth/mammoth.browser");
+      const mammoth: any = mod?.default || mod;
+      if (!mammoth || typeof mammoth.extractRawText !== "function") {
+        throw new Error("DOCX reader failed to load. Try TXT or PDF.");
+      }
       const buf = await file.arrayBuffer();
       const out = await mammoth.extractRawText({ arrayBuffer: buf });
       return (out?.value || "").trim();
@@ -4636,8 +4640,10 @@ Output ONLY the JSON array.`,
       const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
       const clean = text.replace(/```json|```/g, "").trim();
       const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
-      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
-      const parsed = JSON.parse(slice);
+      const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : (start >= 0 ? clean.slice(start) : clean);
+      let parsed: any;
+      try { parsed = JSON.parse(slice); }
+      catch { parsed = repairAndParse(slice, { container: "array" }); }
       if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return any blocks");
 
       setLpMsg("✓ Got blocks. Generating images…");
@@ -6010,7 +6016,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
 }`;
 
     try {
-      const raw = await callClaude(systemPrompt, userPrompt, 5500);
+      const raw = await callClaude(systemPrompt, userPrompt, 8000);
       if (!raw || !raw.trim()) throw new Error("No response received. Please try again.");
 
       // Strip any accidental fences
@@ -6022,10 +6028,16 @@ Return this JSON (replace all placeholder text with real content, keep values co
       // Find the JSON object boundaries
       const start = clean.indexOf("{");
       const end   = clean.lastIndexOf("}");
-      if (start === -1 || end === -1) throw new Error("Response was not valid JSON. Please try again.");
-      clean = clean.slice(start, end + 1);
+      if (start === -1) throw new Error("Response was not valid JSON. Please try again.");
+      clean = end > start ? clean.slice(start, end + 1) : clean.slice(start);
 
-      const parsed = JSON.parse(clean);
+      // Use defensive parser that repairs truncation, trailing commas, control chars.
+      let parsed: any;
+      try {
+        parsed = JSON.parse(clean);
+      } catch {
+        parsed = repairAndParse(clean, { container: "object" });
+      }
 
       // Scrub "N/A"-style answers from homework/extension and ask AI to retry just those if needed
       const isEmpty = v => !v || /^(n\/?a|none|not applicable|tbd|n\.a\.?)\.?$/i.test(String(v).trim());
