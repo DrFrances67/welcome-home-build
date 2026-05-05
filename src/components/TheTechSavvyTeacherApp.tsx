@@ -4712,7 +4712,9 @@ Output ONLY the JSON array.`,
 
   // ━━ Pending lesson handoff from Lesson Plan Generator ━━
   // When the user clicks "Build Worksheets" on a generated lesson, we stash a
-  // payload on window and switch tabs. On mount, consume it and auto-build.
+  // payload on window and switch tabs. On mount, consume it, set state, and
+  // flag a pending auto-run that fires once lpFile has actually committed.
+  const [pendingAutoRun, setPendingAutoRun] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload = (window as any).__pendingLessonForWorksheet;
@@ -4724,10 +4726,15 @@ Output ONLY the JSON array.`,
     setLpType("practice");
     setLpNotes("");
     setLpMsg("✓ Lesson plan received. Auto-generating worksheet…");
-    // Defer one tick so state has applied before generation reads lpFile.
-    setTimeout(() => { generateWorksheetFromLessonPlan(); }, 80);
+    setPendingAutoRun(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    if (!pendingAutoRun || !lpFile?.raw) return;
+    setPendingAutoRun(false);
+    generateWorksheetFromLessonPlan();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoRun, lpFile]);
 
   // ━━ Worksheet-scoped keyboard shortcuts ━━
   // Cmd/Ctrl+C copies the selected element, Cmd/Ctrl+V pastes the clipboard,
