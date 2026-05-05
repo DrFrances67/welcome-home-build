@@ -7946,7 +7946,12 @@ function TheTechSavvyTeacherAppRoot() {
             <WorksheetBuilder />
           </div>
         )}
-        {activeTool === "lesson"    && <LessonPlanGenerator />}
+        {activeTool === "lesson"    && <LessonPlanGenerator onBuildWorksheets={(payload) => {
+          if (typeof window !== "undefined") {
+            (window as any).__pendingLessonForWorksheet = payload;
+          }
+          setActiveTool("worksheet");
+        }} />}
         {activeTool === "danielson" && <DanielsonReview />}
         {activeTool === "email"     && <EmailAssistant />}
       </main>
