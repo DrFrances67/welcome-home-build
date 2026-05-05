@@ -3364,10 +3364,11 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
           {gradeId && (
             <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
               <button onClick={toggleMatchGrade}
-                style={{ padding: "5px 11px", borderRadius: 14, border: `1.5px solid ${matchGrade ? gv.color : "#DDD"}`, background: matchGrade ? gv.light : "white", color: matchGrade ? gv.color : "#666", fontFamily: F, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-                {matchGrade ? "✓ " : ""}Match grade ({GRADES.find(g => g.id === gradeId)?.name || gradeId})
+                title={`Match ${GRADES.find(g => g.id === gradeId)?.name || gradeId}`}
+                style={{ padding: "3px 8px", borderRadius: 10, border: `1px solid ${matchGrade ? gv.color : "#DDD"}`, background: matchGrade ? gv.light : "white", color: matchGrade ? gv.color : "#666", fontFamily: F, fontWeight: 700, fontSize: 10, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {matchGrade ? "✓ " : ""}🎯 Match grade
               </button>
-              <span style={{ fontSize: 11, color: "#999", fontFamily: F }}>{filtered.length} standard{filtered.length === 1 ? "" : "s"}</span>
+              <span style={{ fontSize: 10, color: "#999", fontFamily: F }}>{filtered.length} standard{filtered.length === 1 ? "" : "s"}</span>
             </div>
           )}
         </div>
@@ -6476,7 +6477,7 @@ document.addEventListener('keydown',e=>{
   const inp = { width:"100%", padding:"9px 11px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:13, color:"#111827", outline:"none", boxSizing:"border-box", background:"white" };
 
   return (
-    <div className="lesson-grid" style={{ padding:"28px 32px", maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"360px 1fr", gap:28, alignItems:"start" }}>
+    <div className="lesson-grid" style={{ padding:"28px 32px", maxWidth:1320, margin:"0 auto", display:"grid", gridTemplateColumns:"460px 1fr", gap:28, alignItems:"start" }}>
 
       {/* LEFT: Form */}
       <div style={{ background:"white", borderRadius:10, border:"1px solid #E5E7EB", overflow:"hidden" }}>
@@ -6552,12 +6553,13 @@ document.addEventListener('keydown',e=>{
                   </select>
                   <input type="text" value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder="Search…" style={{ ...inp, flex:2, padding:"6px 8px", fontSize:12 }} />
                   <button type="button" onClick={() => setStdBand(gradeIdToStdBand(form.grade, stdSubj))}
-                    style={{ padding:"5px 11px", borderRadius:14, border:`1.5px solid ${BRAND}`, background:LIGHT, color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" }}>
-                    🎯 Match grade ({GRADES.find(g => g.id === form.grade)?.name || form.grade})
+                    title={`Match ${GRADES.find(g => g.id === form.grade)?.name || form.grade}`}
+                    style={{ padding:"3px 8px", borderRadius:10, border:`1px solid ${BRAND}`, background:LIGHT, color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:10, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    🎯 Match grade
                   </button>
-                  <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
+                  <span style={{ fontSize:10, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
                 </div>
-                <div style={{ maxHeight:200, overflowY:"auto" }}>
+                <div style={{ maxHeight:380, overflowY:"auto" }}>
                   {stdList.map((s,i) => (
                     <button key={i} onClick={() => { setF("standard", `${s.code}: ${s.desc}`); setShowStdPicker(false); setStdSearch(""); }}
                       style={{ display:"block", width:"100%", textAlign:"left", padding:"9px 12px", border:"none", borderBottom:"1px solid #F3F4F6", background:"white", cursor:"pointer", transition:"background 0.1s" }}
