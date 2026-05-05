@@ -3364,10 +3364,11 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
           {gradeId && (
             <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
               <button onClick={toggleMatchGrade}
-                style={{ padding: "5px 11px", borderRadius: 14, border: `1.5px solid ${matchGrade ? gv.color : "#DDD"}`, background: matchGrade ? gv.light : "white", color: matchGrade ? gv.color : "#666", fontFamily: F, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-                {matchGrade ? "✓ " : ""}Match grade ({GRADES.find(g => g.id === gradeId)?.name || gradeId})
+                title={`Match ${GRADES.find(g => g.id === gradeId)?.name || gradeId}`}
+                style={{ padding: "3px 8px", borderRadius: 10, border: `1px solid ${matchGrade ? gv.color : "#DDD"}`, background: matchGrade ? gv.light : "white", color: matchGrade ? gv.color : "#666", fontFamily: F, fontWeight: 700, fontSize: 10, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {matchGrade ? "✓ " : ""}🎯 Match grade
               </button>
-              <span style={{ fontSize: 11, color: "#999", fontFamily: F }}>{filtered.length} standard{filtered.length === 1 ? "" : "s"}</span>
+              <span style={{ fontSize: 10, color: "#999", fontFamily: F }}>{filtered.length} standard{filtered.length === 1 ? "" : "s"}</span>
             </div>
           )}
         </div>
