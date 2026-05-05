@@ -4481,80 +4481,6 @@ function EmailAssistant() {
   const [loading, setLoading]     = useState(false);
   const [copied, setCopied]       = useState(false);
   const [error, setError]         = useState(null);
-  const [listening, setListening] = useState(false);
-  const recognitionRef            = useRef(null);
-
-  const toggleVoice = async () => {
-    setError(null);
-    if (listening) {
-      try { recognitionRef.current?.stop(); } catch {}
-      setListening(false);
-      return;
-    }
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
-      setError("Voice input isn't supported in this browser. Please use Chrome, Edge, or Safari on desktop.");
-      return;
-    }
-    if (typeof window !== "undefined" && window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
-      setError("Voice input requires a secure (HTTPS) connection.");
-      return;
-    }
-    // Proactively request microphone permission so the browser shows the prompt
-    // and we get a clear error if it's blocked.
-    try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Immediately stop the tracks — SpeechRecognition manages its own stream.
-        stream.getTracks().forEach((t) => t.stop());
-      }
-    } catch (err: any) {
-      const name = err?.name || "";
-      if (name === "NotAllowedError" || name === "SecurityError") {
-        setError("Microphone access is blocked. Allow microphone permission in your browser settings and try again.");
-      } else if (name === "NotFoundError") {
-        setError("No microphone was found on this device.");
-      } else {
-        setError("Could not access the microphone. Please check your device and try again.");
-      }
-      return;
-    }
-    try {
-      const rec = new SR();
-      rec.continuous = true; rec.interimResults = true; rec.lang = "en-US";
-      let base = draft;
-      rec.onresult = (e: any) => {
-        let finals = base, interim = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) { finals += (finals ? " " : "") + e.results[i][0].transcript; base = finals; }
-          else interim += e.results[i][0].transcript;
-        }
-        setDraft(finals + (interim ? " " + interim : ""));
-      };
-      rec.onend = () => setListening(false);
-      rec.onerror = (e: any) => {
-        setListening(false);
-        const code = e?.error || "";
-        if (code === "not-allowed" || code === "service-not-allowed") {
-          setError("Microphone access is blocked. Allow microphone permission and try again.");
-        } else if (code === "no-speech") {
-          setError("No speech was detected. Please try speaking again.");
-        } else if (code === "audio-capture") {
-          setError("No microphone was found on this device.");
-        } else if (code === "network") {
-          setError("Voice recognition needs an internet connection.");
-        } else {
-          setError("Voice error — please try again.");
-        }
-      };
-      rec.start();
-      recognitionRef.current = rec;
-      setListening(true);
-    } catch (err) {
-      setListening(false);
-      setError("Could not start voice input. Please refresh the page and try again.");
-    }
-  };
 
   const polish = async () => {
     if (!draft.trim()) return;
@@ -4830,19 +4756,10 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
           })()}
 
           <label htmlFor="email-draft" style={lbl}>Your rough draft or key points</label>
-          <div style={{ position:"relative" }}>
-            <textarea id="email-draft" value={draft} onChange={e => setDraft(e.target.value)} spellCheck
-              placeholder="Write your rough draft, key points, or anything you want to say. Don't worry about being polished — that's our job!"
-              aria-label="Rough draft or key points for your email"
-              style={{ ...inp, minHeight:160, resize:"vertical", lineHeight:1.6, paddingRight:46, background:"#FAFAFA" }} />
-            <button type="button" onClick={toggleVoice}
-              aria-label={listening ? "Stop voice dictation" : "Start voice dictation for draft"}
-              aria-pressed={listening}
-              title={listening ? "Stop recording" : "Speak your draft"}
-              style={{ position:"absolute", top:10, right:10, width:32, height:32, border: listening ? `2px solid #DC2626` : "1.5px solid #D1D5DB", borderRadius:"50%", background: listening ? "#DC2626" : "white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow: listening ? "0 0 0 4px rgba(220,38,38,0.15)" : "none", transition:"all 0.2s" }}>
-              {listening ? <span aria-hidden="true" style={{ fontSize:12 }}>⏹</span> : <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={listening?"#fff":"#374151"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>}
-            </button>
-          </div>
+          <textarea id="email-draft" value={draft} onChange={e => setDraft(e.target.value)} spellCheck
+            placeholder="Write your rough draft, key points, or anything you want to say. Don't worry about being polished — that's our job!"
+            aria-label="Rough draft or key points for your email"
+            style={{ ...inp, minHeight:160, resize:"vertical", lineHeight:1.6, background:"#FAFAFA" }} />
 
           {error && <div role="alert" aria-live="assertive"
             style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:7, padding:"10px 14px", color:"#DC2626", fontSize:13, marginTop:10, marginBottom:4 }}>{error}</div>}
