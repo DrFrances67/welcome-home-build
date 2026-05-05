@@ -6878,24 +6878,6 @@ document.addEventListener('keydown',e=>{
             {/* Header */}
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, color:BRAND, margin:"0 0 4px" }}>{result.title}</h2>
             <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#6B7280", margin:"0 0 16px" }}>{result.gradeSubject} &nbsp;|&nbsp; {result.duration}</p>
-            {onBuildWorksheets && (
-              <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
-                <button
-                  onClick={() => {
-                    const raw = buildPlanText();
-                    const safeTitle = (result?.title || "Lesson Plan").replace(/[^\w\s-]+/g, "").trim() || "Lesson Plan";
-                    onBuildWorksheets({
-                      name: `${safeTitle}.txt`,
-                      raw,
-                      topic: result?.title || form.topic || "",
-                      gradeId: form.grade || "k",
-                    });
-                  }}
-                  style={{ padding:"10px 18px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#F59E0B,#D97706)", color:"white", fontFamily:"'Inter',sans-serif", fontWeight:800, fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 2px 8px rgba(217,119,6,0.4)" }}>
-                  📄 Build Worksheets from this Lesson →
-                </button>
-              </div>
-            )}
             <div style={{ background:LIGHT, borderLeft:`4px solid ${BRAND}`, borderRadius:"0 7px 7px 0", padding:"9px 14px", marginBottom:20, fontSize:12, color:"#374151", lineHeight:1.5 }}>
               <strong style={{ color:BRAND }}>Standard:</strong> {result.standard}
             </div>
