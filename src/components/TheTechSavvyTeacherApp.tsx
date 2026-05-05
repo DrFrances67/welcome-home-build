@@ -6552,10 +6552,11 @@ document.addEventListener('keydown',e=>{
                   </select>
                   <input type="text" value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder="Search…" style={{ ...inp, flex:2, padding:"6px 8px", fontSize:12 }} />
                   <button type="button" onClick={() => setStdBand(gradeIdToStdBand(form.grade, stdSubj))}
-                    style={{ padding:"5px 11px", borderRadius:14, border:`1.5px solid ${BRAND}`, background:LIGHT, color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" }}>
-                    🎯 Match grade ({GRADES.find(g => g.id === form.grade)?.name || form.grade})
+                    title={`Match ${GRADES.find(g => g.id === form.grade)?.name || form.grade}`}
+                    style={{ padding:"3px 8px", borderRadius:10, border:`1px solid ${BRAND}`, background:LIGHT, color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:10, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    🎯 Match grade
                   </button>
-                  <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
+                  <span style={{ fontSize:10, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
                 </div>
                 <div style={{ maxHeight:200, overflowY:"auto" }}>
                   {stdList.map((s,i) => (
