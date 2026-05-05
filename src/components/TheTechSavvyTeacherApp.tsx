@@ -3347,13 +3347,13 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
         <div style={{ padding: "14px 24px", display: "flex", gap: 12, flexWrap: "wrap", background: "#FAFAFA", borderBottom: "1px solid #EEE" }}>
           <div style={{ flex: 1, minWidth: 130 }}>
             <label style={{ ...LBL, marginTop: 0 }}>Subject</label>
-            <select value={subj} onChange={e => { const s = e.target.value; setSubj(s); setBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s] || {})[0] || ""); setPicked(null); }} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
+            <select value={subj} onChange={e => onSubjChange(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
               {subjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div style={{ flex: 1, minWidth: 130 }}>
             <label style={{ ...LBL, marginTop: 0 }}>Grade Band</label>
-            <select value={band} onChange={e => { setBand(e.target.value); setPicked(null); }} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
+            <select value={band} onChange={e => { setBand(e.target.value); setMatchGrade(false); setPicked(null); }} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
               {bands.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
@@ -3361,6 +3361,15 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
             <label style={{ ...LBL, marginTop: 0 }}>Search Standards</label>
             <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by code or keyword…" style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
           </div>
+          {gradeId && (
+            <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={toggleMatchGrade}
+                style={{ padding: "5px 11px", borderRadius: 14, border: `1.5px solid ${matchGrade ? gv.color : "#DDD"}`, background: matchGrade ? gv.light : "white", color: matchGrade ? gv.color : "#666", fontFamily: F, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+                {matchGrade ? "✓ " : ""}Match grade ({GRADES.find(g => g.id === gradeId)?.name || gradeId})
+              </button>
+              <span style={{ fontSize: 11, color: "#999", fontFamily: F }}>{filtered.length} standard{filtered.length === 1 ? "" : "s"}</span>
+            </div>
+          )}
         </div>
 
         {/* Standard list */}
