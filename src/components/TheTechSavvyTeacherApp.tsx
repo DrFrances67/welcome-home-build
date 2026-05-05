@@ -3283,13 +3283,28 @@ Grade-level calibration:
 // STANDARDS MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function StandardsModal({ gv, onClose, onInsert, onGenerate }) {
+// Map a worksheet/lesson grade id to the standards-picker grade band labels.
+const gradeIdToStdBand = (gradeId, subj) => {
+  const bands = Object.keys(NY_STANDARDS[subj] || {});
+  if (subj === "ELA") {
+    const map = { pk: "Pre-Kindergarten", k: "Kindergarten", "1": "Grade 1", "2": "Grade 2", "3": "Grade 3", "4": "Grade 4", "5": "Grade 5", "6": "Grade 6", "7": "Grade 7", "8": "Grade 8", "9": "Grades 9-10", "10": "Grades 9-10", "11": "Grades 11-12", "12": "Grades 11-12" };
+    return bands.includes(map[gradeId]) ? map[gradeId] : bands[0] || "";
+  }
+  if (["pk","k","1","2"].includes(gradeId)) return bands.find(b => /Pre-?K|K\b|– 2|to 2|1[-–]2/i.test(b)) || bands[0] || "";
+  if (["3","4","5"].includes(gradeId))    return bands.find(b => /3[-–]5|3 ?– ?5/i.test(b))   || bands[0] || "";
+  if (["6","7","8"].includes(gradeId))    return bands.find(b => /6[-–]8|6 ?– ?8/i.test(b))   || bands[0] || "";
+  if (["9","10","11","12"].includes(gradeId)) return bands.find(b => /9[-–]12|9 ?– ?12/i.test(b)) || bands[0] || "";
+  return bands[0] || "";
+};
+
+function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
   const subjects = Object.keys(NY_STANDARDS);
   const [subj, setSubj] = useState("ELA");
-  const [band, setBand] = useState("Kindergarten");
+  const [band, setBand] = useState(() => gradeId ? (gradeIdToStdBand(gradeId, "ELA") || "Kindergarten") : "Kindergarten");
   const [search, setSearch] = useState("");
   const [picked, setPicked] = useState(null);
   const [showHeader, setShowHeader] = useState(true);
+  const [matchGrade, setMatchGrade] = useState(!!gradeId);
 
   const bands = Object.keys(NY_STANDARDS[subj] || {});
   const stds = NY_STANDARDS[subj]?.[band] || [];
@@ -3298,6 +3313,22 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate }) {
     : stds;
 
   const handlePick = (s) => { setPicked(s); };
+
+  // Auto-update band when subject changes if matchGrade is on
+  const onSubjChange = (s) => {
+    setSubj(s);
+    if (matchGrade && gradeId) setBand(gradeIdToStdBand(gradeId, s));
+    else setBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s] || {})[0] || "");
+    setPicked(null);
+  };
+
+  const toggleMatchGrade = () => {
+    setMatchGrade(m => {
+      const next = !m;
+      if (next && gradeId) setBand(gradeIdToStdBand(gradeId, subj));
+      return next;
+    });
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
@@ -3316,13 +3347,13 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate }) {
         <div style={{ padding: "14px 24px", display: "flex", gap: 12, flexWrap: "wrap", background: "#FAFAFA", borderBottom: "1px solid #EEE" }}>
           <div style={{ flex: 1, minWidth: 130 }}>
             <label style={{ ...LBL, marginTop: 0 }}>Subject</label>
-            <select value={subj} onChange={e => { const s = e.target.value; setSubj(s); setBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s] || {})[0] || ""); setPicked(null); }} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
+            <select value={subj} onChange={e => onSubjChange(e.target.value)} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
               {subjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div style={{ flex: 1, minWidth: 130 }}>
             <label style={{ ...LBL, marginTop: 0 }}>Grade Band</label>
-            <select value={band} onChange={e => { setBand(e.target.value); setPicked(null); }} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
+            <select value={band} onChange={e => { setBand(e.target.value); setMatchGrade(false); setPicked(null); }} style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none" }}>
               {bands.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
@@ -3330,6 +3361,15 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate }) {
             <label style={{ ...LBL, marginTop: 0 }}>Search Standards</label>
             <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by code or keyword…" style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "2px solid #EEE", fontFamily: F, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
           </div>
+          {gradeId && (
+            <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={toggleMatchGrade}
+                style={{ padding: "5px 11px", borderRadius: 14, border: `1.5px solid ${matchGrade ? gv.color : "#DDD"}`, background: matchGrade ? gv.light : "white", color: matchGrade ? gv.color : "#666", fontFamily: F, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+                {matchGrade ? "✓ " : ""}Match grade ({GRADES.find(g => g.id === gradeId)?.name || gradeId})
+              </button>
+              <span style={{ fontSize: 11, color: "#999", fontFamily: F }}>{filtered.length} standard{filtered.length === 1 ? "" : "s"}</span>
+            </div>
+          )}
         </div>
 
         {/* Standard list */}
@@ -3648,6 +3688,27 @@ function ExportModal({ gv, ws, onClose }) {
       pageEls.forEach((el, i) => renderEl(el, i));
       if (p < totalPages - 1) { lines.push("\f"); lines.push(""); }
     }
+    // Standards Citations section
+    const stds = ws.standards || [];
+    if (stds.length > 0) {
+      lines.push("");
+      lines.push("═══════════════════════════════════════");
+      lines.push("STANDARDS CITATIONS");
+      lines.push("═══════════════════════════════════════");
+      lines.push("Aligned to the New York State Next Generation Learning Standards.");
+      lines.push("");
+      stds.forEach(s => {
+        lines.push(`• ${s.code}: ${s.desc}`);
+        // Show items aligned to this standard
+        const aligned = (ws.elements || [])
+          .map((el, i) => ({ el, i }))
+          .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+        if (aligned.length) {
+          aligned.forEach(({ el, i }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
+        }
+        lines.push("");
+      });
+    }
     return lines.join("\n");
   };
 
@@ -3690,7 +3751,29 @@ function ExportModal({ gv, ws, onClose }) {
       const headerHtml = hideHeader ? "" : `<div style="border-bottom:3px solid ${gv2.color}25;padding-bottom:8px;margin-bottom:16px"><h1 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize+6}px;margin:0 0 14px;padding-right:120px">${ws.title}${totalPages > 1 ? ` <span style="font-family:'Nunito',sans-serif;font-size:${Math.max(gv2.fontSize-4,12)}px;font-weight:700;color:#9CA3AF">— Page ${pIdx + 1}</span>` : ""}</h1><div style="display:flex;gap:44px">${ws.showName?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Name:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""} ${ws.showDate?`<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="font-weight:700;font-size:${Math.max(gv2.fontSize-10,12)}px">Date:</span><div style="flex:1;border-bottom:2px solid #CCC;height:22px"></div></div>`:""}</div></div>`;
       return `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif;position:relative;${isLast ? "" : "page-break-after:always;"}">${ws.showGrade?`<div style="position:absolute;top:14px;right:18px;background:${gv2.light};border:2px solid ${gv2.color}40;border-radius:20px;padding:3px 13px;font-size:11px;font-weight:900;color:${gv2.color}">${gv2.emoji} ${gv2.name}</div>`:""}${headerHtml}${pageEls.map(renderEl).join("")}</div>`;
     }).join("");
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title}</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{body{margin:0}.ws-page{page-break-after:always}.ws-page:last-child{page-break-after:auto}}</style></head><body>${pagesHtml}</body></html>`;
+
+    // Standards Citations page
+    const safe = (s) => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const stds = ws.standards || [];
+    let citationsHtml = "";
+    if (stds.length > 0) {
+      const items = stds.map(s => {
+        const aligned = (ws.elements || [])
+          .map((el, i) => ({ el, i }))
+          .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+        const alignedHtml = aligned.length
+          ? `<div style="margin-top:6px;padding-left:14px;font-size:12px;color:#555">Aligned items: ${aligned.map(({ i }) => `#${i + 1}`).join(", ")}</div>`
+          : "";
+        return `<li style="margin-bottom:14px;line-height:1.55"><strong style="color:${gv2.color}">${safe(s.code)}</strong> — ${safe(s.desc)}${alignedHtml}</li>`;
+      }).join("");
+      citationsHtml = `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif">
+        <h2 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize+4}px;margin:0 0 6px;border-bottom:3px solid ${gv2.color}25;padding-bottom:8px">📚 Standards Citations</h2>
+        <p style="font-size:12.5px;color:#666;margin:0 0 16px">Aligned to the New York State Next Generation Learning Standards.</p>
+        <ul style="padding-left:18px;margin:0;font-size:13.5px;color:#222">${items}</ul>
+      </div>`;
+    }
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title}</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{body{margin:0}.ws-page{page-break-after:always}.ws-page:last-child{page-break-after:auto}}</style></head><body>${pagesHtml}${citationsHtml}</body></html>`;
   };
 
   const downloadHTML = () => {
@@ -3793,11 +3876,99 @@ function HelpModal({ onClose, gv }) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MAIN APP
+// ALIGNMENT MODAL — shows which standard each question/activity maps to
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+function elSummary(el, idx) {
+  const n = `${idx + 1}.`;
+  if (!el) return n;
+  if (el.type === "instruction") return `${n} 📋 Directions — ${(el.text || "").slice(0, 70)}`;
+  if (el.type === "text")        return `${n} 📄 Passage — ${(el.text || "").slice(0, 70)}`;
+  if (el.type === "multipleChoice") return `${n} 🔘 MC — ${(el.question || "").slice(0, 70)}`;
+  if (el.type === "truefalse")   return `${n} ✅ True/False (${(el.statements||[]).length} items)`;
+  if (el.type === "shortAnswer") return `${n} ✍️ Short Answer — ${(el.question || "").slice(0, 70)}`;
+  if (el.type === "fillBlank")   return `${n} ✏️ Fill-in — ${(el.text || "").slice(0, 70)}`;
+  if (el.type === "blank")       return `${n} 📝 Response — ${(el.label || "").slice(0, 70)}`;
+  if (el.type === "essay")       return `${n} 📖 Essay — ${(el.prompt || "").slice(0, 70)}`;
+  if (el.type === "matching")    return `${n} 🔗 Matching — ${(el.title || "")}`;
+  if (el.type === "wordBank")    return `${n} 📚 ${el.title || "Word Bank"}`;
+  if (el.type === "successCriteria") return `${n} 🎯 Success Criteria`;
+  if (el.type === "exitTicket")  return `${n} 🎟️ Exit Ticket`;
+  if (el.type === "dokQuestions") return `${n} 🧠 DOK Questions`;
+  if (el.type === "image")       return `${n} 🖼️ Image`;
+  if (el.type === "table")       return `${n} 📊 Table`;
+  if (el.type === "divider")     return `${n} ─── Divider`;
+  return `${n} ${el.type}`;
+}
+
+function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
+  const standards = ws.standards || [];
+  const items = (ws.elements || []).filter(e => !["divider"].includes(e.type));
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
+      <div style={{ background: "white", borderRadius: 18, maxWidth: 760, width: "100%", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: "20px 24px 14px", borderBottom: "2px solid #F0F0F0", background: gv.light, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h2 style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}>🎯 Standards Alignment</h2>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#666", fontFamily: F }}>See which NYS standard each worksheet item maps to. Click a standard chip to assign or remove it.</p>
+          </div>
+          <button onClick={onClose} style={{ background: "white", border: "none", borderRadius: "50%", width: 34, height: 34, cursor: "pointer", fontSize: 16, color: "#888", fontWeight: 800 }}>✕</button>
+        </div>
+
+        <div style={{ overflowY: "auto", padding: "16px 24px 22px" }}>
+          {standards.length === 0 && (
+            <div style={{ padding: 16, background: "#FFF7ED", border: "1.5px dashed #FDBA74", borderRadius: 10, fontFamily: F, fontSize: 13, color: "#9A3412", marginBottom: 14 }}>
+              No standards have been added yet. Use the <strong>🗽 NY Standards</strong> button in the left panel to add one or more standards. Items will then map to those standards here.
+            </div>
+          )}
+
+          {standards.length > 0 && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ ...LBL, marginTop: 0 }}>Cited Standards ({standards.length})</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {standards.map(s => (
+                    <span key={s.code} title={s.desc} style={{ padding: "4px 10px", borderRadius: 14, background: gv.light, border: `1.5px solid ${gv.color}`, color: gv.color, fontFamily: F, fontSize: 11.5, fontWeight: 800 }}>{s.code}</span>
+                  ))}
+                </div>
+              </div>
+
+              <p style={{ ...LBL, marginTop: 0 }}>Item-by-Item Mapping</p>
+              {items.map((el, i) => {
+                const mapped = el.stdCodes || [];
+                return (
+                  <div key={el.id} style={{ padding: "10px 12px", border: "1.5px solid #EEE", borderRadius: 10, marginBottom: 8, background: mapped.length ? "white" : "#FAFAFA" }}>
+                    <div style={{ fontFamily: F, fontSize: 12.5, color: "#374151", marginBottom: 6, lineHeight: 1.4 }}>{elSummary(el, i)}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {standards.map(s => {
+                        const on = mapped.includes(s.code);
+                        return (
+                          <button key={s.code} onClick={() => {
+                            const next = on ? mapped.filter(c => c !== s.code) : [...mapped, s.code];
+                            onSetMapping(el.id, next);
+                          }} style={{ padding: "3px 9px", borderRadius: 12, border: `1.5px solid ${on ? gv.color : "#DDD"}`, background: on ? gv.color : "white", color: on ? "white" : "#666", fontFamily: F, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            {on ? "✓ " : ""}{s.code}
+                          </button>
+                        );
+                      })}
+                      {mapped.length === 0 && <span style={{ fontFamily: F, fontSize: 11, color: "#9CA3AF", padding: "3px 4px" }}>Unaligned</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              {items.length === 0 && <p style={{ fontFamily: F, color: "#9CA3AF", fontSize: 13, textAlign: "center", padding: 20 }}>No items on the worksheet yet.</p>}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [], oneLineOnly: false });
+  const [ws, setWs] = useState({ title: "My Worksheet", showName: true, showDate: true, showGrade: true, gradeId: "k", elements: [], pageCount: 1, pageHeadersHidden: [], oneLineOnly: false, standards: [] });
   const [currentPage, setCurrentPage] = useState(0);
   const [viewMode, setViewMode] = useState("single"); // "single" | "scroll"
   const [selId, setSelId] = useState(null);
@@ -3806,6 +3977,7 @@ export function WorksheetBuilder() {
   const [showStds, setShowStds]       = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showExport, setShowExport]   = useState(false);
+  const [showAlignment, setShowAlignment] = useState(false);
   const [refImg, setRefImg] = useState(null);
   const [refDesc, setRefDesc] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -4084,19 +4256,24 @@ export function WorksheetBuilder() {
   const [generating, setGenerating] = useState(false);
 
   const insertStandard = (std, showHeader = true) => {
-    if (!showHeader) return; // standard used for context only — no element inserted
-    // Header spans full width at top of page
-    const el = { id: uid(), type: "instruction", text: `📌 NYS Standard ${std.code}: ${std.desc}`, x: 0, y: 0, widthOverride: 100 };
-    // Push existing elements down to make room
-    setWs(p => ({ ...p, elements: [el, ...p.elements.map(e => ({ ...e, y: (e.y || 0) + ROW_HEIGHT }))] }));
-    setSelId(el.id);
+    setWs(p => {
+      const exists = (p.standards || []).some(s => s.code === std.code);
+      const standards = exists ? p.standards : [...(p.standards || []), { code: std.code, desc: std.desc }];
+      if (!showHeader) return { ...p, standards };
+      const el = { id: uid(), type: "instruction", text: `📌 NYS Standard ${std.code}: ${std.desc}`, x: 0, y: 0, widthOverride: 100, stdCodes: [std.code] };
+      return { ...p, standards, elements: [el, ...p.elements.map(e => ({ ...e, y: (e.y || 0) + ROW_HEIGHT }))] };
+    });
   };
 
   const handleGenerateFromStd = async (std, showHeader) => {
     setGenerating(true);
-    // Optionally insert header first
     if (showHeader) {
       insertStandard(std, true);
+    } else {
+      setWs(p => {
+        const exists = (p.standards || []).some(s => s.code === std.code);
+        return exists ? p : { ...p, standards: [...(p.standards || []), { code: std.code, desc: std.desc }] };
+      });
     }
     const g = gInfo(ws.gradeId);
     const bandLabel = BANDS[g.band]?.label || g.name;
@@ -4137,10 +4314,10 @@ Include a variety of activity types. Make the content directly address the stand
       const raw = data.content?.map(b => b.text || "").join("") || "[]";
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      const startIdx = showHeader ? 1 : 0; // reserve slot 0 for header row
+      const startIdx = showHeader ? 1 : 0;
       const newEls = parsed.map((el, i) => {
         const slot = nextSlot(startIdx + i);
-        return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride };
+        return { ...mkEl(el.type, slot), ...el, id: uid(), x: slot.x, y: slot.y, widthOverride: slot.widthOverride, stdCodes: [std.code] };
       });
       setWs(p => ({
         ...p,
@@ -4603,6 +4780,8 @@ Output ONLY the JSON array.`,
           style={{ padding: "6px 12px", borderRadius: 7, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 13, color: "#374151" }}>Help</button>
         <button onClick={() => setShowVersions(true)} aria-label="Create quiz versions with randomized questions"
           style={{ padding: "6px 12px", borderRadius: 7, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 13, color: "#374151" }}>🔀 Versions</button>
+        <button onClick={() => setShowAlignment(true)} aria-label="View standards alignment for each question"
+          style={{ padding: "6px 12px", borderRadius: 7, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontFamily: F, fontWeight: 600, fontSize: 13, color: "#374151" }}>🎯 Alignment</button>
         <button onClick={() => setShowExport(true)} aria-label="Export or print worksheet"
           style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: gv.color, color: "white", cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 13 }}>📤 Export</button>
       </header>
@@ -4951,7 +5130,8 @@ Output ONLY the JSON array.`,
       </div>
 
       {showHelp     && <HelpModal     onClose={() => setShowHelp(false)}     gv={gv} />}
-      {showStds     && <StandardsModal gv={gv} onClose={() => setShowStds(false)} onInsert={insertStandard} onGenerate={handleGenerateFromStd} />}
+      {showStds     && <StandardsModal gv={gv} gradeId={ws.gradeId} onClose={() => setShowStds(false)} onInsert={insertStandard} onGenerate={handleGenerateFromStd} />}
+      {showAlignment && <AlignmentModal gv={gv} ws={ws} onClose={() => setShowAlignment(false)} onSetMapping={(elId, codes) => updEl(elId, { stdCodes: codes })} />}
       {showVersions && <VersionsModal  gv={gv} ws={ws} onClose={() => setShowVersions(false)} />}
       {showExport   && <ExportModal    gv={gv} ws={ws} onClose={() => setShowExport(false)} />}
     </div>
@@ -6364,13 +6544,18 @@ document.addEventListener('keydown',e=>{
             {showStdPicker && !form.standard && (
               <div style={{ marginTop:10, border:"1.5px solid #E5E7EB", borderRadius:8, overflow:"hidden" }}>
                 <div style={{ padding:"10px 12px", background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", display:"flex", gap:8, flexWrap:"wrap" }}>
-                  <select value={stdSubj} onChange={e => { const s = e.target.value; setStdSubj(s); setStdBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s]||{})[0]||""); }} style={{ ...inp, flex:1, padding:"6px 8px", fontSize:12 }}>
+                  <select value={stdSubj} onChange={e => { const s = e.target.value; setStdSubj(s); setStdBand(gradeIdToStdBand(form.grade, s) || (s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s]||{})[0]||"")); }} style={{ ...inp, flex:1, padding:"6px 8px", fontSize:12 }}>
                     {Object.keys(NY_STANDARDS).map(s => <option key={s}>{s}</option>)}
                   </select>
                   <select value={stdBand} onChange={e => setStdBand(e.target.value)} style={{ ...inp, flex:1, padding:"6px 8px", fontSize:12 }}>
                     {stdBands.map(b => <option key={b}>{b}</option>)}
                   </select>
                   <input type="text" value={stdSearch} onChange={e => setStdSearch(e.target.value)} placeholder="Search…" style={{ ...inp, flex:2, padding:"6px 8px", fontSize:12 }} />
+                  <button type="button" onClick={() => setStdBand(gradeIdToStdBand(form.grade, stdSubj))}
+                    style={{ padding:"5px 11px", borderRadius:14, border:`1.5px solid ${BRAND}`, background:LIGHT, color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                    🎯 Match grade ({GRADES.find(g => g.id === form.grade)?.name || form.grade})
+                  </button>
+                  <span style={{ fontSize:11, color:"#9CA3AF", alignSelf:"center" }}>{stdList.length} found</span>
                 </div>
                 <div style={{ maxHeight:200, overflowY:"auto" }}>
                   {stdList.map((s,i) => (
