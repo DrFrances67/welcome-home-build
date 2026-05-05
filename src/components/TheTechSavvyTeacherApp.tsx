@@ -4575,7 +4575,11 @@ Output ONLY the JSON array.`,
       return r.text;
     }
     if (isDocx) {
-      const mammoth: any = await import("mammoth/mammoth.browser");
+      const mod: any = await import("mammoth/mammoth.browser");
+      const mammoth: any = mod?.default || mod;
+      if (!mammoth || typeof mammoth.extractRawText !== "function") {
+        throw new Error("DOCX reader failed to load. Try TXT or PDF.");
+      }
       const buf = await file.arrayBuffer();
       const out = await mammoth.extractRawText({ arrayBuffer: buf });
       return (out?.value || "").trim();
