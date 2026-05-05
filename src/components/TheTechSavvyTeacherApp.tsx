@@ -4484,26 +4484,76 @@ function EmailAssistant() {
   const [listening, setListening] = useState(false);
   const recognitionRef            = useRef(null);
 
-  const toggleVoice = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { setError("Voice input requires Chrome or Edge."); return; }
-    if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
-    const rec = new SR();
-    rec.continuous = true; rec.interimResults = true; rec.lang = "en-US";
-    let base = draft;
-    rec.onresult = (e) => {
-      let finals = base, interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) { finals += (finals ? " " : "") + e.results[i][0].transcript; base = finals; }
-        else interim += e.results[i][0].transcript;
+  const toggleVoice = async () => {
+    setError(null);
+    if (listening) {
+      try { recognitionRef.current?.stop(); } catch {}
+      setListening(false);
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setError("Voice input isn't supported in this browser. Please use Chrome, Edge, or Safari on desktop.");
+      return;
+    }
+    if (typeof window !== "undefined" && window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
+      setError("Voice input requires a secure (HTTPS) connection.");
+      return;
+    }
+    // Proactively request microphone permission so the browser shows the prompt
+    // and we get a clear error if it's blocked.
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately stop the tracks — SpeechRecognition manages its own stream.
+        stream.getTracks().forEach((t) => t.stop());
       }
-      setDraft(finals + (interim ? " " + interim : ""));
-    };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => { setListening(false); setError("Voice error — please try again."); };
-    rec.start();
-    recognitionRef.current = rec;
-    setListening(true);
+    } catch (err: any) {
+      const name = err?.name || "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setError("Microphone access is blocked. Allow microphone permission in your browser settings and try again.");
+      } else if (name === "NotFoundError") {
+        setError("No microphone was found on this device.");
+      } else {
+        setError("Could not access the microphone. Please check your device and try again.");
+      }
+      return;
+    }
+    try {
+      const rec = new SR();
+      rec.continuous = true; rec.interimResults = true; rec.lang = "en-US";
+      let base = draft;
+      rec.onresult = (e: any) => {
+        let finals = base, interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) { finals += (finals ? " " : "") + e.results[i][0].transcript; base = finals; }
+          else interim += e.results[i][0].transcript;
+        }
+        setDraft(finals + (interim ? " " + interim : ""));
+      };
+      rec.onend = () => setListening(false);
+      rec.onerror = (e: any) => {
+        setListening(false);
+        const code = e?.error || "";
+        if (code === "not-allowed" || code === "service-not-allowed") {
+          setError("Microphone access is blocked. Allow microphone permission and try again.");
+        } else if (code === "no-speech") {
+          setError("No speech was detected. Please try speaking again.");
+        } else if (code === "audio-capture") {
+          setError("No microphone was found on this device.");
+        } else if (code === "network") {
+          setError("Voice recognition needs an internet connection.");
+        } else {
+          setError("Voice error — please try again.");
+        }
+      };
+      rec.start();
+      recognitionRef.current = rec;
+      setListening(true);
+    } catch (err) {
+      setListening(false);
+      setError("Could not start voice input. Please refresh the page and try again.");
+    }
   };
 
   const polish = async () => {
