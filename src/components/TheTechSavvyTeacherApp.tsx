@@ -3283,21 +3283,34 @@ Grade-level calibration:
 // STANDARDS MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function StandardsModal({ gv, onClose, onInsert, onGenerate }) {
+// Map a worksheet/lesson grade id to the standards-picker grade band labels.
+const gradeIdToStdBand = (gradeId, subj) => {
+  const bands = Object.keys(NY_STANDARDS[subj] || {});
+  if (subj === "ELA") {
+    const map = { pk: "Pre-Kindergarten", k: "Kindergarten", "1": "Grade 1", "2": "Grade 2", "3": "Grade 3", "4": "Grade 4", "5": "Grade 5", "6": "Grade 6", "7": "Grade 7", "8": "Grade 8", "9": "Grades 9-10", "10": "Grades 9-10", "11": "Grades 11-12", "12": "Grades 11-12" };
+    return bands.includes(map[gradeId]) ? map[gradeId] : bands[0] || "";
+  }
+  if (["pk","k","1","2"].includes(gradeId)) return bands.find(b => /Pre-?K|K\b|– 2|to 2|1[-–]2/i.test(b)) || bands[0] || "";
+  if (["3","4","5"].includes(gradeId))    return bands.find(b => /3[-–]5|3 ?– ?5/i.test(b))   || bands[0] || "";
+  if (["6","7","8"].includes(gradeId))    return bands.find(b => /6[-–]8|6 ?– ?8/i.test(b))   || bands[0] || "";
+  if (["9","10","11","12"].includes(gradeId)) return bands.find(b => /9[-–]12|9 ?– ?12/i.test(b)) || bands[0] || "";
+  return bands[0] || "";
+};
+
+function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
   const subjects = Object.keys(NY_STANDARDS);
   const [subj, setSubj] = useState("ELA");
-  const [band, setBand] = useState("Kindergarten");
+  const [band, setBand] = useState(() => gradeId ? (gradeIdToStdBand(gradeId, "ELA") || "Kindergarten") : "Kindergarten");
   const [search, setSearch] = useState("");
   const [picked, setPicked] = useState(null);
   const [showHeader, setShowHeader] = useState(true);
+  const [matchGrade, setMatchGrade] = useState(!!gradeId);
 
   const bands = Object.keys(NY_STANDARDS[subj] || {});
   const stds = NY_STANDARDS[subj]?.[band] || [];
   const filtered = search.trim()
     ? stds.filter(s => s.code.toLowerCase().includes(search.toLowerCase()) || s.desc.toLowerCase().includes(search.toLowerCase()))
     : stds;
-
-  const handlePick = (s) => { setPicked(s); };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
