@@ -105,11 +105,42 @@ export function repairAndParse<T = JsonValue>(
   const lastSep = noTrailing.lastIndexOf("},");
   if (lastSep > 0) {
     const candidate = noTrailing.slice(0, lastSep + 1) + "]";
-    try { return JSON.parse(candidate) as T; } catch (e) {
-      throw new SyntaxError(`repairAndParse: exhausted strategies (${(e as Error).message})`);
+    try { return JSON.parse(candidate) as T; } catch { /* try next */ }
+  }
+
+  // Strategy 6: position-based recovery. Iteratively read JSON.parse error
+  // positions and truncate just before the offending char, then brute-close.
+  // Handles objects/arrays with unescaped chars, bad tokens, or corruption
+  // mid-property where earlier strategies bail out.
+  let attempt = noTrailing;
+  let lastErr = "";
+  for (let i = 0; i < 20; i++) {
+    try { return JSON.parse(attempt) as T; }
+    catch (e) {
+      lastErr = (e as Error).message;
+      const m = lastErr.match(/position\s+(\d+)/i);
+      if (!m) break;
+      let pos = parseInt(m[1], 10);
+      if (!Number.isFinite(pos) || pos <= 0 || pos > attempt.length) break;
+      // Walk back to the nearest safe boundary: end of last complete value
+      let cut = pos;
+      while (cut > 0 && !/[}\],"]/.test(attempt[cut - 1])) cut--;
+      // If we land on a quote, back up past the string entirely
+      if (attempt[cut - 1] === '"') {
+        // find matching opening quote (best-effort)
+        let q = cut - 2;
+        while (q >= 0 && !(attempt[q] === '"' && attempt[q - 1] !== "\\")) q--;
+        if (q >= 0) cut = q; // drop the broken string
+      }
+      // Trim trailing comma/whitespace/colon
+      let next = attempt.slice(0, cut).replace(/[\s,:]+$/, "");
+      next = bruteClose(next);
+      if (next === attempt) break;
+      attempt = next;
     }
   }
-  throw new SyntaxError("repairAndParse: could not repair JSON");
+
+  throw new SyntaxError(`repairAndParse: exhausted strategies (${lastErr || "unknown"})`);
 }
 
 /**
