@@ -4710,6 +4710,25 @@ Output ONLY the JSON array.`,
   const removeLpHistory = (id: string) => setLpHistory(h => h.filter(x => x.id !== id));
   const clearLpHistory = () => { if (window.confirm("Clear all worksheet history?")) setLpHistory([]); };
 
+  // ━━ Pending lesson handoff from Lesson Plan Generator ━━
+  // When the user clicks "Build Worksheets" on a generated lesson, we stash a
+  // payload on window and switch tabs. On mount, consume it and auto-build.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const payload = (window as any).__pendingLessonForWorksheet;
+    if (!payload?.raw) return;
+    (window as any).__pendingLessonForWorksheet = null;
+    const gradeId = payload.gradeId && GRADES.some(g => g.id === payload.gradeId) ? payload.gradeId : ws.gradeId;
+    setWs(p => ({ ...p, gradeId, title: payload.topic ? `${payload.topic} — Worksheet` : p.title }));
+    setLpFile({ name: payload.name || "Lesson Plan.txt", raw: payload.raw });
+    setLpType("practice");
+    setLpNotes("");
+    setLpMsg("✓ Lesson plan received. Auto-generating worksheet…");
+    // Defer one tick so state has applied before generation reads lpFile.
+    setTimeout(() => { generateWorksheetFromLessonPlan(); }, 80);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ━━ Worksheet-scoped keyboard shortcuts ━━
   // Cmd/Ctrl+C copies the selected element, Cmd/Ctrl+V pastes the clipboard,
   // Cmd/Ctrl+D duplicates the selected element. We deliberately skip when
