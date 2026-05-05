@@ -3312,6 +3312,24 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
     ? stds.filter(s => s.code.toLowerCase().includes(search.toLowerCase()) || s.desc.toLowerCase().includes(search.toLowerCase()))
     : stds;
 
+  const handlePick = (s) => { setPicked(s); };
+
+  // Auto-update band when subject changes if matchGrade is on
+  const onSubjChange = (s) => {
+    setSubj(s);
+    if (matchGrade && gradeId) setBand(gradeIdToStdBand(gradeId, s));
+    else setBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s] || {})[0] || "");
+    setPicked(null);
+  };
+
+  const toggleMatchGrade = () => {
+    setMatchGrade(m => {
+      const next = !m;
+      if (next && gradeId) setBand(gradeIdToStdBand(gradeId, subj));
+      return next;
+    });
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "white", borderRadius: 18, maxWidth: 680, width: "100%", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", animation: "fadeIn 0.25s ease" }} onClick={e => e.stopPropagation()}>
