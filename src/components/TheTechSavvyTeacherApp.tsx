@@ -7061,7 +7061,8 @@ document.addEventListener('keydown',e=>{
 
             {/* Build Worksheets CTA — placed directly above the Slide Deck builder */}
             {onBuildWorksheets && (
-              <div style={{ marginTop:18, display:"flex", justifyContent:"center" }}>
+              <div style={{ marginTop:18, padding:"14px 16px", background:"#FFFBEB", border:"1.5px dashed #F59E0B", borderRadius:10, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", margin:0, textAlign:"center" }}>💾 Save your lesson plan before creating a worksheet</p>
                 <button
                   onClick={() => {
                     const raw = buildPlanText();
