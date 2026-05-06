@@ -3172,6 +3172,8 @@ Allowed element shapes (use exactly these keys):
 
 CRITICAL: Whenever the worksheet would benefit from a picture (e.g. matching pictures to words, label-the-picture, picture-prompt writing, vocabulary with visuals), include {"type":"image", ...} blocks with a clear "imagePrompt". NEVER output text like "(picture of a cat)" or "[image: dog]" — emit a real image block instead so we can generate the picture.
 
+GROUPING RULE (MANDATORY): Always keep related content together in the array. When an image belongs to a question, prompt, or task, place that {"type":"image"} block IMMEDIATELY adjacent to the related element (typically right BEFORE the question/shortAnswer/blank/multipleChoice it illustrates, or right AFTER its instruction). Never separate an image from the content that references it by inserting unrelated elements between them. The same applies to instruction → activity pairs and word banks → fill-in-the-blank passages that use them: keep each pair contiguous.
+
 Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
         messages: [{ role: "user", content: userPrompt }]
       })
