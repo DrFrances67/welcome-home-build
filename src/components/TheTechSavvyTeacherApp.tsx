@@ -4823,6 +4823,13 @@ Output ONLY the JSON array.`,
           style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: gv.color, color: "white", cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 13 }}>📤 Export</button>
       </header>
 
+      {/* Save reminder banner */}
+      <div className="no-print" style={{ padding: "10px 16px", background: "#FFFBEB", borderBottom: "1.5px dashed #F59E0B", flexShrink: 0 }}>
+        <p style={{ margin: 0, fontFamily: F, fontSize: 12.5, fontWeight: 700, color: "#B45309", textAlign: "center" }}>
+          💾 Save your lesson plan before creating a worksheet
+        </p>
+      </div>
+
       {/* ── 3-COLUMN BODY ── */}
       <div className="ws-body" style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
 
