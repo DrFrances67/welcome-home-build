@@ -6876,7 +6876,15 @@ document.addEventListener('keydown',e=>{
           )}
         </div>
 
-        {/* Fallback copy text box */}
+        {/* Save reminder — appears after lesson generation, below action bar */}
+        {result && (
+          <div style={{ padding:"10px 16px", background:"#FFFBEB", borderBottom:"1.5px dashed #F59E0B" }}>
+            <p style={{ margin:0, fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", textAlign:"center" }}>
+              💾 Save your lesson plan before creating a worksheet
+            </p>
+          </div>
+        )}
+
         {showCopyBox && (
           <div style={{ padding:"12px 18px", background:"#F0FDF4", borderBottom:"1px solid #86EFAC" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
