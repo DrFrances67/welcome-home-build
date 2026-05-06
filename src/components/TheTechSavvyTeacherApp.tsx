@@ -4613,7 +4613,7 @@ Output ONLY the JSON array.`,
     try {
       const g = gInfo(ws.gradeId);
       const typeLabel = WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType;
-      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".`;
+      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".\n- GROUPING: Place each image block IMMEDIATELY adjacent to the question, prompt, or task it illustrates (right before or right after). Never separate an image from its associated content with unrelated blocks. Keep instruction → activity and wordBank → fillBlank pairs together on the same page.`;
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
