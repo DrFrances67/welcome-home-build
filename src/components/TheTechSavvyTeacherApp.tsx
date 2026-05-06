@@ -4996,15 +4996,6 @@ Output ONLY the JSON array.`,
             )}
         </div>
 
-        {/* Save reminder — appears after lesson generation, below action bar */}
-        {result && (
-          <div style={{ padding:"10px 16px", background:"#FFFBEB", borderBottom:"1.5px dashed #F59E0B" }}>
-            <p style={{ margin:0, fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", textAlign:"center" }}>
-              💾 Save your lesson plan before creating a worksheet
-            </p>
-          </div>
-        )}
-
 
           {/* Element palette */}
           <div style={{ padding: "6px 8px 2px" }}>
