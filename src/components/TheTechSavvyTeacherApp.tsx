@@ -4527,6 +4527,8 @@ Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every eleme
 {"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]],"page":0}
 {"type":"image","imagePrompt":"<short visual description for an AI image generator>","caption":"<optional caption>","size":"small","align":"center","page":0}
 
+GROUPING RULE (MANDATORY): Keep related blocks contiguous in the array. Place each {"type":"image"} block IMMEDIATELY adjacent to the question/prompt/task that references it (right before or right after) — never split an image from its associated content with unrelated blocks. Likewise, keep instruction → activity and wordBank → fillBlank pairs together on the same page.
+
 Output ONLY the JSON array.`,
           messages: [{ role: "user", content: userContent }],
         })
