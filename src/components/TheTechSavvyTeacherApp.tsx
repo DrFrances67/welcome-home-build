@@ -4823,12 +4823,7 @@ Output ONLY the JSON array.`,
           style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: gv.color, color: "white", cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 13 }}>📤 Export</button>
       </header>
 
-      {/* Save reminder banner */}
-      <div className="no-print" style={{ padding: "10px 16px", background: "#FFFBEB", borderBottom: "1.5px dashed #F59E0B", flexShrink: 0 }}>
-        <p style={{ margin: 0, fontFamily: F, fontSize: 12.5, fontWeight: 700, color: "#B45309", textAlign: "center" }}>
-          💾 Save your lesson plan before creating a worksheet
-        </p>
-      </div>
+
 
       {/* ── 3-COLUMN BODY ── */}
       <div className="ws-body" style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
@@ -4994,7 +4989,7 @@ Output ONLY the JSON array.`,
                   onChange={e => e.target.files[0] && handleWsFileUpload(e.target.files[0])} style={{ display: "none" }} />
               </label>
             )}
-          </div>
+        </div>
 
 
           {/* Element palette */}
@@ -6881,7 +6876,15 @@ document.addEventListener('keydown',e=>{
           )}
         </div>
 
-        {/* Fallback copy text box */}
+        {/* Save reminder — appears after lesson generation, below action bar */}
+        {result && (
+          <div style={{ padding:"10px 16px", background:"#FFFBEB", borderBottom:"1.5px dashed #F59E0B" }}>
+            <p style={{ margin:0, fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", textAlign:"center" }}>
+              💾 Save your lesson plan before creating a worksheet
+            </p>
+          </div>
+        )}
+
         {showCopyBox && (
           <div style={{ padding:"12px 18px", background:"#F0FDF4", borderBottom:"1px solid #86EFAC" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
