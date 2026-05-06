@@ -7061,7 +7061,8 @@ document.addEventListener('keydown',e=>{
 
             {/* Build Worksheets CTA — placed directly above the Slide Deck builder */}
             {onBuildWorksheets && (
-              <div style={{ marginTop:18, display:"flex", justifyContent:"center" }}>
+              <div style={{ marginTop:18, padding:"14px 16px", background:"#FFFBEB", border:"1.5px dashed #F59E0B", borderRadius:10, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+                <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", margin:0, textAlign:"center" }}>💾 Save your lesson plan before creating a worksheet</p>
                 <button
                   onClick={() => {
                     const raw = buildPlanText();
@@ -7081,6 +7082,7 @@ document.addEventListener('keydown',e=>{
 
             {/* Generate Slide Deck CTA — multi-format export */}
             <div style={{ marginTop:18, padding:"18px 16px", background:"linear-gradient(135deg, #FDF4FF 0%, #FAE8FF 100%)", border:`1.5px dashed ${BRAND}`, borderRadius:10 }}>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", margin:"0 0 10px", textAlign:"center", background:"#FFFBEB", border:"1.5px dashed #F59E0B", borderRadius:8, padding:"8px 10px" }}>💾 Save your lesson plan before creating a slideshow</p>
               <p style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:BRAND, margin:"0 0 4px", textAlign:"center" }}>🎞️ Build a slide deck for this lesson</p>
               <p style={{ fontFamily:"'Inter',sans-serif", fontSize:12, color:"#6B7280", margin:"0 0 14px", lineHeight:1.5, textAlign:"center" }}>Pick your format — the deck is built from every section of this plan.</p>
               {(() => {
