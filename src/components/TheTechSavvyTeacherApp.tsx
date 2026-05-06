@@ -3172,6 +3172,8 @@ Allowed element shapes (use exactly these keys):
 
 CRITICAL: Whenever the worksheet would benefit from a picture (e.g. matching pictures to words, label-the-picture, picture-prompt writing, vocabulary with visuals), include {"type":"image", ...} blocks with a clear "imagePrompt". NEVER output text like "(picture of a cat)" or "[image: dog]" — emit a real image block instead so we can generate the picture.
 
+GROUPING RULE (MANDATORY): Always keep related content together in the array. When an image belongs to a question, prompt, or task, place that {"type":"image"} block IMMEDIATELY adjacent to the related element (typically right BEFORE the question/shortAnswer/blank/multipleChoice it illustrates, or right AFTER its instruction). Never separate an image from the content that references it by inserting unrelated elements between them. The same applies to instruction → activity pairs and word banks → fill-in-the-blank passages that use them: keep each pair contiguous.
+
 Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
         messages: [{ role: "user", content: userPrompt }]
       })
@@ -4503,7 +4505,7 @@ Include a variety of activity types. Make the content directly address the stand
         if (!m) return;
         userContent.push({ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } });
       });
-      userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
+      userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n- GROUPING: Place each image block IMMEDIATELY next to the question/prompt it illustrates (right before or right after). Never separate an image from its related content with unrelated blocks.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -4524,6 +4526,8 @@ Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every eleme
 {"type":"essay","prompt":"<prompt>","points":10,"lines":14,"page":0}
 {"type":"table","title":"<title>","headers":["A","B","C"],"rows":[["","",""],["","",""]],"page":0}
 {"type":"image","imagePrompt":"<short visual description for an AI image generator>","caption":"<optional caption>","size":"small","align":"center","page":0}
+
+GROUPING RULE (MANDATORY): Keep related blocks contiguous in the array. Place each {"type":"image"} block IMMEDIATELY adjacent to the question/prompt/task that references it (right before or right after) — never split an image from its associated content with unrelated blocks. Likewise, keep instruction → activity and wordBank → fillBlank pairs together on the same page.
 
 Output ONLY the JSON array.`,
           messages: [{ role: "user", content: userContent }],
@@ -4609,7 +4613,7 @@ Output ONLY the JSON array.`,
     try {
       const g = gInfo(ws.gradeId);
       const typeLabel = WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType;
-      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".`;
+      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".\n- GROUPING: Place each image block IMMEDIATELY adjacent to the question, prompt, or task it illustrates (right before or right after). Never separate an image from its associated content with unrelated blocks. Keep instruction → activity and wordBank → fillBlank pairs together on the same page.`;
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
