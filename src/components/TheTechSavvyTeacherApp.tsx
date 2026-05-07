@@ -5667,6 +5667,7 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
   const [copied, setCopied]       = useState(false);
   const [showCopyBox, setShowCopyBox] = useState(false);
   const [showGdocsBox, setShowGdocsBox] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [showStdPicker, setShowStdPicker] = useState(false);
 
   // AI Idea Helper
@@ -6624,6 +6625,122 @@ document.addEventListener('keydown',e=>{
     if (!result) return;
     setShowGdocsBox(true);
     setShowCopyBox(false);
+    setShowExportMenu(false);
+  };
+
+  // Helper: trigger download of a Blob
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  };
+
+  const safeFileName = () => (result?.title || "Lesson Plan").replace(/[^\w\s-]+/g, "").trim().replace(/\s+/g, "_") || "Lesson_Plan";
+
+  // Build the same rich HTML used for Print — reused for PDF + Word
+  const buildPlanHtml = () => {
+    const safeHtml = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const sectionColors = ["#1E3A5F","#CF27F5","#0369A1","#B45309","#374151","#166534"];
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeHtml(result.title)}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:32px;color:#111;max-width:820px}
+h1{color:#CF27F5;font-size:22px;margin-bottom:4px}
+.meta{font-size:12px;color:#666;margin-bottom:12px}
+.std{background:#fdf4ff;border-left:4px solid #CF27F5;padding:8px 12px;font-size:12px;margin-bottom:16px}
+h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#666;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:3px}
+ul{padding-left:18px}li{margin-bottom:3px;font-size:12px}
+.sec{margin-bottom:12px;border:1px solid #ddd}
+.sec-h{padding:6px 12px;color:white;font-weight:700;font-size:11px}
+.sec-b{padding:10px 12px;font-size:12px;line-height:1.5}
+.box{background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;margin-bottom:6px}
+.box-l{font-size:9px;font-weight:700;text-transform:uppercase;color:#CF27F5;margin-bottom:3px}</style></head><body>
+<h1>${safeHtml(result.title)}</h1>
+<div class="meta">${safeHtml(result.gradeSubject)} | ${safeHtml(result.duration)}</div>
+<div class="std"><strong>Standard:</strong> ${safeHtml(result.standard)}</div>
+<h2>Objectives</h2><ul>${(result.objectives||[]).map(o=>`<li>${safeHtml(o)}</li>`).join("")}</ul>
+<h2>Success Criteria</h2><ul>${(result.successCriteria||[]).map(s=>`<li>${safeHtml(s)}</li>`).join("")}</ul>
+<h2>Materials</h2><ul>${(result.materials||[]).map(m=>`<li>${safeHtml(m)}</li>`).join("")}</ul>
+<h2>Key Vocabulary</h2><p style="font-size:12px">${(result.vocabulary||[]).map(v=>safeHtml(v)).join(" · ")}</p>
+<h2>Lesson Sequence</h2>
+${(result.sections||[]).map((s,i)=>`<div class="sec"><div class="sec-h" style="background:${sectionColors[i]||"#374151"}">${safeHtml(s.name)} — ${safeHtml(s.duration)}</div><div class="sec-b"><p>${safeHtml(s.description)}</p><p><strong>Teacher:</strong> ${safeHtml(s.teacherMoves)}</p><p><strong>Students:</strong> ${safeHtml(s.studentActions)}</p>${s.udlNotes?`<p style="color:#0369A1">UDL: ${safeHtml(s.udlNotes)}</p>`:""}</div></div>`).join("")}
+<h2>Assessment</h2>
+<div class="box"><div class="box-l">Formative</div><p>${safeHtml(result.assessment?.formative)}</p></div>
+<div class="box"><div class="box-l">Exit Ticket</div><p>${safeHtml(result.assessment?.exitTicket)}</p></div>
+<div class="box"><div class="box-l">Summative</div><p>${safeHtml(result.assessment?.summative)}</p></div>
+${Array.isArray(result.dokQuestions) && result.dokQuestions.length ? `<h2>DOK Questions</h2>${result.dokQuestions.map(lv=>`<div class="box"><div class="box-l">DOK ${lv.level} · ${safeHtml(lv.label)}</div><ul>${(lv.items||[]).map(q=>`<li>${safeHtml(q)}</li>`).join("")}</ul></div>`).join("")}` : ""}
+<h2>Differentiation</h2>
+<div class="box"><div class="box-l">ELL</div><p>${safeHtml(result.differentiation?.ell)}</p></div>
+<div class="box"><div class="box-l">IEP</div><p>${safeHtml(result.differentiation?.iep)}</p></div>
+<div class="box"><div class="box-l">Gifted</div><p>${safeHtml(result.differentiation?.gifted)}</p></div>
+<div class="box"><div class="box-l">Universal Design</div><p>${safeHtml(result.differentiation?.universal)}</p></div>
+${result.homework?`<h2>Homework</h2><p style="font-size:12px">${safeHtml(result.homework)}</p>`:""}
+${result.extension?`<h2>Extension Activity</h2><p style="font-size:12px">${safeHtml(result.extension)}</p>`:""}
+${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtml(result.teacherNotes)}</p>`:""}
+</body></html>`;
+  };
+
+  // PDF — reuse print pipeline (browser "Save as PDF")
+  const exportPDF = () => { setShowExportMenu(false); printPlan(); };
+
+  // Word (.doc) — HTML wrapped with Word MIME; opens cleanly in Microsoft Word & Google Docs
+  const exportWord = () => {
+    if (!result) return;
+    setShowExportMenu(false);
+    const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" + buildPlanHtml().replace(/^<!DOCTYPE html>|<html>|<\/html>$/g,"") + "</html>";
+    downloadBlob(new Blob(["\ufeff", html], { type: "application/msword" }), `${safeFileName()}.doc`);
+  };
+
+  // CSV — structured rows for standards tracking / data backup
+  const exportCSV = () => {
+    if (!result) return;
+    setShowExportMenu(false);
+    const esc = v => `"${String(v||"").replace(/"/g,'""').replace(/\r?\n/g," ")}"`;
+    const rows = [["Section","Field","Value"]];
+    rows.push(["Meta","Title",result.title]);
+    rows.push(["Meta","Grade/Subject",result.gradeSubject]);
+    rows.push(["Meta","Duration",result.duration]);
+    rows.push(["Meta","Standard",result.standard]);
+    (result.objectives||[]).forEach((o,i)=>rows.push(["Objectives",`#${i+1}`,o]));
+    (result.successCriteria||[]).forEach((s,i)=>rows.push(["Success Criteria",`#${i+1}`,s]));
+    (result.materials||[]).forEach((m,i)=>rows.push(["Materials",`#${i+1}`,m]));
+    (result.vocabulary||[]).forEach((v,i)=>rows.push(["Vocabulary",`#${i+1}`,v]));
+    (result.sections||[]).forEach(s=>{
+      rows.push([`Section: ${s.name}`,"Duration",s.duration]);
+      rows.push([`Section: ${s.name}`,"Description",s.description]);
+      rows.push([`Section: ${s.name}`,"Teacher Moves",s.teacherMoves]);
+      rows.push([`Section: ${s.name}`,"Student Actions",s.studentActions]);
+      if (s.udlNotes) rows.push([`Section: ${s.name}`,"UDL",s.udlNotes]);
+    });
+    rows.push(["Assessment","Formative",result.assessment?.formative]);
+    rows.push(["Assessment","Exit Ticket",result.assessment?.exitTicket]);
+    rows.push(["Assessment","Summative",result.assessment?.summative]);
+    (result.dokQuestions||[]).forEach(lv=>(lv.items||[]).forEach((q,i)=>rows.push([`DOK ${lv.level} ${lv.label||""}`,`Q${i+1}`,q])));
+    rows.push(["Differentiation","ELL",result.differentiation?.ell]);
+    rows.push(["Differentiation","IEP",result.differentiation?.iep]);
+    rows.push(["Differentiation","Gifted",result.differentiation?.gifted]);
+    rows.push(["Differentiation","Universal",result.differentiation?.universal]);
+    rows.push(["Homework","",result.homework]);
+    rows.push(["Extension","",result.extension]);
+    rows.push(["Teacher Notes","",result.teacherNotes]);
+    const csv = rows.map(r => r.map(esc).join(",")).join("\r\n");
+    downloadBlob(new Blob(["\ufeff"+csv], { type: "text/csv;charset=utf-8" }), `${safeFileName()}.csv`);
+  };
+
+  // Google Classroom — share lesson via Classroom share link
+  const exportGoogleClassroom = () => {
+    if (!result) return;
+    setShowExportMenu(false);
+    const url = (typeof window !== "undefined" ? window.location.href : "https://thetechsavvyteacher.lovable.app");
+    const shareUrl = `https://classroom.google.com/share?url=${encodeURIComponent(url)}&title=${encodeURIComponent(result.title)}&body=${encodeURIComponent(buildPlanText().slice(0, 1500))}`;
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
+  };
+
+  // Canvas / Edmodo / other LMS — instruct to import the .doc or copy text
+  const exportLMSGuidance = (lms) => {
+    setShowExportMenu(false);
+    exportWord();
+    setTimeout(() => alert(`Word file downloaded.\n\nTo import into ${lms}:\n1. Open ${lms} → create a new Assignment / Page\n2. Upload the downloaded .doc OR paste the copied text\n3. Save & assign to your class.`), 400);
   };
 
   // Inline Standards Picker for lesson plan
@@ -7130,10 +7247,33 @@ document.addEventListener('keydown',e=>{
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"none", background:BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   🖨️ Print / PDF
                 </button>
-                <button onClick={exportToGoogleDocs}
+                <div style={{ position:"relative" }}>
+                <button onClick={() => setShowExportMenu(s => !s)}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${BRAND}`, background:"white", color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  📤 Export
+                  📤 Export ▾
                 </button>
+                {showExportMenu && (
+                  <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, left:0, background:"white", border:`1.5px solid ${BRAND}`, borderRadius:8, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:50, overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
+                    {[
+                      { label:"📄 PDF (Print)",            onClick: exportPDF,             desc:"Preserves layout" },
+                      { label:"📝 Microsoft Word (.doc)",  onClick: exportWord,            desc:"Editable" },
+                      { label:"📊 Excel / CSV",            onClick: exportCSV,             desc:"Standards tracking" },
+                      { label:"📘 Google Docs",            onClick: exportToGoogleDocs,    desc:"Cloud collaboration" },
+                      { label:"🎓 Google Classroom",       onClick: exportGoogleClassroom, desc:"Share to Classroom" },
+                      { label:"🅒 Canvas",                 onClick: () => exportLMSGuidance("Canvas"), desc:"Import as Word" },
+                      { label:"🅔 Edmodo",                 onClick: () => exportLMSGuidance("Edmodo"), desc:"Import as Word" },
+                    ].map((opt,i) => (
+                      <button key={i} onClick={opt.onClick}
+                        style={{ width:"100%", padding:"10px 12px", border:"none", borderTop: i===0?"none":"1px solid #F3F4F6", background:"white", textAlign:"left", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2 }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#FAF5FF"}
+                        onMouseLeave={e => e.currentTarget.style.background = "white"}>
+                        <span style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{opt.label}</span>
+                        <span style={{ fontSize:11, color:"#6B7280" }}>{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                </div>
                 </div>
               </div>
             )}
