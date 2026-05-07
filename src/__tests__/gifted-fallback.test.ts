@@ -6,7 +6,7 @@ import {
 
 describe("ensureGiftedDifferentiation — regression guard", () => {
   it("does not throw when Gifted & Advanced is NOT selected and gifted is empty", () => {
-    const parsed = { differentiation: { ell: "ELL notes" } };
+    const parsed: any = { differentiation: { ell: "ELL notes" } };
     const form = { topic: "Photosynthesis", diff: ["ELL / Language Learners"] };
     expect(() => ensureGiftedDifferentiation(parsed, form)).not.toThrow();
     expect(parsed.differentiation.gifted).toContain("Photosynthesis");
@@ -29,13 +29,13 @@ describe("ensureGiftedDifferentiation — regression guard", () => {
 
   it("preserves an existing substantive gifted entry when Gifted is not selected", () => {
     const existing = "x".repeat(200);
-    const parsed = { differentiation: { gifted: existing } };
+    const parsed: any = { differentiation: { gifted: existing } };
     ensureGiftedDifferentiation(parsed, { diff: ["ELL / Language Learners"] });
     expect(parsed.differentiation.gifted).toBe(existing);
   });
 
   it("replaces a too-thin gifted entry when multiple groups are selected (even without Gifted)", () => {
-    const parsed = { differentiation: { gifted: "tbd" } };
+    const parsed: any = { differentiation: { gifted: "tbd" } };
     ensureGiftedDifferentiation(parsed, {
       topic: "Ecosystems",
       diff: ["ELL / Language Learners", "Students with IEPs"],
