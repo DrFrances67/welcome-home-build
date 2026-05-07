@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
+import { ensureGiftedDifferentiation } from "@/lib/giftedFallback";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 
