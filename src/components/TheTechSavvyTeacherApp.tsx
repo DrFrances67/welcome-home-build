@@ -6656,33 +6656,35 @@ document.addEventListener('keydown',e=>{
     setSlidesLoading(false); setExportingFmt("");
   };
 
-  // Google Docs — copy lesson text to clipboard + open a new Google Doc (docs.new)
+  // Google Docs — download a .doc of the lesson plan AND open Google Docs so the
+  // teacher can upload/import it into a new Doc. Also copies the plan text to the
+  // clipboard as a quick alternative (paste into the blank doc).
   const exportToGoogleDocs = async () => {
     if (!result) return;
     setShowExportMenu(false);
-    const text = buildPlanText();
+    // 1) Build + download the .doc (Google Docs imports it natively)
+    const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" + buildPlanHtml().replace(/^<!DOCTYPE html>|<html>|<\/html>$/g,"") + "</html>";
+    downloadBlob(new Blob(["\ufeff", html], { type: "application/msword" }), `${safeFileName()}.doc`);
+    // 2) Try to copy plan text to clipboard as a fast paste path
     let copiedOk = false;
     try {
       if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(buildPlanText());
         copiedOk = true;
       }
-    } catch { /* fall through to fallback box */ }
-    // Open a fresh Google Doc in a new tab (user must be signed into Google)
-    const win = window.open("https://docs.new", "_blank", "noopener,noreferrer");
+    } catch { /* ignore */ }
+    // 3) Open Google Docs file picker so the user can upload the .doc just downloaded
+    //    (this creates and opens a new Google Doc with the full lesson content)
+    const win = window.open("https://docs.google.com/document/u/0/?usp=docs_home&ths=true", "_blank", "noopener,noreferrer");
     if (!win) {
-      // Pop-up blocked — fall back to the manual copy box
       setShowGdocsBox(true);
       setShowCopyBox(false);
       return;
     }
-    if (copiedOk) {
-      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 250);
-    } else {
-      // Couldn't copy — show the fallback panel with the textarea
-      setShowGdocsBox(true);
-      setShowCopyBox(false);
-    }
+    setTimeout(() => {
+      const pasteHint = copiedOk ? "\n\nQuick alternative: open a Blank doc and press Ctrl+V (Cmd+V on Mac) — the full lesson plan is already on your clipboard." : "";
+      alert(`✓ Lesson plan downloaded as a Word file (.doc).\n\nGoogle Docs has opened in a new tab — click \"File ▸ Open ▸ Upload\" and pick the .doc you just downloaded to create a new Google Doc with the full lesson plan.${pasteHint}`);
+    }, 300);
   };
 
   // Helper: trigger download of a Blob
