@@ -3967,7 +3967,46 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
       </div>
     </div>
   );
-}
+      }
+
+      // UDL compliance check: when Multiple Learning Styles is selected, every
+      // section MUST offer Representation (visual/audio/text), Engagement
+      // (choice/collaboration/relevance), and Action/Expression (multiple
+      // output modalities). Auto-append a labeled UDL options block when missing.
+      if (form.diff.includes("Multiple Learning Styles") && Array.isArray(parsed.sections)) {
+        const UDL_BANK = {
+          representation: ["Provide a visual anchor chart or diagram", "Offer an audio version or read-aloud", "Share a written transcript or leveled text"],
+          engagement:     ["Offer student choice of topic or partner", "Connect content to a real-world relevance prompt", "Include a collaborative turn-and-talk"],
+          action:         ["Allow response via writing, drawing, speaking, or building", "Provide a digital tool option (slides, video, infographic)", "Offer a hands-on/kinesthetic demonstration option"],
+        };
+        const detectUdl = (text: string) => {
+          const t = (text || "").toLowerCase();
+          return {
+            representation: /\b(visual|diagram|chart|infographic|audio|listen|read[- ]aloud|transcript|handout|text|video|caption)\b/.test(t),
+            engagement:     /\b(choice|choose|partner|group|collaborat|discuss|relevan|real[- ]world|interest|engage)\b/.test(t),
+            action:         /\b(write|draw|speak|present|build|model|create|demonstrate|record|act out|role[- ]play|digital|slides|video|infographic)\b/.test(t),
+          };
+        };
+        const udlMissingReport: string[] = [];
+        parsed.sections = parsed.sections.map((sec: any, idx: number) => {
+          const blob = [sec.description, sec.teacherMoves, sec.studentActions, sec.udlNotes].filter(Boolean).join(" ");
+          const has = detectUdl(blob);
+          const missing = (Object.keys(has) as Array<keyof typeof has>).filter(k => !has[k]);
+          if (missing.length === 0) return sec;
+          udlMissingReport.push(`Section ${idx+1} "${sec.name||""}" missing UDL: ${missing.join(", ")}`);
+          const additions = missing.map(principle => {
+            const label = principle === "action" ? "Action & Expression" : principle.charAt(0).toUpperCase()+principle.slice(1);
+            const opt = UDL_BANK[principle][idx % UDL_BANK[principle].length];
+            return `${label}: ${opt}`;
+          }).join(" • ");
+          return { ...sec, udlNotes: `${sec.udlNotes||""}\n\nUDL Options — ${additions}`.trim() };
+        });
+        if (udlMissingReport.length) {
+          console.warn("[UDL Validation] Auto-augmented sections missing UDL principles:\n" + udlMissingReport.join("\n"));
+        } else {
+          console.info("[UDL Validation] ✓ All sections include representation, engagement, and action options.");
+        }
+      }
 
 
 export function WorksheetBuilder() {
