@@ -7037,6 +7037,24 @@ document.addEventListener('keydown',e=>{
               </div>
             )}
 
+            {/* Action bar — Copy / Print / Export (below lesson plan, above Build Worksheets) */}
+            {result && (
+              <div className="no-print" style={{ marginTop:18, display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, padding:"12px", background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:10 }}>
+                <button onClick={copyPlan}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${copied ? "#86EFAC" : BRAND}`, background: copied ? "#D1FAE5" : "white", color: copied ? "#166534" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  {copied ? "✓ Copied!" : "📋 Copy Text"}
+                </button>
+                <button onClick={printPlan}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"none", background:BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  🖨️ Print / PDF
+                </button>
+                <button onClick={exportToGoogleDocs}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${BRAND}`, background:"white", color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  📤 Export
+                </button>
+              </div>
+            )}
+
             {/* Build Worksheets CTA — placed directly above the Slide Deck builder */}
             {onBuildWorksheets && (
               <div style={{ marginTop:18, padding:"14px 16px", background:"#FFFBEB", border:"1.5px dashed #F59E0B", borderRadius:10, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
