@@ -6411,11 +6411,12 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     const slidesHtml = deck.slides.map((sl, i) => {
       const isTitle = sl.kind === "title" || i === 0;
       const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
+      const imgTag = sl.imageUrl ? `<img class="slide-img" src="${sl.imageUrl}" alt="${safe(sl.title||"")}" />` : "";
       return `<section class="slide ${isTitle ? "slide-title" : ""}" data-i="${i}">
         <div class="slide-inner">
           ${isTitle
-            ? `<div class="title-block"><h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
-            : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}
+            ? `<div class="title-block">${imgTag}<h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
+            : `<h2>${safe(sl.title)}</h2><div class="slide-body">${imgTag ? `<div class="slide-text"><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul></div>${imgTag}` : `<ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}</div>`}
           <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
         </div>
       </section>`;
