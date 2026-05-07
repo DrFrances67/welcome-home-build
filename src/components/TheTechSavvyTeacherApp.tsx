@@ -6365,8 +6365,8 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
   const ensureDeck = async () => {
     if (deckData) return deckData;
     const lessonContext = buildPlanText().slice(0, 6000);
-    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
-    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
+    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A". For EVERY slide also include an "imagePrompt" field: a short (10-20 words), concrete, visual description of an educational illustration that depicts the SPECIFIC content of THAT slide (not generic classroom imagery). Reference the lesson topic and that slide's specific concept.`;
+    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing", "imagePrompt": "concrete visual description of this slide's specific content"}\n  ]\n}`;
 
     const raw = await callClaude(sys, userMsg, 3500);
     let clean = (raw || "").trim();
@@ -6377,6 +6377,28 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
       throw new Error("No slides were returned. Try again.");
     }
+
+    // Generate a topic-matched image for each slide in parallel.
+    // Failures are non-fatal — that slide just renders without an image.
+    const lessonTopic = result?.title || form?.topic || "lesson";
+    setSlidesError("Generating slide images…");
+    await Promise.all(deck.slides.map(async (sl: any) => {
+      const prompt = (sl.imagePrompt && String(sl.imagePrompt).trim())
+        || `Educational illustration for "${sl.title}" — ${(sl.bullets || []).slice(0,2).join("; ")} (lesson: ${lessonTopic})`;
+      try {
+        const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: `${prompt}. Lesson topic: ${lessonTopic}.`, style: "cartoon" }),
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.url) sl.imageUrl = j.url;
+        }
+      } catch { /* non-fatal */ }
+    }));
+    setSlidesError("");
+
     setDeckData(deck);
     return deck;
   };
