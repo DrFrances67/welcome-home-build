@@ -6128,6 +6128,44 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         }
       }
 
+      // Validation: if Gifted & Advanced is selected, every section MUST contain
+      // analyze + evaluate + synthesize/create question stems. Auto-augment any
+      // section that is missing one or more cognitive levels.
+      if (form.diff.includes("Gifted & Advanced") && Array.isArray(parsed.sections)) {
+        const STEM_BANK = {
+          analyze:    ["What patterns do you notice between ___ and ___?", "How does ___ contrast with ___?", "What evidence supports ___?"],
+          evaluate:   ["Critique the strength of ___ using ___ criteria.", "Defend or refute the claim that ___.", "Which solution is most effective and why?"],
+          synthesize: ["Design a ___ that solves ___.", "Combine ideas from ___ and ___ to propose ___.", "Hypothesize what would happen if ___."],
+        };
+        const detect = (text: string) => {
+          const t = (text || "").toLowerCase();
+          return {
+            analyze:    /\banalyze|analyse|patterns?|contrast|evidence|assumption|break down\b/.test(t),
+            evaluate:   /\bevaluate|critique|defend|refute|judge|justify|rank|most effective\b/.test(t),
+            synthesize: /\bsynthesi[sz]e|create|design|combine|hypothesize|construct|develop a (new|model)\b/.test(t),
+          };
+        };
+        const missingReport: string[] = [];
+        parsed.sections = parsed.sections.map((sec: any, idx: number) => {
+          const blob = [sec.description, sec.teacherMoves, sec.studentActions, sec.udlNotes].filter(Boolean).join(" ");
+          const has = detect(blob);
+          const missing = (Object.keys(has) as Array<keyof typeof has>).filter(k => !has[k]);
+          if (missing.length === 0) return sec;
+          missingReport.push(`Section ${idx+1} "${sec.name||""}" missing: ${missing.join(", ")}`);
+          const additions = missing.map(level => {
+            const label = level === "synthesize" ? "Synthesize/Create" : level.charAt(0).toUpperCase()+level.slice(1);
+            const stem = STEM_BANK[level][idx % STEM_BANK[level].length];
+            return `${label}: ${stem}`;
+          }).join(" • ");
+          return { ...sec, studentActions: `${sec.studentActions||""}\n\nHigher-Order Question Stems (Gifted) — ${additions}`.trim() };
+        });
+        if (missingReport.length) {
+          console.warn("[Gifted Validation] Auto-augmented sections missing higher-order stems:\n" + missingReport.join("\n"));
+        } else {
+          console.info("[Gifted Validation] ✓ All sections contain analyze/evaluate/synthesize stems.");
+        }
+      }
+
       setResult(parsed);
       setDeckData(null); // invalidate cached deck so next export regenerates from new plan
       setSlidesError("");
