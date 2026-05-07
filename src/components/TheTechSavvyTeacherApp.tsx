@@ -6438,6 +6438,10 @@ h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weig
 ul{list-style:none;display:flex;flex-direction:column;gap:14px}
 li{font-size:clamp(16px,2vw,24px);line-height:1.5;padding-left:34px;position:relative;color:#1F2937}
 li::before{content:"●";position:absolute;left:0;color:#CF27F5;font-size:0.9em;top:0.15em}
+.slide-body{display:flex;gap:32px;align-items:center}
+.slide-text{flex:1;min-width:0}
+.slide-img{max-width:38%;max-height:60vh;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.15);object-fit:contain;background:white}
+.slide-title .slide-img{display:block;margin:0 auto 22px;max-width:340px;max-height:38vh;border-radius:18px}
 .slide-num{position:absolute;bottom:-3vh;right:0;font-size:13px;color:#9CA3AF;font-weight:600;letter-spacing:1px}
 .slide-title .slide-num{color:rgba(255,255,255,0.7)}
 .controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);padding:8px 14px;border-radius:30px;z-index:10}
