@@ -6665,29 +6665,50 @@ document.addEventListener('keydown',e=>{
   };
 
   // Google Docs — open a new Google Doc synchronously (avoids popup blockers),
-  // then copy lesson text to clipboard so the teacher can paste it in.
+  // then copy the lesson plan to the clipboard as BOTH rich HTML and plain text
+  // so a single Ctrl/Cmd+V in the new doc pastes the full formatted lesson.
+  // (Per-user OAuth would be required to insert content programmatically; we
+  // give the next best UX: one-click open + one-keystroke paste of rich content.)
   const exportToGoogleDocs = async () => {
     if (!result) return;
     setShowExportMenu(false);
     // CRITICAL: open the window SYNCHRONOUSLY in the click handler — any await
     // before window.open() will trigger Chrome/Safari popup blockers.
     const win = window.open("https://docs.google.com/document/create", "_blank");
-    const text = buildPlanText();
+
+    const plainText = buildPlanText();
+    const richHtml = buildPlanHtml();
     let copiedOk = false;
+
+    // Prefer rich HTML clipboard so formatting (headings, bullets, bold) survives the paste.
     try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+      if ((window as any).ClipboardItem && navigator.clipboard?.write) {
+        const item = new (window as any).ClipboardItem({
+          "text/html": new Blob([richHtml], { type: "text/html" }),
+          "text/plain": new Blob([plainText], { type: "text/plain" }),
+        });
+        await navigator.clipboard.write([item]);
+        copiedOk = true;
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(plainText);
         copiedOk = true;
       }
-    } catch { /* fall through */ }
+    } catch {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(plainText);
+          copiedOk = true;
+        }
+      } catch { /* ignore */ }
+    }
+
     if (!win || win.closed) {
-      // Pop-up blocked — show the manual copy box as a fallback.
       setShowGdocsBox(true);
       setShowCopyBox(false);
       return;
     }
     if (copiedOk) {
-      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 300);
+      setTimeout(() => alert("✓ Lesson plan (with formatting) copied to clipboard.\n\nA new Google Doc opened in another tab — click into it and press Ctrl+V (Cmd+V on Mac) to paste the full lesson."), 300);
     } else {
       setShowGdocsBox(true);
       setShowCopyBox(false);
