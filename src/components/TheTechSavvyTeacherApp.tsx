@@ -7055,6 +7055,7 @@ document.addEventListener('keydown',e=>{
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${BRAND}`, background:"white", color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   📤 Export
                 </button>
+                </div>
               </div>
             )}
 
