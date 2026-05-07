@@ -6361,8 +6361,8 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
   const ensureDeck = async () => {
     if (deckData) return deckData;
     const lessonContext = buildPlanText().slice(0, 6000);
-    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
-    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
+    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A". For EVERY slide, also include an "imagePrompt" field (8–18 words) describing a single classroom-friendly illustration that VISUALLY MATCHES that specific slide's content (use concrete nouns from the slide title/bullets; no text-in-image; no real people).`;
+    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing", "imagePrompt": "..."}\n  ]\n}`;
 
     const raw = await callClaude(sys, userMsg, 3500);
     let clean = (raw || "").trim();
@@ -6373,6 +6373,34 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
       throw new Error("No slides were returned. Try again.");
     }
+
+    // Generate one image per slide that visually matches that slide's content.
+    // Limited concurrency so we don't overload the image gateway.
+    setSlidesError("Generating slide images…");
+    const concurrency = 3;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < deck.slides.length) {
+        const idx = cursor++;
+        const sl = deck.slides[idx];
+        const promptBase = sl.imagePrompt || `${sl.title || ""} — ${(sl.bullets||[]).slice(0,2).join("; ")}`;
+        const fullPrompt = `${promptBase}. Educational classroom illustration that visually represents this slide's topic. No text in image.`;
+        try {
+          const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: fullPrompt, style: "clipart" }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.url) sl.imageUrl = data.url;
+          }
+        } catch { /* skip image on failure */ }
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, worker));
+    setSlidesError("");
+
     setDeckData(deck);
     return deck;
   };
@@ -6383,11 +6411,12 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     const slidesHtml = deck.slides.map((sl, i) => {
       const isTitle = sl.kind === "title" || i === 0;
       const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
+      const imgTag = sl.imageUrl ? `<img class="slide-img" src="${sl.imageUrl}" alt="${safe(sl.title||"")}" />` : "";
       return `<section class="slide ${isTitle ? "slide-title" : ""}" data-i="${i}">
         <div class="slide-inner">
           ${isTitle
-            ? `<div class="title-block"><h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
-            : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}
+            ? `<div class="title-block">${imgTag}<h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
+            : `<h2>${safe(sl.title)}</h2><div class="slide-body">${imgTag ? `<div class="slide-text"><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul></div>${imgTag}` : `<ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}</div>`}
           <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
         </div>
       </section>`;
@@ -6409,6 +6438,10 @@ h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weig
 ul{list-style:none;display:flex;flex-direction:column;gap:14px}
 li{font-size:clamp(16px,2vw,24px);line-height:1.5;padding-left:34px;position:relative;color:#1F2937}
 li::before{content:"●";position:absolute;left:0;color:#CF27F5;font-size:0.9em;top:0.15em}
+.slide-body{display:flex;gap:32px;align-items:center}
+.slide-text{flex:1;min-width:0}
+.slide-img{max-width:38%;max-height:60vh;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.15);object-fit:contain;background:white}
+.slide-title .slide-img{display:block;margin:0 auto 22px;max-width:340px;max-height:38vh;border-radius:18px}
 .slide-num{position:absolute;bottom:-3vh;right:0;font-size:13px;color:#9CA3AF;font-weight:600;letter-spacing:1px}
 .slide-title .slide-num{color:rgba(255,255,255,0.7)}
 .controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);padding:8px 14px;border-radius:30px;z-index:10}
@@ -6568,12 +6601,21 @@ document.addEventListener('keydown',e=>{
           text: String(b),
           options: { bullet: { code: "25CF" }, color: PPTX_DARK, fontSize: 20 },
         }));
+        const hasImg = typeof sl.imageUrl === "string" && sl.imageUrl.startsWith("data:image");
+        const textW = hasImg ? 7.4 : 12.0;
         if (bullets.length) {
           slide.addText(bullets, {
-            x: 0.7, y: 1.7, w: 12.0, h: 5.2,
+            x: 0.7, y: 1.7, w: textW, h: 5.2,
             fontFace: "Calibri", lineSpacingMultiple: 1.3, valign: "top",
           });
         }
+        if (hasImg) {
+          slide.addImage({ data: sl.imageUrl, x: 8.4, y: 1.7, w: 4.4, h: 4.4, sizing: { type: "contain", w: 4.4, h: 4.4 } });
+        }
+      }
+      // For title slide, also add image (smaller, above title) if available
+      if (isTitle && typeof sl.imageUrl === "string" && sl.imageUrl.startsWith("data:image")) {
+        slide.addImage({ data: sl.imageUrl, x: 5.17, y: 0.5, w: 3.0, h: 1.8, sizing: { type: "contain", w: 3.0, h: 1.8 } });
       }
 
       slide.addText(`${i + 1} / ${deck.slides.length}`, {
@@ -6620,10 +6662,14 @@ document.addEventListener('keydown',e=>{
     setSlidesLoading(false); setExportingFmt("");
   };
 
-  // Google Docs — copy lesson text to clipboard + open a new Google Doc (docs.new)
+  // Google Docs — open a new Google Doc synchronously (avoids popup blockers),
+  // then copy lesson text to clipboard so the teacher can paste it in.
   const exportToGoogleDocs = async () => {
     if (!result) return;
     setShowExportMenu(false);
+    // CRITICAL: open the window SYNCHRONOUSLY in the click handler — any await
+    // before window.open() will trigger Chrome/Safari popup blockers.
+    const win = window.open("https://docs.google.com/document/create", "_blank");
     const text = buildPlanText();
     let copiedOk = false;
     try {
@@ -6631,19 +6677,16 @@ document.addEventListener('keydown',e=>{
         await navigator.clipboard.writeText(text);
         copiedOk = true;
       }
-    } catch { /* fall through to fallback box */ }
-    // Open a fresh Google Doc in a new tab (user must be signed into Google)
-    const win = window.open("https://docs.new", "_blank", "noopener,noreferrer");
-    if (!win) {
-      // Pop-up blocked — fall back to the manual copy box
+    } catch { /* fall through */ }
+    if (!win || win.closed) {
+      // Pop-up blocked — show the manual copy box as a fallback.
       setShowGdocsBox(true);
       setShowCopyBox(false);
       return;
     }
     if (copiedOk) {
-      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 250);
+      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 300);
     } else {
-      // Couldn't copy — show the fallback panel with the textarea
       setShowGdocsBox(true);
       setShowCopyBox(false);
     }
