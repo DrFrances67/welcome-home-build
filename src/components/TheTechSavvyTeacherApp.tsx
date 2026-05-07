@@ -6361,8 +6361,8 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
   const ensureDeck = async () => {
     if (deckData) return deckData;
     const lessonContext = buildPlanText().slice(0, 6000);
-    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
-    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
+    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A". For EVERY slide, also include an "imagePrompt" field (8–18 words) describing a single classroom-friendly illustration that VISUALLY MATCHES that specific slide's content (use concrete nouns from the slide title/bullets; no text-in-image; no real people).`;
+    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing", "imagePrompt": "..."}\n  ]\n}`;
 
     const raw = await callClaude(sys, userMsg, 3500);
     let clean = (raw || "").trim();
@@ -6373,6 +6373,34 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
       throw new Error("No slides were returned. Try again.");
     }
+
+    // Generate one image per slide that visually matches that slide's content.
+    // Limited concurrency so we don't overload the image gateway.
+    setSlidesError("Generating slide images…");
+    const concurrency = 3;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < deck.slides.length) {
+        const idx = cursor++;
+        const sl = deck.slides[idx];
+        const promptBase = sl.imagePrompt || `${sl.title || ""} — ${(sl.bullets||[]).slice(0,2).join("; ")}`;
+        const fullPrompt = `${promptBase}. Educational classroom illustration that visually represents this slide's topic. No text in image.`;
+        try {
+          const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: fullPrompt, style: "clipart" }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.url) sl.imageUrl = data.url;
+          }
+        } catch { /* skip image on failure */ }
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, worker));
+    setSlidesError("");
+
     setDeckData(deck);
     return deck;
   };
