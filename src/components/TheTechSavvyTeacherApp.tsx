@@ -7037,9 +7037,12 @@ document.addEventListener('keydown',e=>{
               </div>
             )}
 
-            {/* Action bar — Copy / Print / Export (below lesson plan, above Build Worksheets) */}
+            {/* Save box — Lesson Plan header + Copy / Print / Export */}
             {result && (
-              <div className="no-print" style={{ marginTop:18, display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, padding:"12px", background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:10 }}>
+              <div className="no-print" style={{ marginTop:18, padding:"14px 16px", background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:10 }}>
+                <p style={{ margin:0, fontFamily:"'Inter',sans-serif", fontSize:15, fontWeight:800, color:"#111827", textAlign:"center" }}>Lesson Plan</p>
+                <p style={{ margin:"4px 0 12px", fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:600, color:"#6B7280", textAlign:"center" }}>How Do You Want To Save Your Lesson?</p>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 }}>
                 <button onClick={copyPlan}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${copied ? "#86EFAC" : BRAND}`, background: copied ? "#D1FAE5" : "white", color: copied ? "#166534" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   {copied ? "✓ Copied!" : "📋 Copy Text"}
