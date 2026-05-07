@@ -5951,8 +5951,12 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
     if (form.diff.includes("Multiple Learning Styles")) diffNotes.push("Multiple Learning Styles / UDL (apply UDL best practices throughout EVERY section, activity, and material — not just one note): (1) Multiple means of representation in every section — visuals (charts, diagrams, infographics, anchor charts), audio (discussions, lectures, podcasts, read-alouds), text (handouts, transcripts, leveled readings), and kinesthetic activities (hands-on manipulatives, role-play, movement, building). (2) Flexible assessment options: students may demonstrate mastery via written report, oral presentation, model building, digital simulation, video, infographic, or performance — same rigor, multiple modalities. (3) Blended learning structures: microlearning chunks, interactive online modules, and a balance of solitary AND collaborative tasks within each lesson. (4) Technology integration: LMS pathways (Google Classroom, Canvas, Schoology), closed captions on all videos, interactive elements (Nearpod, Pear Deck, Padlet), and student self-assessment tools (rubrics, checklists, reflection prompts). (5) Embed meaningful student CHOICE throughout activities — choice in topic, process, product, grouping, or pacing — to maximize accessibility and engagement. (6) Frame instruction around multiple MODES of engagement (action/expression, representation, engagement per UDL guidelines) rather than fixed/outdated 'learning style' labels (no VAK/VARK matching). Every activity description, material list, and assessment MUST visibly offer multi-modal access and at least one student choice point.");
     if (isNeurodiverse) diffNotes.push("Neurodiverse (Autism/Multiple Disabilities): simplify language to short concrete phrases, use field-of-3 picture choices for responses, embed visual aids in every section, allow AAC devices and assistive technology as primary response modes, no independent writing required, use real objects and tactile materials, include sensory breaks, connect all content to concrete real-world examples");
 
+    const multiGroupDirective = form.diff.length > 1
+      ? ` MULTI-GROUP DIFFERENTIATION REQUIRED: The teacher selected ${form.diff.length} differentiation groups (${form.diff.join(", ")}). Every section, activity, material list, and assessment MUST incorporate best practices for ALL selected groups simultaneously. Where a single blended approach works, embed supports for every group together. Where groups need distinct supports, include clearly labeled per-group sub-bullets (e.g., "For ELL:", "For IEP:", "For Gifted:", "For 504:", "For UDL/Multiple Learning Styles:") within the relevant section so the teacher can implement each group's accommodations side-by-side. Do NOT favor one group over another and do NOT collapse groups together in a way that loses any group's required supports.`
+      : "";
+
     const diffSection = diffNotes.length > 0
-      ? "Differentiation strategies to embed throughout every lesson section: " + diffNotes.join(" | ")
+      ? "Differentiation strategies to embed throughout every lesson section: " + diffNotes.join(" | ") + multiGroupDirective
       : "No specific differentiation required.";
 
     const sectionNames = is5E
@@ -6918,15 +6922,6 @@ document.addEventListener('keydown',e=>{
         <div style={{ background:BRAND, padding:"12px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
           <span style={{ fontFamily:"'Playfair Display',serif", color:"white", fontSize:15, fontWeight:700 }}>📄  Lesson Plan</span>
         </div>
-
-        {/* Save reminder — appears after lesson generation, below action bar */}
-        {result && (
-          <div style={{ padding:"10px 16px", background:"#FFFBEB", borderBottom:"1.5px dashed #F59E0B" }}>
-            <p style={{ margin:0, fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:700, color:"#B45309", textAlign:"center" }}>
-              💾 Save your lesson plan before creating a worksheet
-            </p>
-          </div>
-        )}
 
         {showCopyBox && (
           <div style={{ padding:"12px 18px", background:"#F0FDF4", borderBottom:"1px solid #86EFAC" }}>
