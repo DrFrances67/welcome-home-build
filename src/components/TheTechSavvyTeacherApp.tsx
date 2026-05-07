@@ -6620,10 +6620,14 @@ document.addEventListener('keydown',e=>{
     setSlidesLoading(false); setExportingFmt("");
   };
 
-  // Google Docs — copy lesson text to clipboard + open a new Google Doc (docs.new)
+  // Google Docs — open a new Google Doc synchronously (avoids popup blockers),
+  // then copy lesson text to clipboard so the teacher can paste it in.
   const exportToGoogleDocs = async () => {
     if (!result) return;
     setShowExportMenu(false);
+    // CRITICAL: open the window SYNCHRONOUSLY in the click handler — any await
+    // before window.open() will trigger Chrome/Safari popup blockers.
+    const win = window.open("https://docs.google.com/document/create", "_blank");
     const text = buildPlanText();
     let copiedOk = false;
     try {
@@ -6631,19 +6635,16 @@ document.addEventListener('keydown',e=>{
         await navigator.clipboard.writeText(text);
         copiedOk = true;
       }
-    } catch { /* fall through to fallback box */ }
-    // Open a fresh Google Doc in a new tab (user must be signed into Google)
-    const win = window.open("https://docs.new", "_blank", "noopener,noreferrer");
-    if (!win) {
-      // Pop-up blocked — fall back to the manual copy box
+    } catch { /* fall through */ }
+    if (!win || win.closed) {
+      // Pop-up blocked — show the manual copy box as a fallback.
       setShowGdocsBox(true);
       setShowCopyBox(false);
       return;
     }
     if (copiedOk) {
-      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 250);
+      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 300);
     } else {
-      // Couldn't copy — show the fallback panel with the textarea
       setShowGdocsBox(true);
       setShowCopyBox(false);
     }
