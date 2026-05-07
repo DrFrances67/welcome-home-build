@@ -6620,12 +6620,33 @@ document.addEventListener('keydown',e=>{
     setSlidesLoading(false); setExportingFmt("");
   };
 
-  // then link them to docs.new — no blob URLs needed, works in all CSP environments
-  const exportToGoogleDocs = () => {
+  // Google Docs — copy lesson text to clipboard + open a new Google Doc (docs.new)
+  const exportToGoogleDocs = async () => {
     if (!result) return;
-    setShowGdocsBox(true);
-    setShowCopyBox(false);
     setShowExportMenu(false);
+    const text = buildPlanText();
+    let copiedOk = false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        copiedOk = true;
+      }
+    } catch { /* fall through to fallback box */ }
+    // Open a fresh Google Doc in a new tab (user must be signed into Google)
+    const win = window.open("https://docs.new", "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Pop-up blocked — fall back to the manual copy box
+      setShowGdocsBox(true);
+      setShowCopyBox(false);
+      return;
+    }
+    if (copiedOk) {
+      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 250);
+    } else {
+      // Couldn't copy — show the fallback panel with the textarea
+      setShowGdocsBox(true);
+      setShowCopyBox(false);
+    }
   };
 
   // Helper: trigger download of a Blob
