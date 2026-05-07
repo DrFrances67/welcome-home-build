@@ -7338,7 +7338,6 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
                       { label:"📄 PDF (Print)",            onClick: exportPDF,             desc:"Preserves layout" },
                       { label:"📝 Microsoft Word (.doc)",  onClick: exportWord,            desc:"Editable" },
                       { label:"📊 Excel / CSV",            onClick: exportCSV,             desc:"Standards tracking" },
-                      { label:"📘 Google Docs",            onClick: exportToGoogleDocs,    desc:"Cloud collaboration" },
                       { label:"🎓 Google Classroom",       onClick: exportGoogleClassroom, desc:"Share to Classroom" },
                       { label:"🅒 Canvas",                 onClick: () => exportLMSGuidance("Canvas"), desc:"Import as Word" },
                       { label:"🅔 Edmodo",                 onClick: () => exportLMSGuidance("Edmodo"), desc:"Import as Word" },
