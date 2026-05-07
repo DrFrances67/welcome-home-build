@@ -7247,10 +7247,33 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"none", background:BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   🖨️ Print / PDF
                 </button>
-                <button onClick={exportToGoogleDocs}
+                <div style={{ position:"relative" }}>
+                <button onClick={() => setShowExportMenu(s => !s)}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${BRAND}`, background:"white", color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  📤 Export
+                  📤 Export ▾
                 </button>
+                {showExportMenu && (
+                  <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, left:0, background:"white", border:`1.5px solid ${BRAND}`, borderRadius:8, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:50, overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
+                    {[
+                      { label:"📄 PDF (Print)",            onClick: exportPDF,             desc:"Preserves layout" },
+                      { label:"📝 Microsoft Word (.doc)",  onClick: exportWord,            desc:"Editable" },
+                      { label:"📊 Excel / CSV",            onClick: exportCSV,             desc:"Standards tracking" },
+                      { label:"📘 Google Docs",            onClick: exportToGoogleDocs,    desc:"Cloud collaboration" },
+                      { label:"🎓 Google Classroom",       onClick: exportGoogleClassroom, desc:"Share to Classroom" },
+                      { label:"🅒 Canvas",                 onClick: () => exportLMSGuidance("Canvas"), desc:"Import as Word" },
+                      { label:"🅔 Edmodo",                 onClick: () => exportLMSGuidance("Edmodo"), desc:"Import as Word" },
+                    ].map((opt,i) => (
+                      <button key={i} onClick={opt.onClick}
+                        style={{ width:"100%", padding:"10px 12px", border:"none", borderTop: i===0?"none":"1px solid #F3F4F6", background:"white", textAlign:"left", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2 }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#FAF5FF"}
+                        onMouseLeave={e => e.currentTarget.style.background = "white"}>
+                        <span style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{opt.label}</span>
+                        <span style={{ fontSize:11, color:"#6B7280" }}>{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                </div>
                 </div>
               </div>
             )}
