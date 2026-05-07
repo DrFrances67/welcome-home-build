@@ -6134,17 +6134,11 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       }
 
       // Ensure the Gifted differentiation field is NEVER empty — always provide
-      // enrichment, extension, or advanced engagement strategies appropriate to the lesson.
-      // ALSO: when multiple differentiation groups are selected, force a substantive
-      // Gifted entry even if "Gifted & Advanced" wasn't one of the selected groups.
-      if (!parsed.differentiation || typeof parsed.differentiation !== "object") parsed.differentiation = {};
-      const giftedTxt = String(parsed.differentiation.gifted || "").trim();
-      const multiSelected = Array.isArray(form.diff) && form.diff.length > 1;
-      const giftedTooThin = giftedTxt.length < 120; // brief / placeholder
-      if (!giftedTxt || (multiSelected && giftedTooThin)) {
-        const topic = form.topic || parsed.topic || "the lesson topic";
-        parsed.differentiation.gifted = `Enrichment & extension for advanced learners on ${topic}: (1) Curriculum compacting — pre-assess and replace mastered content with an independent study contract or advanced project. (2) Higher-order tasks using ANALYZE ("What patterns/assumptions underlie ${topic}?"), EVALUATE ("Critique competing approaches to ${topic} and defend your choice."), and SYNTHESIZE/CREATE ("Design an original product/model that applies ${topic} to a real-world problem.") prompts at DOK 3–4. (3) Acceleration — above-grade-level texts, problems, or dual-enrollment-style challenges. (4) Choice of product, audience, and process; option to pursue a competition, expert mentor, or community/university partnership. (5) Flexible cluster grouping for deeper intellectual collaboration. (6) Social-emotional supports: normalize productive failure, address perfectionism, and build self-regulation, empathy, and grit; include 2e scaffolds where needed.`;
-      }
+      // enrichment, extension, or advanced engagement strategies appropriate to
+      // the lesson. Logic extracted to src/lib/giftedFallback.ts and covered by
+      // src/__tests__/gifted-fallback.test.ts (regression: must not break when
+      // Gifted & Advanced is NOT one of the selected groups).
+      ensureGiftedDifferentiation(parsed, form);
 
       // Validation: if Gifted & Advanced is selected, every section MUST contain
       // analyze + evaluate + synthesize/create question stems. Auto-augment any
