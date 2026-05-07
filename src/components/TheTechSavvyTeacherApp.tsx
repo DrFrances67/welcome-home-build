@@ -6601,12 +6601,21 @@ document.addEventListener('keydown',e=>{
           text: String(b),
           options: { bullet: { code: "25CF" }, color: PPTX_DARK, fontSize: 20 },
         }));
+        const hasImg = typeof sl.imageUrl === "string" && sl.imageUrl.startsWith("data:image");
+        const textW = hasImg ? 7.4 : 12.0;
         if (bullets.length) {
           slide.addText(bullets, {
-            x: 0.7, y: 1.7, w: 12.0, h: 5.2,
+            x: 0.7, y: 1.7, w: textW, h: 5.2,
             fontFace: "Calibri", lineSpacingMultiple: 1.3, valign: "top",
           });
         }
+        if (hasImg) {
+          slide.addImage({ data: sl.imageUrl, x: 8.4, y: 1.7, w: 4.4, h: 4.4, sizing: { type: "contain", w: 4.4, h: 4.4 } });
+        }
+      }
+      // For title slide, also add image (smaller, above title) if available
+      if (isTitle && typeof sl.imageUrl === "string" && sl.imageUrl.startsWith("data:image")) {
+        slide.addImage({ data: sl.imageUrl, x: 5.17, y: 0.5, w: 3.0, h: 1.8, sizing: { type: "contain", w: 3.0, h: 1.8 } });
       }
 
       slide.addText(`${i + 1} / ${deck.slides.length}`, {
