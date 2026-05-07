@@ -5667,6 +5667,7 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
   const [copied, setCopied]       = useState(false);
   const [showCopyBox, setShowCopyBox] = useState(false);
   const [showGdocsBox, setShowGdocsBox] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [showStdPicker, setShowStdPicker] = useState(false);
 
   // AI Idea Helper
