@@ -6135,9 +6135,13 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
 
       // Ensure the Gifted differentiation field is NEVER empty — always provide
       // enrichment, extension, or advanced engagement strategies appropriate to the lesson.
+      // ALSO: when multiple differentiation groups are selected, force a substantive
+      // Gifted entry even if "Gifted & Advanced" wasn't one of the selected groups.
       if (!parsed.differentiation || typeof parsed.differentiation !== "object") parsed.differentiation = {};
       const giftedTxt = String(parsed.differentiation.gifted || "").trim();
-      if (!giftedTxt) {
+      const multiSelected = Array.isArray(form.diff) && form.diff.length > 1;
+      const giftedTooThin = giftedTxt.length < 120; // brief / placeholder
+      if (!giftedTxt || (multiSelected && giftedTooThin)) {
         const topic = form.topic || parsed.topic || "the lesson topic";
         parsed.differentiation.gifted = `Enrichment & extension for advanced learners on ${topic}: (1) Curriculum compacting — pre-assess and replace mastered content with an independent study contract or advanced project. (2) Higher-order tasks using ANALYZE ("What patterns/assumptions underlie ${topic}?"), EVALUATE ("Critique competing approaches to ${topic} and defend your choice."), and SYNTHESIZE/CREATE ("Design an original product/model that applies ${topic} to a real-world problem.") prompts at DOK 3–4. (3) Acceleration — above-grade-level texts, problems, or dual-enrollment-style challenges. (4) Choice of product, audience, and process; option to pursue a competition, expert mentor, or community/university partnership. (5) Flexible cluster grouping for deeper intellectual collaboration. (6) Social-emotional supports: normalize productive failure, address perfectionism, and build self-regulation, empathy, and grit; include 2e scaffolds where needed.`;
       }
@@ -6361,8 +6365,8 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
   const ensureDeck = async () => {
     if (deckData) return deckData;
     const lessonContext = buildPlanText().slice(0, 6000);
-    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A".`;
-    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing"}\n  ]\n}`;
+    const sys = `You are an instructional slide designer. Output ONLY a valid JSON object — no markdown, no fences. Start with { and end with }. Build a clear, classroom-ready slide deck from the provided lesson plan. Aim for 9–15 slides total. Each slide should have a short title and 2–6 concise bullet points. Cover (in order): Title slide, Objectives, Success Criteria ("I can…" statements for students), Standard, Key Vocabulary, one slide per lesson section (Do Now, I Do/Direct Instruction, We Do/Guided Practice, You Do/Independent, Closure — OR for the 5E model: Engage, Explore, Explain, Elaborate, Evaluate), Assessment / Exit Ticket, Differentiation highlights, Homework, and Extension Activity. Do NOT write "N/A". For EVERY slide also include an "imagePrompt" field: a short (10-20 words), concrete, visual description of an educational illustration that depicts the SPECIFIC content of THAT slide (not generic classroom imagery). Reference the lesson topic and that slide's specific concept.`;
+    const userMsg = `Build a slide deck from this lesson plan:\n\n${lessonContext}\n\nReturn this JSON shape:\n{\n  "title": "...",\n  "subtitle": "...",\n  "slides": [\n    {"title": "...", "bullets": ["...","..."], "kind": "title|content|section|closing", "imagePrompt": "concrete visual description of this slide's specific content"}\n  ]\n}`;
 
     const raw = await callClaude(sys, userMsg, 3500);
     let clean = (raw || "").trim();
@@ -6373,6 +6377,28 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
       throw new Error("No slides were returned. Try again.");
     }
+
+    // Generate a topic-matched image for each slide in parallel.
+    // Failures are non-fatal — that slide just renders without an image.
+    const lessonTopic = result?.title || form?.topic || "lesson";
+    setSlidesError("Generating slide images…");
+    await Promise.all(deck.slides.map(async (sl: any) => {
+      const prompt = (sl.imagePrompt && String(sl.imagePrompt).trim())
+        || `Educational illustration for "${sl.title}" — ${(sl.bullets || []).slice(0,2).join("; ")} (lesson: ${lessonTopic})`;
+      try {
+        const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: `${prompt}. Lesson topic: ${lessonTopic}.`, style: "cartoon" }),
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.url) sl.imageUrl = j.url;
+        }
+      } catch { /* non-fatal */ }
+    }));
+    setSlidesError("");
+
     setDeckData(deck);
     return deck;
   };
@@ -6383,11 +6409,15 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
     const slidesHtml = deck.slides.map((sl, i) => {
       const isTitle = sl.kind === "title" || i === 0;
       const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
+      const img = sl.imageUrl ? `<img class="slide-img" src="${sl.imageUrl}" alt="${safe(sl.title || "")}" />` : "";
+      const body = isTitle
+        ? `<div class="title-block">${img ? `<div class="title-img-wrap">${img}</div>` : ""}<h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
+        : (img
+            ? `<h2>${safe(sl.title)}</h2><div class="slide-two-col"><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul><div class="slide-img-col">${img}</div></div>`
+            : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`);
       return `<section class="slide ${isTitle ? "slide-title" : ""}" data-i="${i}">
         <div class="slide-inner">
-          ${isTitle
-            ? `<div class="title-block"><h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle?`<p class="subtitle">${safe(deck.subtitle)}</p>`:""}</div>`
-            : `<h2>${safe(sl.title)}</h2><ul>${bullets.map(b=>`<li>${safe(b)}</li>`).join("")}</ul>`}
+          ${body}
           <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
         </div>
       </section>`;
@@ -6409,6 +6439,12 @@ h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weig
 ul{list-style:none;display:flex;flex-direction:column;gap:14px}
 li{font-size:clamp(16px,2vw,24px);line-height:1.5;padding-left:34px;position:relative;color:#1F2937}
 li::before{content:"●";position:absolute;left:0;color:#CF27F5;font-size:0.9em;top:0.15em}
+.slide-two-col{display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center}
+.slide-two-col ul{margin:0}
+.slide-img-col{display:flex;align-items:center;justify-content:center}
+.slide-img{max-width:100%;max-height:55vh;border-radius:14px;box-shadow:0 12px 32px rgba(139,10,176,0.18);background:white;object-fit:contain}
+.title-img-wrap{display:flex;justify-content:center;margin-bottom:18px}
+.title-block .slide-img{max-height:38vh;background:rgba(255,255,255,0.95);padding:10px}
 .slide-num{position:absolute;bottom:-3vh;right:0;font-size:13px;color:#9CA3AF;font-weight:600;letter-spacing:1px}
 .slide-title .slide-num{color:rgba(255,255,255,0.7)}
 .controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);padding:8px 14px;border-radius:30px;z-index:10}
