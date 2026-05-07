@@ -6620,12 +6620,33 @@ document.addEventListener('keydown',e=>{
     setSlidesLoading(false); setExportingFmt("");
   };
 
-  // then link them to docs.new — no blob URLs needed, works in all CSP environments
-  const exportToGoogleDocs = () => {
+  // Google Docs — copy lesson text to clipboard + open a new Google Doc (docs.new)
+  const exportToGoogleDocs = async () => {
     if (!result) return;
-    setShowGdocsBox(true);
-    setShowCopyBox(false);
     setShowExportMenu(false);
+    const text = buildPlanText();
+    let copiedOk = false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        copiedOk = true;
+      }
+    } catch { /* fall through to fallback box */ }
+    // Open a fresh Google Doc in a new tab (user must be signed into Google)
+    const win = window.open("https://docs.new", "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Pop-up blocked — fall back to the manual copy box
+      setShowGdocsBox(true);
+      setShowCopyBox(false);
+      return;
+    }
+    if (copiedOk) {
+      setTimeout(() => alert("✓ Lesson plan copied to clipboard.\n\nA new Google Doc has opened in a new tab. Paste with Ctrl+V (Cmd+V on Mac)."), 250);
+    } else {
+      // Couldn't copy — show the fallback panel with the textarea
+      setShowGdocsBox(true);
+      setShowCopyBox(false);
+    }
   };
 
   // Helper: trigger download of a Blob
@@ -7238,23 +7259,16 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
               <div className="no-print" style={{ marginTop:18, padding:"14px 16px", background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:10 }}>
                 <p style={{ margin:0, fontFamily:"'Inter',sans-serif", fontSize:15, fontWeight:800, color:"#111827", textAlign:"center" }}>Lesson Plan</p>
                 <p style={{ margin:"4px 0 12px", fontFamily:"'Inter',sans-serif", fontSize:12.5, fontWeight:600, color:"#6B7280", textAlign:"center" }}>How Do You Want To Save Your Lesson?</p>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 }}>
-                <button onClick={copyPlan}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${copied ? "#86EFAC" : BRAND}`, background: copied ? "#D1FAE5" : "white", color: copied ? "#166534" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  {copied ? "✓ Copied!" : "📋 Copy Text"}
-                </button>
-                <button onClick={printPlan}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"none", background:BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  🖨️ Print / PDF
-                </button>
-                <div style={{ position:"relative" }}>
+                <div style={{ display:"flex", justifyContent:"center" }}>
+                <div style={{ position:"relative", width:"100%", maxWidth:320 }}>
                 <button onClick={() => setShowExportMenu(s => !s)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${BRAND}`, background:"white", color:BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"none", background:BRAND, color:"white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   📤 Export ▾
                 </button>
                 {showExportMenu && (
                   <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, left:0, background:"white", border:`1.5px solid ${BRAND}`, borderRadius:8, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:50, overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
                     {[
+                      { label: copied ? "✓ Copied!" : "📋 Copy Text", onClick: () => { setShowExportMenu(false); copyPlan(); }, desc:"Copy lesson plan text" },
                       { label:"📄 PDF (Print)",            onClick: exportPDF,             desc:"Preserves layout" },
                       { label:"📝 Microsoft Word (.doc)",  onClick: exportWord,            desc:"Editable" },
                       { label:"📊 Excel / CSV",            onClick: exportCSV,             desc:"Standards tracking" },
