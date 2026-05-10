@@ -21,7 +21,7 @@ describe("Branding: no 'AI Tools for Educators' anywhere", () => {
     const text = brand!.textContent || "";
     // CSS uppercases the tagline; raw text is "Tools for Educators" or
     // "TOOLS FOR EDUCATORS". Either way, "AI" must not appear.
-    expect(/tools\s+for\s+educators/i.test(text)).toBe(true);
+    expect(/tools\s+for\s+new\s+york\s+educators/i.test(text)).toBe(true);
     expect(/ai\s+tools\s+for\s+educators/i.test(text)).toBe(false);
   });
 
