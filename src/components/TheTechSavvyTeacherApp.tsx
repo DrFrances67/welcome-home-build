@@ -8067,7 +8067,7 @@ function TheTechSavvyTeacherAppRoot() {
   }, [swipeDir, activeTool]);
 
   return (
-    <div className="site-shell" style={{ display:"flex", flexDirection:"column", height:"100vh", minHeight:0, overflow:"hidden", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+    <div className="site-shell" style={{ display:"flex", flexDirection:"column", height: activeTool === "email" ? "auto" : "100vh", minHeight: activeTool === "email" ? "100vh" : 0, overflow: activeTool === "email" ? "visible" : "hidden", background:"#F8F9FA", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
