@@ -6858,12 +6858,36 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
                 {GRADES.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>
-            <div>
-              <label style={lbl}>Duration</label>
-              <select value={form.duration} onChange={e => setF("duration",e.target.value)} style={{ ...inp, cursor:"pointer" }}>
-                {LP_DURATIONS.map(d => <option key={d}>{d}</option>)}
-              </select>
-            </div>
+             <div>
+               <label style={lbl}>Duration</label>
+               {(() => {
+                 const isOther = !LP_DURATIONS.includes(form.duration);
+                 return (
+                   <>
+                     <select
+                       value={isOther ? "Other" : form.duration}
+                       onChange={e => {
+                         if (e.target.value === "Other") setF("duration","");
+                         else setF("duration", e.target.value);
+                       }}
+                       style={{ ...inp, cursor:"pointer" }}
+                     >
+                       {LP_DURATIONS.map(d => <option key={d}>{d}</option>)}
+                       <option value="Other">Other…</option>
+                     </select>
+                     {isOther && (
+                       <input
+                         type="text"
+                         value={form.duration}
+                         onChange={e => setF("duration", e.target.value)}
+                         placeholder="e.g. 75 minutes"
+                         style={{ ...inp, marginTop:8 }}
+                       />
+                     )}
+                   </>
+                 );
+               })()}
+             </div>
           </div>
 
           <div style={{ marginBottom:14 }}>
