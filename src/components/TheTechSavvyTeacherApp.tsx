@@ -3151,8 +3151,10 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
     const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514", max_tokens: 1800,
-        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–10 worksheet element objects.
+        model: "claude-sonnet-4-20250514", max_tokens: 4000,
+        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 12–20 worksheet element objects spanning AT LEAST 2 PAGES (use a 0-based "page" field on every element: 0, 1, and optionally 2).
+
+MULTI-PAGE REQUIREMENT (MANDATORY): The worksheet MUST span at least 2 pages. Never compress all content onto page 0. Distribute blocks so each page has roughly 6–9 elements. Use page 0 for warm-up / introduction / core practice, page 1 for extension / deeper practice / varied question types, and optionally page 2 for reflection / exit ticket / challenge. Prioritize depth and variety over brevity — include multiple activity types (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay, table) rather than repeating one format.
 
 Allowed element shapes (use exactly these keys):
 {"type":"instruction","text":"<directions>"}
