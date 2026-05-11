@@ -7873,6 +7873,54 @@ function DanielsonReview() {
               );
             })}
           </div>
+
+          {/* Submit another lesson — same form as before generation */}
+          <div style={{ marginTop: 28 }}>
+            <div style={{ textAlign: "center", marginBottom: 14 }}>
+              <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: "#1F2937", margin: "0 0 4px" }}>
+                Review another lesson plan
+              </h3>
+              <p style={{ color: "#6B7280", fontSize: 13, margin: 0 }}>
+                Upload another lesson plan to score it against the Danielson rubric.
+              </p>
+            </div>
+            <div
+              onDragOver={e => { e.preventDefault(); setDraggingOver(true); }}
+              onDragLeave={() => setDraggingOver(false)}
+              onDrop={e => { e.preventDefault(); setDraggingOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
+              style={{
+                background: draggingOver ? LIGHT : "white",
+                border: `2px dashed ${draggingOver ? BRAND : "#D1D5DB"}`,
+                borderRadius: 14,
+                padding: "32px 24px",
+                textAlign: "center",
+                transition: "all 0.15s",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 10 }} aria-hidden="true">📄</div>
+              <p style={{ color: "#6B7280", fontSize: 13, margin: "0 0 14px" }}>PDF, Word (.docx), or plain text (.txt) — drag & drop or click below.</p>
+              <label style={{
+                display: "inline-block",
+                background: BRAND,
+                color: "white",
+                padding: "11px 24px",
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(207,39,245,0.3)",
+              }}>
+                {loading ? "Reading file…" : "Choose file"}
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.txt,.md,.rtf,application/pdf,text/plain"
+                  onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+                  style={{ display: "none" }}
+                  disabled={loading}
+                />
+              </label>
+            </div>
+          </div>
         </div>
       )}
 
