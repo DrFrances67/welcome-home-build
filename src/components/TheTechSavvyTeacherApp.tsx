@@ -5165,7 +5165,7 @@ Output ONLY the JSON array.`,
           <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }} role="tabpanel">
             {rightTab === "edit"  && <ElEditor el={selEl} gv={gv} onChange={u => selEl && updEl(selEl.id, u)} onDelete={() => selEl && delEl(selEl.id)} onMoveUp={() => selEl && movEl(selEl.id, "up")} onMoveDown={() => selEl && movEl(selEl.id, "down")} onDuplicate={() => selEl && dupEl(selEl.id)} />}
             {rightTab === "image" && <AIImageGen gv={gv} onAddImage={addGeneratedImage} />}
-            {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} onInsertElements={insertAiElements} />}
+            {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} onInsertElements={insertAiElementsMultiPage} />}
           </div>
         </aside>
       </div>
