@@ -4512,7 +4512,7 @@ Include a variety of activity types. Make the content directly address the stand
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 3200,
+          model: "claude-sonnet-4-20250514", max_tokens: 5000,
           system: `You convert a teacher's existing worksheet into structured worksheet blocks for a ${g.name} class. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
 
 Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element to control pagination):
