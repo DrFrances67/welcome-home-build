@@ -3151,8 +3151,10 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
     const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514", max_tokens: 1800,
-        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 5–10 worksheet element objects.
+        model: "claude-sonnet-4-20250514", max_tokens: 4000,
+        system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 12–20 worksheet element objects spanning AT LEAST 2 PAGES (use a 0-based "page" field on every element: 0, 1, and optionally 2).
+
+MULTI-PAGE REQUIREMENT (MANDATORY): The worksheet MUST span at least 2 pages. Never compress all content onto page 0. Distribute blocks so each page has roughly 6–9 elements. Use page 0 for warm-up / introduction / core practice, page 1 for extension / deeper practice / varied question types, and optionally page 2 for reflection / exit ticket / challenge. Prioritize depth and variety over brevity — include multiple activity types (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay, table) rather than repeating one format.
 
 Allowed element shapes (use exactly these keys):
 {"type":"instruction","text":"<directions>"}
@@ -4494,8 +4496,8 @@ Include a variety of activity types. Make the content directly address the stand
     try {
       const g = gInfo(ws.gradeId);
       const intent = reimagine
-        ? `Re-imagine the worksheet below as a fresh, improved version for ${g.name} students. Keep the same topic and skill focus, but feel free to adjust activity types, vary question styles, and add engagement.`
-        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, structure, AND any images / illustrations as closely as possible.`;
+        ? `Re-imagine the worksheet below as a fresh, improved, EXPANDED version for ${g.name} students. Keep the same topic and skill focus, but vary activity types, add new question styles, deepen practice, and produce MORE content than the original — never compress.`
+        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, structure, AND any images / illustrations. If the original is short, EXPAND it with additional varied practice items so the result spans multiple pages.`;
 
       // Build multimodal user content: page images first, then text.
       const userContent: any[] = [];
@@ -4505,12 +4507,12 @@ Include a variety of activity types. Make the content directly address the stand
         if (!m) return;
         userContent.push({ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } });
       });
-      userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n- GROUPING: Place each image block IMMEDIATELY next to the question/prompt it illustrates (right before or right after). Never separate an image from its related content with unrelated blocks.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
+      userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- The OUTPUT MUST SPAN AT LEAST 2 PAGES. Never compress everything onto page 0. If the source is short, expand it with additional varied items (more questions, deeper practice, extension activities, reflection) until you fill at least 2 full pages.\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- Vary activity types across pages (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay) — prioritize depth and variety over brevity.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n- GROUPING: Place each image block IMMEDIATELY next to the question/prompt it illustrates (right before or right after). Never separate an image from its related content with unrelated blocks.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 3200,
+          model: "claude-sonnet-4-20250514", max_tokens: 5000,
           system: `You convert a teacher's existing worksheet into structured worksheet blocks for a ${g.name} class. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
 
 Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element to control pagination):
@@ -4613,13 +4615,13 @@ Output ONLY the JSON array.`,
     try {
       const g = gInfo(ws.gradeId);
       const typeLabel = WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType;
-      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max.\n- Output enough blocks to cover the lesson's objectives and key concepts.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".\n- GROUPING: Place each image block IMMEDIATELY adjacent to the question, prompt, or task it illustrates (right before or right after). Never separate an image from its associated content with unrelated blocks. Keep instruction → activity and wordBank → fillBlank pairs together on the same page.`;
+      const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- The OUTPUT MUST SPAN AT LEAST 2 PAGES (use page 0 and page 1, optionally page 2). Never compress everything onto one page.\n- Distribute content across distinct lesson sections: page 0 = warm-up + core practice, page 1 = extension / deeper practice / varied question types, optional page 2 = reflection / exit ticket / challenge.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so each page is full but not crowded.\n- Output 12–20 total blocks covering the lesson's objectives, vocabulary, and key concepts in depth. Prioritize depth and variety over brevity.\n- Vary activity types across pages (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay, table) — do not repeat the same format.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".\n- GROUPING: Place each image block IMMEDIATELY adjacent to the question, prompt, or task it illustrates (right before or right after). Never separate an image from its associated content with unrelated blocks. Keep instruction → activity and wordBank → fillBlank pairs together on the same page.`;
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 3200,
-          system: `You are an expert curriculum designer. The teacher has uploaded a lesson plan and wants a "${typeLabel}" worksheet for ${g.name} students that is directly aligned to the lesson's objectives, vocabulary, and content. Respond with VALID JSON ONLY — a single JSON array of worksheet element objects. No markdown, no preamble.
+          model: "claude-sonnet-4-20250514", max_tokens: 5000,
+          system: `You are an expert curriculum designer. The teacher has uploaded a lesson plan and wants a "${typeLabel}" worksheet for ${g.name} students that is directly aligned to the lesson's objectives, vocabulary, and content. The worksheet MUST span AT LEAST 2 PAGES — distribute content across warm-up, practice, extension, and reflection sections. Respond with VALID JSON ONLY — a single JSON array of 12–20 worksheet element objects with a 0-based "page" field on every element. No markdown, no preamble.
 
 Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every element):
 {"type":"instruction","text":"<directions>","page":0}
@@ -5163,7 +5165,7 @@ Output ONLY the JSON array.`,
           <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }} role="tabpanel">
             {rightTab === "edit"  && <ElEditor el={selEl} gv={gv} onChange={u => selEl && updEl(selEl.id, u)} onDelete={() => selEl && delEl(selEl.id)} onMoveUp={() => selEl && movEl(selEl.id, "up")} onMoveDown={() => selEl && movEl(selEl.id, "down")} onDuplicate={() => selEl && dupEl(selEl.id)} />}
             {rightTab === "image" && <AIImageGen gv={gv} onAddImage={addGeneratedImage} />}
-            {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} onInsertElements={insertAiElements} />}
+            {rightTab === "ai"    && <AIChat gv={gv} wsTitle={ws.title} elCount={ws.elements.length} refDesc={refDesc} onInsertElements={insertAiElementsMultiPage} />}
           </div>
         </aside>
       </div>
