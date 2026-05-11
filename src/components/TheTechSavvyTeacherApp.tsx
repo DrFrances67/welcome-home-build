@@ -4496,8 +4496,8 @@ Include a variety of activity types. Make the content directly address the stand
     try {
       const g = gInfo(ws.gradeId);
       const intent = reimagine
-        ? `Re-imagine the worksheet below as a fresh, improved version for ${g.name} students. Keep the same topic and skill focus, but feel free to adjust activity types, vary question styles, and add engagement.`
-        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, structure, AND any images / illustrations as closely as possible.`;
+        ? `Re-imagine the worksheet below as a fresh, improved, EXPANDED version for ${g.name} students. Keep the same topic and skill focus, but vary activity types, add new question styles, deepen practice, and produce MORE content than the original — never compress.`
+        : `Faithfully recreate the worksheet below as editable blocks for ${g.name} students. Preserve the original questions, instructions, word banks, structure, AND any images / illustrations. If the original is short, EXPAND it with additional varied practice items so the result spans multiple pages.`;
 
       // Build multimodal user content: page images first, then text.
       const userContent: any[] = [];
