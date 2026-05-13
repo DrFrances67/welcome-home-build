@@ -402,7 +402,7 @@ export function AuthPage() {
             <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" required />
             <PasswordStrength password={password} />
-            <PasswordRequirements password={password} />
+            <PasswordRequirements password={password} highlightUnmet={weakAttempt} ref={requirementsRef} />
             <p style={{ fontSize: 12, color: "var(--auth-subtle)", marginTop: -2 }}>
               Min 10 characters with upper, lower, number, and symbol.
             </p>
