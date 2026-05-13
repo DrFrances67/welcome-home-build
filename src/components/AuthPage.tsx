@@ -89,6 +89,8 @@ export function AuthPage() {
   const [resendHistory, setResendHistory] = useState<
     Array<{ requested_at: string; status: string; error_message: string | null }>
   >([]);
+  const [weakAttempt, setWeakAttempt] = useState(false);
+  const requirementsRef = useRef<HTMLDivElement | null>(null);
 
   const loadResendHistory = async (addr: string) => {
     const { data } = await supabase.rpc("get_recent_verification_resends", { _email: addr });
