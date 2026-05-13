@@ -130,7 +130,6 @@ describe("Account edit (E2E)", () => {
 
     // Re-mounting the page (e.g. after a navigation back) shows the persisted values.
     cleanup();
-    rerender(<AccountPage />);
     render(<AccountPage />);
     expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe("New Teacher Name");
     expect((screen.getByLabelText(/^username$/i) as HTMLInputElement).value).toBe("newteacher");
@@ -144,7 +143,9 @@ describe("Account edit (E2E)", () => {
 
   it("blocks saving when required fields are missing", async () => {
     render(<AccountPage />);
-    setByLabel(/^name$/i, "");
+    // Use a whitespace-only name: it satisfies the native `required` attribute
+    // but fails the component's trim() check, so we exercise the JS guard.
+    setByLabel(/^name$/i, "   ");
 
     await act(async () => {
       fireEvent.click(screen.getByText(/save changes/i));
