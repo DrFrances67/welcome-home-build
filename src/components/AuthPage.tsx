@@ -157,7 +157,7 @@ export function AuthPage() {
               features you use (Lesson Plan Generator, Danielson Review, Worksheet Builder, Professional Communication
               Support), the actions you take, and time spent per feature. This data is used to operate the service and
               is visible to the site owner. Read the full{" "}
-              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#4f46e5" }}>privacy statement</a>.
+              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#6D28D9" }}>privacy statement</a>.
             </div>
 
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#334155" }}>
