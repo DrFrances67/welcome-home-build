@@ -260,6 +260,7 @@ export function AuthPage() {
           <div style={{ background: "var(--auth-info-bg)", color: "var(--auth-info-text)", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
             {info}
           </div>
+        )}
 
         {verificationStatus && (
           <div
