@@ -140,8 +140,8 @@ export function AuthPage() {
       await supabase.rpc("log_verification_resend", {
         _email: addr,
         _status: status,
-        _error_message: errMsg,
-        _message_id: null,
+        _error_message: errMsg ?? undefined,
+        _message_id: undefined,
       });
       // UI feedback
       const ts = startedAt.toLocaleString();
