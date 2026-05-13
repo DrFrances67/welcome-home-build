@@ -1,0 +1,17 @@
+# Tech Savvy Teacher
+
+> The Tech Savvy Teacher Ecosystem — AI-powered tools that help teachers plan lessons, build worksheets, draft Danielson-aligned reflections, and write parent emails faster.
+
+Tech Savvy Teacher is a web app for K–12 educators. Signed-in teachers use a suite of generators (lesson plans, Danielson framework write-ups, student worksheets, parent/guardian emails) backed by large language models, with account management and saved school context.
+
+## Pages
+
+- [Home](/): Product overview and entry point to the teacher toolset.
+- [Sign in / Sign up](/auth): Create an account or log in to access the tools.
+- [Account](/account): Manage profile, username, password, and school details.
+- [Reset password](/reset-password): Recover access to your account.
+- [Privacy](/privacy): Privacy policy and data handling.
+
+## Optional
+
+- [Admin](/admin): Internal admin dashboard (staff only).
