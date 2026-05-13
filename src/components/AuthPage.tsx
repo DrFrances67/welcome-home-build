@@ -131,6 +131,18 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("auth-theme");
+    if (saved === "light" || saved === "dark" || saved === "system") setTheme(saved);
+  }, []);
+
+  const cycleTheme = () => {
+    const next = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
+    setTheme(next);
+    localStorage.setItem("auth-theme", next);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
