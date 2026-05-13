@@ -1,4 +1,21 @@
 import { useState } from "react";
+
+function strengthExplanation(label: string): string {
+  switch (label) {
+    case "Very weak":
+      return "Easy to guess. Add length and a mix of upper, lower, numbers, and symbols.";
+    case "Weak":
+      return "Still risky. Aim for 12+ characters with at least 3 character types.";
+    case "Fair":
+      return "Acceptable but not great. Add length or a missing character type to reach Good.";
+    case "Good":
+      return "Solid: 12+ characters with a healthy mix of upper, lower, numbers, and symbols. Hard to guess in normal attacks.";
+    case "Strong":
+      return "Excellent: long (14+) and uses all 4 character types with no obvious patterns.";
+    default:
+      return "Type a password to see strength.";
+  }
+}
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
@@ -543,8 +560,35 @@ function PasswordStrength({ password }: { password: string }) {
         ))}
       </div>
       {password && (
-        <div style={{ fontSize: 12, color, marginTop: 4, fontWeight: 600 }}>
-          Password strength: {label}
+        <div style={{ fontSize: 12, color, marginTop: 4, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+          <span>Password strength: {label}</span>
+          <span
+            tabIndex={0}
+            aria-label={`What does ${label} mean?`}
+            title={strengthExplanation(label)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 16,
+              height: 16,
+              borderRadius: "50%",
+              border: `1px solid ${color}`,
+              color,
+              fontSize: 10,
+              fontWeight: 700,
+              cursor: "help",
+              background: "transparent",
+              userSelect: "none",
+            }}
+          >
+            ?
+          </span>
+        </div>
+      )}
+      {password && (
+        <div style={{ fontSize: 11, color: "var(--auth-subtle)", marginTop: 4, lineHeight: 1.4 }}>
+          {strengthExplanation(label)}
         </div>
       )}
     </div>
