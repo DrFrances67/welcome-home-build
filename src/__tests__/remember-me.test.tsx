@@ -3,21 +3,30 @@ import { render, waitFor } from "@testing-library/react";
 import React from "react";
 
 // --- Mock the Supabase client used by useAuth ---
-const signOut = vi.fn().mockResolvedValue({ error: null });
-const onAuthStateChange = vi.fn(() => ({
-  data: { subscription: { unsubscribe: vi.fn() } },
-}));
-const getSession = vi.fn().mockResolvedValue({ data: { session: null } });
-const from = vi.fn(() => ({
-  select: () => ({
-    eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }),
-  }),
-}));
+const mocks = vi.hoisted(() => {
+  return {
+    signOut: vi.fn().mockResolvedValue({ error: null }),
+    onAuthStateChange: vi.fn(() => ({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    })),
+    getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
+    from: vi.fn(() => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }),
+      }),
+    })),
+  };
+});
+const { signOut, onAuthStateChange, getSession } = mocks;
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    auth: { signOut, onAuthStateChange, getSession },
-    from,
+    auth: {
+      signOut: mocks.signOut,
+      onAuthStateChange: mocks.onAuthStateChange,
+      getSession: mocks.getSession,
+    },
+    from: mocks.from,
   },
 }));
 
