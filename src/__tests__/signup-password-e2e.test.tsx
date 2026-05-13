@@ -89,7 +89,7 @@ describe("Sign-up flow: live checklist + weak-password highlight (E2E)", () => {
     setInput(/full name/i, "Jane Teacher");
     setInput(/^username$/i, "janet");
     setInput(/^email$/i, "jane@example.com");
-    setInput(/^password$/i, "abcdefghij"); // valid by schema, but Weak
+    setInput(/^password$/i, "Abcd1!efgh"); // passes schema (all 4 classes, 10 chars) but Fair, not Good
 
     const agree = screen.getByText(/i have read and agree/i).parentElement!.querySelector("input")!;
     fireEvent.click(agree);
@@ -106,13 +106,13 @@ describe("Sign-up flow: live checklist + weak-password highlight (E2E)", () => {
     expect(region.getAttribute("data-failing")).toBe("true");
     expect(region.textContent).toMatch(/Fix these to reach Good/i);
 
-    // Each unmet requirement is flagged as failed.
-    const upper = screen.getByTestId("pw-req-upper");
-    expect(upper.getAttribute("data-failed")).toBe("true");
-    expect(upper.textContent).toMatch(/missing/i);
-    const symbol = screen.getByTestId("pw-req-symbol");
-    expect(symbol.getAttribute("data-failed")).toBe("true");
-    // Met items stay met (lowercase + len10).
+    // The unmet "12+ characters" requirement is flagged as missing.
+    const len12 = screen.getByTestId("pw-req-len12");
+    expect(len12.getAttribute("data-met")).toBe("false");
+    expect(len12.getAttribute("data-failed")).toBe("true");
+    expect(len12.textContent).toMatch(/missing/i);
+
+    // Met items stay met and are not flagged as failed.
     expect(screen.getByTestId("pw-req-lower").getAttribute("data-met")).toBe("true");
     expect(screen.getByTestId("pw-req-lower").getAttribute("data-failed")).toBe("false");
 
