@@ -518,7 +518,7 @@ const primaryBtn: React.CSSProperties = {
 const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
 const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "var(--auth-link)", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
 
-function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+export function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
   if (!pw) return { score: 0, label: "Empty", color: "#E5E7EB" };
   let score = 0;
   if (pw.length >= 10) score++;
