@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
@@ -48,7 +48,7 @@ const themeCss = `
   --auth-info-text: #047857;
 }
 @media (prefers-color-scheme: dark) {
-  .auth-page {
+  .auth-page:not([data-theme="light"]) {
     --auth-bg: linear-gradient(135deg, #1E1B2E 0%, #2D1B4E 50%, #3B1F6B 100%);
     --auth-card: #1F1B2E;
     --auth-card-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
@@ -72,6 +72,48 @@ const themeCss = `
     --auth-info-text: #6EE7B7;
   }
 }
+.auth-page[data-theme="dark"] {
+  --auth-bg: linear-gradient(135deg, #1E1B2E 0%, #2D1B4E 50%, #3B1F6B 100%);
+  --auth-card: #1F1B2E;
+  --auth-card-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --auth-border-top: #A78BFA;
+  --auth-title: #EDE9FE;
+  --auth-subtle: #9CA3AF;
+  --auth-label: #D1D5DB;
+  --auth-input-bg: #2A2440;
+  --auth-input-border: #4C3D6E;
+  --auth-input-text: #F3F4F6;
+  --auth-primary: #8B5CF6;
+  --auth-primary-hover: #A78BFA;
+  --auth-link: #C4B5FD;
+  --auth-notice-bg: #2A2440;
+  --auth-notice-border: #4C3D6E;
+  --auth-notice-text: #CBD5E1;
+  --auth-notice-strong: #EDE9FE;
+  --auth-error-bg: #3B1818;
+  --auth-error-text: #FCA5A5;
+  --auth-info-bg: #0F2A1F;
+  --auth-info-text: #6EE7B7;
+}
+.auth-theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s;
+}
+.auth-theme-toggle:hover { background: rgba(255,255,255,0.25); }
 .auth-page input::placeholder { color: var(--auth-subtle); }
 .auth-page input:focus { border-color: var(--auth-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--auth-primary) 20%, transparent); }
 .auth-btn-primary { background: var(--auth-primary); transition: background 0.15s; }
@@ -89,6 +131,18 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("auth-theme");
+    if (saved === "light" || saved === "dark" || saved === "system") setTheme(saved);
+  }, []);
+
+  const cycleTheme = () => {
+    const next = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
+    setTheme(next);
+    localStorage.setItem("auth-theme", next);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +229,9 @@ export function AuthPage() {
   return (
     <div
       className="auth-page"
+      data-theme={theme === "system" ? undefined : theme}
       style={{
+        position: "relative",
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
@@ -186,6 +242,16 @@ export function AuthPage() {
       }}
     >
       <style>{themeCss}</style>
+      <button
+        type="button"
+        onClick={cycleTheme}
+        className="auth-theme-toggle"
+        aria-label={`Theme: ${theme}. Click to change.`}
+        title={`Theme: ${theme} (click to change)`}
+      >
+        <span aria-hidden="true">{theme === "light" ? "☀️" : theme === "dark" ? "🌙" : "🖥️"}</span>
+        <span style={{ textTransform: "capitalize" }}>{theme}</span>
+      </button>
       <div
         style={{
           width: "100%",
