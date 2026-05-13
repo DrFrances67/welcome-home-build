@@ -97,7 +97,9 @@ export function AuthPage() {
         }
         loginEmail = data as string;
       }
-      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      // Clear any stale local session before attempting a fresh sign-in
+      try { await supabase.auth.signOut({ scope: "local" } as never); } catch { /* ignore */ }
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) {
         const isUnverified = /confirm|verif/i.test(error.message);
         setError(error.message);
@@ -110,8 +112,13 @@ export function AuthPage() {
           setUnverifiedEmail(loginEmail);
           await loadResendHistory(loginEmail);
         }
+      } else if (data?.session) {
+        // Successful sign-in: force a clean reload so the app rehydrates with the new session
+        // (avoids the "verified but stuck on auth page" race during SSR/session hydration).
+        setInfo("Signed in. Loading your account…");
+        window.location.assign("/");
       } else {
-        setVerificationStatus({ state: "verified", email: loginEmail, checkedAt: new Date() });
+        setError("Sign-in returned no session. Please try again.");
       }
     } finally {
       setBusy(false);
