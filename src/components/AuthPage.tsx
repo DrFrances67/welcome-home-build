@@ -25,23 +25,23 @@ const signupSchema = z.object({
 
 const themeCss = `
 .auth-page {
-  --auth-bg: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
+  --auth-bg: rgba(30, 8, 45, 0.45);
   --auth-card: #ffffff;
-  --auth-card-shadow: 0 20px 60px rgba(109, 40, 217, 0.18);
-  --auth-border-top: #6D28D9;
-  --auth-title: #4C1D95;
+  --auth-card-shadow: 0 25px 70px rgba(139, 10, 176, 0.35), 0 0 0 1px rgba(207, 39, 245, 0.15);
+  --auth-border-top: #8B0AB0;
+  --auth-title: #8B0AB0;
   --auth-subtle: #6B7280;
   --auth-label: #374151;
   --auth-input-bg: #ffffff;
   --auth-input-border: #D1D5DB;
   --auth-input-text: #111827;
-  --auth-primary: #6D28D9;
-  --auth-primary-hover: #5B21B6;
-  --auth-link: #6D28D9;
-  --auth-notice-bg: #F5F3FF;
-  --auth-notice-border: #DDD6FE;
+  --auth-primary: #8B0AB0;
+  --auth-primary-hover: #6E0789;
+  --auth-link: #8B0AB0;
+  --auth-notice-bg: #FDF4FF;
+  --auth-notice-border: #F5D0FE;
   --auth-notice-text: #4B5563;
-  --auth-notice-strong: #4C1D95;
+  --auth-notice-strong: #8B0AB0;
   --auth-error-bg: #fef2f2;
   --auth-error-text: #b91c1c;
   --auth-info-bg: #ecfdf5;
@@ -149,13 +149,19 @@ export function AuthPage() {
   return (
     <div
       className="auth-page"
+      role="dialog"
+      aria-modal="true"
       style={{
-        minHeight: "100vh",
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
         background: "var(--auth-bg)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
         fontFamily: "Inter, 'Segoe UI', sans-serif",
       }}
     >

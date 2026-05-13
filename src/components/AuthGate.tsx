@@ -19,6 +19,26 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>Loading…</div>;
   }
 
-  if (!user) return <AuthPage />;
+  if (!user) {
+    return (
+      <>
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
+            filter: "blur(6px)",
+            transform: "scale(1.02)",
+            opacity: 0.6,
+          }}
+        >
+          {children}
+        </div>
+        <AuthPage />
+      </>
+    );
+  }
   return <>{children}</>;
 }
