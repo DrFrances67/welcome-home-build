@@ -60,8 +60,7 @@ import { Route } from "../routes/account";
 const AccountPage = (Route as unknown as { options: { component: React.ComponentType } }).options.component;
 
 function setByLabel(labelText: RegExp, value: string) {
-  const label = screen.getByText(labelText).closest("label") as HTMLLabelElement;
-  const field = label.querySelector("input, textarea") as HTMLInputElement | HTMLTextAreaElement;
+  const field = screen.getByLabelText(labelText) as HTMLInputElement | HTMLTextAreaElement;
   fireEvent.change(field, { target: { value } });
   return field;
 }
