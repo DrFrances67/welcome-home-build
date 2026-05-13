@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function strengthExplanation(label: string): string {
+export function strengthExplanation(label: string): string {
   switch (label) {
     case "Very weak":
       return "Easy to guess. Add length and a mix of upper, lower, numbers, and symbols.";
@@ -396,6 +396,7 @@ export function AuthPage() {
             <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" required />
             <PasswordStrength password={password} />
+            <PasswordRequirements password={password} />
             <p style={{ fontSize: 12, color: "var(--auth-subtle)", marginTop: -2 }}>
               Min 10 characters with upper, lower, number, and symbol.
             </p>
@@ -518,7 +519,7 @@ const primaryBtn: React.CSSProperties = {
 const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
 const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "var(--auth-link)", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
 
-function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+export function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
   if (!pw) return { score: 0, label: "Empty", color: "#E5E7EB" };
   let score = 0;
   if (pw.length >= 10) score++;
@@ -539,7 +540,7 @@ function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; c
   return { score: s, label: map[s].label, color: map[s].color };
 }
 
-function PasswordStrength({ password }: { password: string }) {
+export function PasswordStrength({ password }: { password: string }) {
   const { score, label, color } = scorePassword(password);
   const segments = 4;
   const filled = score; // 0..4
@@ -549,6 +550,7 @@ function PasswordStrength({ password }: { password: string }) {
         {Array.from({ length: segments }).map((_, i) => (
           <div
             key={i}
+            data-testid={`pw-strength-segment-${i}`}
             style={{
               flex: 1,
               height: 6,
@@ -564,8 +566,10 @@ function PasswordStrength({ password }: { password: string }) {
           <span>Password strength: {label}</span>
           <span
             tabIndex={0}
+            role="tooltip"
             aria-label={`What does ${label} mean?`}
             title={strengthExplanation(label)}
+            data-testid="pw-strength-tooltip"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -587,10 +591,84 @@ function PasswordStrength({ password }: { password: string }) {
         </div>
       )}
       {password && (
-        <div style={{ fontSize: 11, color: "var(--auth-subtle)", marginTop: 4, lineHeight: 1.4 }}>
+        <div data-testid="pw-strength-explanation" style={{ fontSize: 11, color: "var(--auth-subtle)", marginTop: 4, lineHeight: 1.4 }}>
           {strengthExplanation(label)}
         </div>
       )}
+    </div>
+  );
+}
+
+export type PasswordRequirement = {
+  id: string;
+  label: string;
+  met: boolean;
+  /** True when this unmet item is one the user still needs to reach "Good". */
+  neededForGood: boolean;
+};
+
+/** Compute the live password requirements list. Exported for tests. */
+export function getPasswordRequirements(pw: string): PasswordRequirement[] {
+  const items: Array<{ id: string; label: string; met: boolean }> = [
+    { id: "len10", label: "At least 10 characters", met: pw.length >= 10 },
+    { id: "len12", label: "12+ characters (recommended for Good)", met: pw.length >= 12 },
+    { id: "lower", label: "A lowercase letter", met: /[a-z]/.test(pw) },
+    { id: "upper", label: "An uppercase letter", met: /[A-Z]/.test(pw) },
+    { id: "number", label: "A number", met: /[0-9]/.test(pw) },
+    { id: "symbol", label: "A symbol (e.g. !@#$%)", met: /[^A-Za-z0-9]/.test(pw) },
+    {
+      id: "no-pattern",
+      label: "No repeating triples or common words",
+      met: pw.length > 0 && !/(.)\1\1/.test(pw) && !/^(?:password|qwerty|12345|letmein|welcome)/i.test(pw),
+    },
+  ];
+  const reachedGood = scorePassword(pw).score >= 3;
+  return items.map((it) => ({ ...it, neededForGood: !it.met && !reachedGood }));
+}
+
+export function PasswordRequirements({ password }: { password: string }) {
+  const reqs = getPasswordRequirements(password);
+  const reachedGood = scorePassword(password).score >= 3;
+  return (
+    <div
+      aria-label="Password requirements"
+      aria-live="polite"
+      data-testid="pw-requirements"
+      style={{
+        marginTop: 4,
+        padding: 10,
+        borderRadius: 8,
+        border: "1px solid var(--auth-input-border)",
+        background: "#FAFAFA",
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: "var(--auth-label)" }}>
+        Password requirements {reachedGood ? "✓ Good or better" : "— items needed for Good are highlighted"}
+      </div>
+      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+        {reqs.map((r) => (
+          <li
+            key={r.id}
+            data-testid={`pw-req-${r.id}`}
+            data-met={r.met ? "true" : "false"}
+            data-needed={r.neededForGood ? "true" : "false"}
+            style={{
+              fontSize: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              color: r.met ? "#047857" : r.neededForGood ? "#B45309" : "var(--auth-subtle)",
+              fontWeight: r.neededForGood ? 700 : 500,
+            }}
+          >
+            <span aria-hidden="true">{r.met ? "✓" : r.neededForGood ? "●" : "○"}</span>
+            <span>{r.label}</span>
+            {r.neededForGood && (
+              <span style={{ fontSize: 10, color: "#B45309", fontWeight: 700 }}>(needed for Good)</span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
