@@ -9,15 +9,19 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Generate differentiated lesson plans, build print-ready worksheets aligned to NY Standards, and polish professional emails — all in one AI-powered toolkit for teachers.",
+          "AI lesson plans, NY-standards worksheets, and polished parent emails — one classroom-ready toolkit built for K–12 teachers.",
       },
       { property: "og:title", content: "The Tech Savvy Teacher" },
       {
         property: "og:description",
         content:
-          "AI-powered lesson plans, worksheet builder, and professional email assistant for teachers.",
+          "AI lesson plans, NY-standards worksheets, and polished parent emails for K–12 teachers.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://techsavvyteacher.app/" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://techsavvyteacher.app/" },
     ],
   }),
   component: Index,
