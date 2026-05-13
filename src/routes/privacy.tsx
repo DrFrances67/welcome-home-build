@@ -57,7 +57,13 @@ function PrivacyPage() {
         <li>To deliver the requested features and personalize your experience.</li>
         <li>To monitor service usage, diagnose problems, and improve the platform.</li>
         <li>To communicate essential account messages (verification, password reset).</li>
+        <li>Generate AI-powered responses, lesson plans, worksheets, and professional communications on your behalf.</li>
+        <li>Respond to user inquiries and provide technical support.</li>
       </ul>
+      <p>
+        We do not sell, rent, or share your personal information with third parties for advertising or marketing
+        purposes.
+      </p>
 
       <h2 style={h2}>3. Who can see your data</h2>
       <p>
@@ -74,7 +80,7 @@ function PrivacyPage() {
         <li>Database access is governed by row-level security so that users can only read their own records.</li>
       </ul>
 
-      <h2 style={h2}>2-step verification & resets</h2>
+      <h2 style={h2}>2-step verification &amp; resets</h2>
       <p>
         You can reset your password at any time from the sign-in screen, and you can sign out from the menu in the
         top-right corner.
@@ -82,27 +88,53 @@ function PrivacyPage() {
 
       <h2 style={h2}>5. Data retention and your rights</h2>
       <p>
-        Your account data is retained for as long as your account is active. You may request export or deletion of your
-        data, or close your account, by contacting the site owner. Closing your account removes your profile, sessions,
-        and feature-usage records.
+        Your account data is retained for as long as your account is active. We are committed to minimizing data
+        storage. Unless you have created an account or explicitly saved content within the Platform, input data and
+        AI-generated outputs are not retained beyond your active session. Once your session ends, your content is not
+        stored on our servers. If account-based features are offered, saved data is retained only for as long as
+        necessary to provide the service and is deleted upon account closure upon request.
       </p>
 
-      <h2 style={h2}>6. Children&rsquo;s privacy</h2>
+      <h2 style={h2}>6. Student Data &amp; FERPA Compliance</h2>
       <p>
-        The Service is intended for use by educators. It is not directed to children under 13, and we do not knowingly
-        collect personal information from children.
+        The Tech Savvy Teacher Ecosystem is designed exclusively for use by educators and school professionals. It is
+        not intended for direct use by students. To protect student privacy and comply with the Family Educational
+        Rights and Privacy Act (FERPA):
       </p>
-
-      <h2 style={h2}>7. Changes to this statement</h2>
+      <ul style={ul}>
+        <li>
+          Do not enter personally identifiable student information (such as student names, ID numbers, grades, or
+          behavioral records) into any program on this Platform.
+        </li>
+        <li>
+          The Platform is not a student record system and should not be used to store or transmit student educational
+          records.
+        </li>
+      </ul>
       <p>
-        We may update this statement from time to time. Material changes will be communicated through the Service or by
-        email.
+        Educators are responsible for ensuring that any content entered into the Platform complies with their school&rsquo;s,
+        district&rsquo;s, or state&rsquo;s FERPA obligations and data privacy policies. The Service is intended for use
+        by educators. It is not directed to children under 17, and we do not knowingly collect personal information from
+        children.
       </p>
 
-      <h2 style={h2}>8. Contact</h2>
+      <h2 style={h2}>7. Updates to This Privacy Statement</h2>
+      <p>
+        We may update this Privacy Statement periodically to reflect changes in our practices, technology, or legal
+        requirements. When updates are made, the Effective Date at the top of this document will be revised.
+      </p>
+      <p>
+        We encourage users to review this statement regularly. Continued use of the Platform following any updates
+        constitutes acceptance of the revised Privacy Statement.
+      </p>
+
+      <h2 style={h2}>8. Contact Information</h2>
       <p>
         Questions about this privacy statement or your data can be directed to the site owner at{" "}
         <a href="mailto:edtechsavvyteach@gmail.com" style={{ color: "#4f46e5" }}>edtechsavvyteach@gmail.com</a>.
+      </p>
+      <p style={{ marginTop: 24 }}>
+        Thank you for trusting the Tech Savvy Teacher Ecosystem to support your professional practice.
       </p>
     </div>
   );
