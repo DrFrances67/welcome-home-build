@@ -144,7 +144,11 @@ export type Database = {
           created_at: string
           email: string
           full_name: string
+          home_address: string | null
           id: string
+          school_address: string | null
+          school_info: string | null
+          school_name: string | null
           updated_at: string
           username: string
         }
@@ -152,7 +156,11 @@ export type Database = {
           created_at?: string
           email: string
           full_name: string
+          home_address?: string | null
           id: string
+          school_address?: string | null
+          school_info?: string | null
+          school_name?: string | null
           updated_at?: string
           username: string
         }
@@ -160,7 +168,11 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string
+          home_address?: string | null
           id?: string
+          school_address?: string | null
+          school_info?: string | null
+          school_name?: string | null
           updated_at?: string
           username?: string
         }
