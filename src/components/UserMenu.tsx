@@ -40,9 +40,13 @@ export function UserMenu() {
 
   return (
     <div style={wrap}>
-      <span style={{ fontSize: 12, color: "#475569", background: "white", padding: "6px 10px", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+      <Link
+        to="/account"
+        title="Account settings"
+        style={{ fontSize: 12, color: "#475569", background: "white", padding: "6px 10px", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", textDecoration: "none", fontWeight: 600 }}
+      >
         {profile?.username ?? user.email}
-      </span>
+      </Link>
       {isAdmin && <Link to="/admin" style={btn}>Admin</Link>}
       <button onClick={signOut} style={btn}>Sign out</button>
     </div>
