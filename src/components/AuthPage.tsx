@@ -213,8 +213,12 @@ export function AuthPage() {
       setError(
         `Password is too weak (${strength.label}). Please choose a stronger password — aim for "Good" or "Strong".`,
       );
+      setWeakAttempt(true);
+      // Scroll the live checklist into view so the user sees what's missing.
+      requirementsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
+    setWeakAttempt(false);
     setBusy(true);
     try {
       const { error } = await supabase.auth.signUp({
