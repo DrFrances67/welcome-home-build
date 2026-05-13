@@ -203,15 +203,16 @@ function Field({ label, value, onChange, type = "text", required, autoComplete }
 }
 
 const primaryBtn: React.CSSProperties = {
-  background: "#4f46e5",
+  background: "linear-gradient(135deg, #1E3A5F, #6D28D9)",
   color: "white",
   border: "none",
-  padding: "11px 16px",
+  padding: "12px 16px",
   borderRadius: 8,
   fontSize: 14,
-  fontWeight: 600,
+  fontWeight: 700,
   cursor: "pointer",
   marginTop: 4,
+  letterSpacing: 0.2,
 };
 const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
-const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontSize: 13, padding: 0 };
+const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "#6D28D9", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
