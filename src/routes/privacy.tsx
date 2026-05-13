@@ -15,13 +15,22 @@ function PrivacyPage() {
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "48px 24px 80px", color: "#0f172a", lineHeight: 1.65 }}>
       <Link to="/" style={{ color: "#4f46e5", fontSize: 14 }}>← Back to app</Link>
       <h1 style={{ fontSize: 32, fontWeight: 800, margin: "12px 0 8px" }}>Privacy Statement</h1>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>Last updated: {new Date().toLocaleDateString()}</p>
+      <p style={{ color: "#64748b", marginBottom: 24 }}>Last updated: 5/12/2026</p>
 
       <p>
-        The Tech Savvy Teacher Ecosystem (&ldquo;the Service&rdquo;) is a comprehensive platform designed to meet the
-        diverse needs of educators through four user-friendly programs: the Lesson Plan Generator, Danielson Review,
-        Worksheet Builder, and Professional Communication Support. This statement explains what information we collect,
-        why we collect it, and how it is used.
+        The Tech Savvy Teacher Ecosystem (&ldquo;the Service&rdquo;) is a comprehensive platform designed for educators
+        through four user-friendly, distinct programs:
+      </p>
+      <ul style={ul}>
+        <li><strong>Lesson Plan Generator</strong> &mdash; AI-assisted creation of standards-aligned lesson plans</li>
+        <li><strong>Danielson Review</strong> &mdash; Support tools for educator reflection and evaluation aligned to the Danielson Framework</li>
+        <li><strong>Worksheet Builder</strong> &mdash; Dynamic creation of student-facing instructional materials</li>
+        <li><strong>Professional Communication Support</strong> &mdash; AI-powered drafting of professional educator communications</li>
+      </ul>
+      <p>
+        This Privacy Statement explains how we collect, use, protect, and handle information when you use our platform
+        and its programs. By using any of these programs, you agree to the practices described in this Privacy
+        Statement.
       </p>
 
       <h2 style={h2}>1. Information we collect</h2>
