@@ -64,28 +64,56 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setInfo(null);
+    setUnverifiedEmail(null);
     setBusy(true);
     try {
       let loginEmail = identifier.trim();
       if (!loginEmail.includes("@")) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("username", loginEmail)
-          .maybeSingle();
-        if (!data?.email) {
+        const { data, error: rpcErr } = await supabase.rpc("get_email_by_username", {
+          _username: loginEmail,
+        });
+        if (rpcErr || !data) {
           setError("No account found with that username.");
           setBusy(false);
           return;
         }
-        loginEmail = data.email;
+        loginEmail = data as string;
       }
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      if (error) {
+        setError(error.message);
+        if (/confirm|verif/i.test(error.message)) {
+          setUnverifiedEmail(loginEmail);
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleResendVerification = async (target?: string) => {
+    const addr = (target ?? unverifiedEmail ?? email).trim();
+    if (!addr) {
+      setError("Enter your email so we can resend the verification link.");
+      return;
+    }
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: addr,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
       if (error) setError(error.message);
+      else setInfo(`Verification email resent to ${addr}. Check your inbox (and spam).`);
     } finally {
       setBusy(false);
     }
