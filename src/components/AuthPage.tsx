@@ -493,3 +493,53 @@ const primaryBtn: React.CSSProperties = {
 };
 const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
 const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "var(--auth-link)", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
+
+function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+  if (!pw) return { score: 0, label: "Empty", color: "#E5E7EB" };
+  let score = 0;
+  if (pw.length >= 10) score++;
+  if (pw.length >= 14) score++;
+  const classes = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter((r) => r.test(pw)).length;
+  if (classes >= 3) score++;
+  if (classes === 4 && pw.length >= 12) score++;
+  // Penalize common patterns
+  if (/(.)\1\1/.test(pw) || /^(?:password|qwerty|12345|letmein|welcome)/i.test(pw)) score = Math.max(0, score - 1);
+  const s = Math.min(4, Math.max(0, score)) as 0 | 1 | 2 | 3 | 4;
+  const map = [
+    { label: "Very weak", color: "#DC2626" },
+    { label: "Weak", color: "#EA580C" },
+    { label: "Fair", color: "#D97706" },
+    { label: "Good", color: "#65A30D" },
+    { label: "Strong", color: "#059669" },
+  ];
+  return { score: s, label: map[s].label, color: map[s].color };
+}
+
+function PasswordStrength({ password }: { password: string }) {
+  const { score, label, color } = scorePassword(password);
+  const segments = 4;
+  const filled = score; // 0..4
+  return (
+    <div style={{ marginTop: -6 }} aria-live="polite">
+      <div style={{ display: "flex", gap: 4 }}>
+        {Array.from({ length: segments }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: 6,
+              borderRadius: 3,
+              background: i < filled ? color : "#E5E7EB",
+              transition: "background 0.15s",
+            }}
+          />
+        ))}
+      </div>
+      {password && (
+        <div style={{ fontSize: 12, color, marginTop: 4, fontWeight: 600 }}>
+          Password strength: {label}
+        </div>
+      )}
+    </div>
+  );
+}
