@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useRef, useState } from "react";
 
 export function strengthExplanation(label: string): string {
   switch (label) {
@@ -89,6 +89,8 @@ export function AuthPage() {
   const [resendHistory, setResendHistory] = useState<
     Array<{ requested_at: string; status: string; error_message: string | null }>
   >([]);
+  const [weakAttempt, setWeakAttempt] = useState(false);
+  const requirementsRef = useRef<HTMLDivElement | null>(null);
 
   const loadResendHistory = async (addr: string) => {
     const { data } = await supabase.rpc("get_recent_verification_resends", { _email: addr });
@@ -211,8 +213,12 @@ export function AuthPage() {
       setError(
         `Password is too weak (${strength.label}). Please choose a stronger password — aim for "Good" or "Strong".`,
       );
+      setWeakAttempt(true);
+      // Scroll the live checklist into view so the user sees what's missing.
+      requirementsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
+    setWeakAttempt(false);
     setBusy(true);
     try {
       const { error } = await supabase.auth.signUp({
@@ -396,7 +402,7 @@ export function AuthPage() {
             <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" required />
             <PasswordStrength password={password} />
-            <PasswordRequirements password={password} />
+            <PasswordRequirements password={password} highlightUnmet={weakAttempt} ref={requirementsRef} />
             <p style={{ fontSize: 12, color: "var(--auth-subtle)", marginTop: -2 }}>
               Min 10 characters with upper, lower, number, and symbol.
             </p>
@@ -626,49 +632,77 @@ export function getPasswordRequirements(pw: string): PasswordRequirement[] {
   return items.map((it) => ({ ...it, neededForGood: !it.met && !reachedGood }));
 }
 
-export function PasswordRequirements({ password }: { password: string }) {
-  const reqs = getPasswordRequirements(password);
-  const reachedGood = scorePassword(password).score >= 3;
-  return (
-    <div
-      aria-label="Password requirements"
-      aria-live="polite"
-      data-testid="pw-requirements"
-      style={{
-        marginTop: 4,
-        padding: 10,
-        borderRadius: 8,
-        border: "1px solid var(--auth-input-border)",
-        background: "#FAFAFA",
-      }}
-    >
-      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: "var(--auth-label)" }}>
-        Password requirements {reachedGood ? "✓ Good or better" : "— items needed for Good are highlighted"}
+type PasswordRequirementsProps = {
+  password: string;
+  /** When true, all unmet items are styled as failure (red) — set after a weak signup attempt. */
+  highlightUnmet?: boolean;
+};
+
+export const PasswordRequirements = React.forwardRef<HTMLDivElement, PasswordRequirementsProps>(
+  function PasswordRequirements({ password, highlightUnmet = false }, ref) {
+    const reqs = getPasswordRequirements(password);
+    const reachedGood = scorePassword(password).score >= 3;
+    const failing = highlightUnmet && !reachedGood;
+    return (
+      <div
+        ref={ref}
+        aria-label="Password requirements"
+        aria-live="polite"
+        data-testid="pw-requirements"
+        data-failing={failing ? "true" : "false"}
+        style={{
+          marginTop: 4,
+          padding: 10,
+          borderRadius: 8,
+          border: failing ? "2px solid #DC2626" : "1px solid var(--auth-input-border)",
+          background: failing ? "#FEF2F2" : "#FAFAFA",
+          scrollMarginTop: 80,
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: failing ? "#B91C1C" : "var(--auth-label)" }}>
+          {failing
+            ? "Fix these to reach Good:"
+            : `Password requirements ${reachedGood ? "✓ Good or better" : "— items needed for Good are highlighted"}`}
+        </div>
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+          {reqs.map((r) => {
+            const failedItem = failing && !r.met;
+            const itemColor = r.met
+              ? "#047857"
+              : failedItem
+                ? "#B91C1C"
+                : r.neededForGood
+                  ? "#B45309"
+                  : "var(--auth-subtle)";
+            return (
+              <li
+                key={r.id}
+                data-testid={`pw-req-${r.id}`}
+                data-met={r.met ? "true" : "false"}
+                data-needed={r.neededForGood ? "true" : "false"}
+                data-failed={failedItem ? "true" : "false"}
+                style={{
+                  fontSize: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color: itemColor,
+                  fontWeight: failedItem || r.neededForGood ? 700 : 500,
+                }}
+              >
+                <span aria-hidden="true">{r.met ? "✓" : failedItem ? "✕" : r.neededForGood ? "●" : "○"}</span>
+                <span>{r.label}</span>
+                {failedItem ? (
+                  <span style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>(missing)</span>
+                ) : r.neededForGood ? (
+                  <span style={{ fontSize: 10, color: "#B45309", fontWeight: 700 }}>(needed for Good)</span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
       </div>
-      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
-        {reqs.map((r) => (
-          <li
-            key={r.id}
-            data-testid={`pw-req-${r.id}`}
-            data-met={r.met ? "true" : "false"}
-            data-needed={r.neededForGood ? "true" : "false"}
-            style={{
-              fontSize: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              color: r.met ? "#047857" : r.neededForGood ? "#B45309" : "var(--auth-subtle)",
-              fontWeight: r.neededForGood ? 700 : 500,
-            }}
-          >
-            <span aria-hidden="true">{r.met ? "✓" : r.neededForGood ? "●" : "○"}</span>
-            <span>{r.label}</span>
-            {r.neededForGood && (
-              <span style={{ fontSize: 10, color: "#B45309", fontWeight: 700 }}>(needed for Good)</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+    );
+  },
+);
+
