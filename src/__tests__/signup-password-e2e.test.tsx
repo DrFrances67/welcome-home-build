@@ -30,8 +30,7 @@ const scrollSpy = vi.fn();
 beforeEach(() => {
   mocks.signUp.mockClear();
   scrollSpy.mockClear();
-  // @ts-expect-error – test stub on the prototype
-  Element.prototype.scrollIntoView = scrollSpy;
+  (Element.prototype as unknown as { scrollIntoView: typeof scrollSpy }).scrollIntoView = scrollSpy;
 });
 afterEach(() => cleanup());
 
