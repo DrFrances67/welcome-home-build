@@ -93,7 +93,7 @@ function PrivacyPage() {
       <h2 style={h2}>8. Contact</h2>
       <p>
         Questions about this privacy statement or your data can be directed to the site owner at{" "}
-        <a href="mailto:famato67@gmail.com" style={{ color: "#4f46e5" }}>famato67@gmail.com</a>.
+        <a href="mailto:edtechsavvyteach@gmail.com" style={{ color: "#4f46e5" }}>edtechsavvyteach@gmail.com</a>.
       </p>
     </div>
   );
