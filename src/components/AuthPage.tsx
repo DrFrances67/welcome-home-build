@@ -119,9 +119,9 @@ export function AuthPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "linear-gradient(135deg, #f8fafc, #eef2ff)" }}>
-      <div style={{ width: "100%", maxWidth: 460, background: "white", borderRadius: 16, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.08)" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>The Tech Savvy Teacher</h1>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "linear-gradient(135deg, #1E3A5F 0%, #6D28D9 100%)", fontFamily: "Inter, 'Segoe UI', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "white", borderRadius: 16, padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderTop: "6px solid #6D28D9" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: "#1E3A5F" }}>The Tech Savvy Teacher</h1>
         <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
           {mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Sign in to continue"}
         </p>
@@ -157,7 +157,7 @@ export function AuthPage() {
               features you use (Lesson Plan Generator, Danielson Review, Worksheet Builder, Professional Communication
               Support), the actions you take, and time spent per feature. This data is used to operate the service and
               is visible to the site owner. Read the full{" "}
-              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#4f46e5" }}>privacy statement</a>.
+              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#6D28D9" }}>privacy statement</a>.
             </div>
 
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#334155" }}>
@@ -203,15 +203,16 @@ function Field({ label, value, onChange, type = "text", required, autoComplete }
 }
 
 const primaryBtn: React.CSSProperties = {
-  background: "#4f46e5",
+  background: "linear-gradient(135deg, #1E3A5F, #6D28D9)",
   color: "white",
   border: "none",
-  padding: "11px 16px",
+  padding: "12px 16px",
   borderRadius: 8,
   fontSize: 14,
-  fontWeight: 600,
+  fontWeight: 700,
   cursor: "pointer",
   marginTop: 4,
+  letterSpacing: 0.2,
 };
 const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
-const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontSize: 13, padding: 0 };
+const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "#6D28D9", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
