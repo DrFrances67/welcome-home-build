@@ -149,9 +149,7 @@ export function AuthPage() {
   return (
     <div
       className="auth-page"
-      data-theme={theme === "system" ? undefined : theme}
       style={{
-        position: "relative",
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
@@ -162,16 +160,6 @@ export function AuthPage() {
       }}
     >
       <style>{themeCss}</style>
-      <button
-        type="button"
-        onClick={cycleTheme}
-        className="auth-theme-toggle"
-        aria-label={`Theme: ${theme}. Click to change.`}
-        title={`Theme: ${theme} (click to change)`}
-      >
-        <span aria-hidden="true">{theme === "light" ? "☀️" : theme === "dark" ? "🌙" : "🖥️"}</span>
-        <span style={{ textTransform: "capitalize" }}>{theme}</span>
-      </button>
       <div
         style={{
           width: "100%",
