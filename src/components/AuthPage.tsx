@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export function strengthExplanation(label: string): string {
   switch (label) {
