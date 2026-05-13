@@ -84,7 +84,7 @@ afterEach(() => cleanup());
 
 describe("Account edit (E2E)", () => {
   it("edits required + optional fields, saves, and persists the changes", async () => {
-    const { rerender } = render(<AccountPage />);
+    render(<AccountPage />);
 
     // Form pre-fills from the loaded profile.
     const nameInput = setByLabel(/^name$/i, "New Teacher Name");
