@@ -269,9 +269,12 @@ export function AuthPage() {
         inset: 0,
         zIndex: 1000,
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
-        padding: 24,
+        padding: "24px 16px",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        overscrollBehavior: "contain",
         background: "var(--auth-bg)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
@@ -285,9 +288,11 @@ export function AuthPage() {
           maxWidth: 460,
           background: "var(--auth-card)",
           borderRadius: 16,
-          padding: 32,
+          padding: "clamp(20px, 4vw, 32px)",
           boxShadow: "var(--auth-card-shadow)",
           borderTop: "6px solid var(--auth-border-top)",
+          margin: "auto 0",
+          flexShrink: 0,
         }}
       >
         <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: "var(--auth-title)" }}>
