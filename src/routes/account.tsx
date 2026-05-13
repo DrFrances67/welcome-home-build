@@ -104,18 +104,40 @@ function AccountPage() {
       <form onSubmit={handleSave} style={{ background: "white", padding: 24, borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
         <div style={sectionTitle}>Required</div>
 
+        <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 12px" }}>
+          Fields marked with <span style={{ color: "#dc2626" }} aria-hidden="true">*</span> are required.
+        </p>
+
         <div style={field}>
-          <label style={label} htmlFor="fullName">Name</label>
+          <label style={label} htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            style={{ ...input, background: "#f1f5f9", color: "#475569", cursor: "not-allowed" }}
+            value={profile?.email ?? user.email ?? ""}
+            readOnly
+            aria-readonly="true"
+          />
+        </div>
+
+        <div style={field}>
+          <label style={label} htmlFor="fullName">
+            Name <span style={{ color: "#dc2626" }} aria-hidden="true">*</span>
+          </label>
           <input id="fullName" style={input} value={fullName} onChange={(e) => setFullName(e.target.value)} required />
         </div>
 
         <div style={field}>
-          <label style={label} htmlFor="username">Username</label>
+          <label style={label} htmlFor="username">
+            Username <span style={{ color: "#dc2626" }} aria-hidden="true">*</span>
+          </label>
           <input id="username" style={input} value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} />
         </div>
 
         <div style={field}>
-          <label style={label} htmlFor="password">Password</label>
+          <label style={label} htmlFor="password">
+            Password <span style={{ color: "#dc2626" }} aria-hidden="true">*</span>
+          </label>
           <input id="password" type="password" style={input} value={password}
             onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to keep current password" autoComplete="new-password" />
           <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Only fill in to change your password (must reach &ldquo;Good&rdquo; strength).</p>
