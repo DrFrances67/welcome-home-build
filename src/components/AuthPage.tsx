@@ -189,6 +189,13 @@ export function AuthPage() {
       setError(parsed.error.errors[0].message);
       return;
     }
+    const strength = scorePassword(parsed.data.password);
+    if (strength.score < 3) {
+      setError(
+        `Password is too weak (${strength.label}). Please choose a stronger password — aim for "Good" or "Strong".`,
+      );
+      return;
+    }
     setBusy(true);
     try {
       const { error } = await supabase.auth.signUp({
