@@ -235,6 +235,33 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_resend_log: {
+        Row: {
+          email: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          requested_at: string
+          status: string
+        }
+        Insert: {
+          email: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          requested_at?: string
+          status: string
+        }
+        Update: {
+          email?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          requested_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -249,12 +276,42 @@ export type Database = {
         Returns: number
       }
       get_email_by_username: { Args: { _username: string }; Returns: string }
+      get_recent_verification_resends: {
+        Args: { _email: string }
+        Returns: {
+          error_message: string
+          requested_at: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      log_verification_resend: {
+        Args: {
+          _email: string
+          _error_message?: string
+          _message_id?: string
+          _status: string
+        }
+        Returns: {
+          email: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          requested_at: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "verification_resend_log"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       move_to_dlq: {
         Args: {
