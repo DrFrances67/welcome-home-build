@@ -64,28 +64,56 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setInfo(null);
+    setUnverifiedEmail(null);
     setBusy(true);
     try {
       let loginEmail = identifier.trim();
       if (!loginEmail.includes("@")) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("username", loginEmail)
-          .maybeSingle();
-        if (!data?.email) {
+        const { data, error: rpcErr } = await supabase.rpc("get_email_by_username", {
+          _username: loginEmail,
+        });
+        if (rpcErr || !data) {
           setError("No account found with that username.");
           setBusy(false);
           return;
         }
-        loginEmail = data.email;
+        loginEmail = data as string;
       }
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      if (error) {
+        setError(error.message);
+        if (/confirm|verif/i.test(error.message)) {
+          setUnverifiedEmail(loginEmail);
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleResendVerification = async (target?: string) => {
+    const addr = (target ?? unverifiedEmail ?? email).trim();
+    if (!addr) {
+      setError("Enter your email so we can resend the verification link.");
+      return;
+    }
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: addr,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
       if (error) setError(error.message);
+      else setInfo(`Verification email resent to ${addr}. Check your inbox (and spam).`);
     } finally {
       setBusy(false);
     }
@@ -200,9 +228,19 @@ export function AuthPage() {
             <Field label="Username or email" value={identifier} onChange={setIdentifier} autoComplete="username" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" required />
             <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>{busy ? "Signing in…" : "Sign in"}</button>
+            {unverifiedEmail && (
+              <button type="button" disabled={busy} onClick={() => handleResendVerification(unverifiedEmail)} style={{ ...primaryBtn, background: "transparent", color: "var(--auth-primary)", border: "1px solid var(--auth-primary)", marginTop: 0 }}>
+                Resend verification email
+              </button>
+            )}
             <div style={linkRow}>
-              <button type="button" onClick={() => { setMode("signup"); setError(null); setInfo(null); }} style={linkBtn}>Create account</button>
-              <button type="button" onClick={() => { setMode("reset"); setError(null); setInfo(null); }} style={linkBtn}>Forgot password?</button>
+              <button type="button" onClick={() => { setMode("signup"); setError(null); setInfo(null); setUnverifiedEmail(null); }} style={linkBtn}>Create account</button>
+              <button type="button" onClick={() => { setMode("reset"); setError(null); setInfo(null); setUnverifiedEmail(null); }} style={linkBtn}>Forgot password?</button>
+            </div>
+            <div style={{ textAlign: "center", marginTop: 4 }}>
+              <button type="button" onClick={() => handleResendVerification(identifier.includes("@") ? identifier : undefined)} disabled={busy} style={linkBtn}>
+                Didn't get the verification email? Resend
+              </button>
             </div>
           </form>
         )}
