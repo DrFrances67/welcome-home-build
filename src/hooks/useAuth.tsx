@@ -39,6 +39,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Remember-me enforcement: if the previous sign-in opted out, sessionStorage
+    // clears when the tab closes, so on the next cold load we sign out before restoring.
+    try {
+      const sessionOnly = localStorage.getItem("tst-session-only") === "1";
+      const alive = sessionStorage.getItem("tst-session-alive") === "1";
+      if (sessionOnly && !alive) {
+        localStorage.removeItem("tst-session-only");
+        supabase.auth.signOut();
+      } else if (sessionOnly) {
+        sessionStorage.setItem("tst-session-alive", "1");
+      }
+    } catch { /* storage unavailable */ }
+
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       setSession(s);
       setUser(s?.user ?? null);
