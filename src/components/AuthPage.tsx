@@ -338,6 +338,15 @@ export function AuthPage() {
           <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Field label="Username or email" value={identifier} onChange={setIdentifier} autoComplete="username" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" required />
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--auth-label)", userSelect: "none" }}>
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                style={{ accentColor: "var(--auth-primary)" }}
+              />
+              <span>Remember me — keep me signed in on this device</span>
+            </label>
             <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>{busy ? "Signing in…" : "Sign in"}</button>
             {unverifiedEmail && (
               <button type="button" disabled={busy} onClick={() => handleResendVerification(unverifiedEmail)} style={{ ...primaryBtn, background: "transparent", color: "var(--auth-primary)", border: "1px solid var(--auth-primary)", marginTop: 0 }}>
