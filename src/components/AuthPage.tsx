@@ -260,6 +260,61 @@ export function AuthPage() {
           <div style={{ background: "var(--auth-info-bg)", color: "var(--auth-info-text)", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
             {info}
           </div>
+
+        {verificationStatus && (
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 8,
+              marginBottom: 16,
+              fontSize: 13,
+              border: "1px solid",
+              borderColor:
+                verificationStatus.state === "verified"
+                  ? "#A7F3D0"
+                  : verificationStatus.state === "unverified"
+                    ? "#FDE68A"
+                    : "#E5E7EB",
+              background:
+                verificationStatus.state === "verified"
+                  ? "#ECFDF5"
+                  : verificationStatus.state === "unverified"
+                    ? "#FFFBEB"
+                    : "#F9FAFB",
+              color:
+                verificationStatus.state === "verified"
+                  ? "#047857"
+                  : verificationStatus.state === "unverified"
+                    ? "#92400E"
+                    : "#374151",
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>
+              {verificationStatus.state === "verified" && "✓ Email verified"}
+              {verificationStatus.state === "unverified" && "⚠ Email not verified"}
+              {verificationStatus.state === "unknown" && "Verification status unknown"}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.85 }}>
+              {verificationStatus.email} · checked {verificationStatus.checkedAt.toLocaleTimeString()}
+            </div>
+          </div>
+        )}
+
+        {resendHistory.length > 0 && (
+          <div style={{ marginBottom: 16, padding: 10, borderRadius: 8, background: "#F9FAFB", border: "1px solid #E5E7EB", fontSize: 12, color: "#374151" }}>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>Recent verification email resends</div>
+            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+              {resendHistory.map((r, i) => (
+                <li key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <span>{new Date(r.requested_at).toLocaleString()}</span>
+                  <span style={{ fontWeight: 600, color: r.status === "sent" ? "#047857" : "#B91C1C" }}>
+                    {r.status}
+                    {r.error_message ? ` — ${r.error_message}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {mode === "signin" && (
