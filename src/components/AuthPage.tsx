@@ -119,9 +119,9 @@ export function AuthPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "linear-gradient(135deg, #f8fafc, #eef2ff)" }}>
-      <div style={{ width: "100%", maxWidth: 460, background: "white", borderRadius: 16, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.08)" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>The Tech Savvy Teacher</h1>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "linear-gradient(135deg, #1E3A5F 0%, #6D28D9 100%)", fontFamily: "Inter, 'Segoe UI', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "white", borderRadius: 16, padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderTop: "6px solid #6D28D9" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: "#1E3A5F" }}>The Tech Savvy Teacher</h1>
         <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
           {mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Sign in to continue"}
         </p>
