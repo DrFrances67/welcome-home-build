@@ -65,12 +65,24 @@ export function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<
+    null | { state: "verified" | "unverified" | "unknown"; email: string; checkedAt: Date }
+  >(null);
+  const [resendHistory, setResendHistory] = useState<
+    Array<{ requested_at: string; status: string; error_message: string | null }>
+  >([]);
+
+  const loadResendHistory = async (addr: string) => {
+    const { data } = await supabase.rpc("get_recent_verification_resends", { _email: addr });
+    setResendHistory((data as typeof resendHistory) ?? []);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setInfo(null);
     setUnverifiedEmail(null);
+    setVerificationStatus(null);
     setBusy(true);
     try {
       let loginEmail = identifier.trim();
@@ -87,10 +99,19 @@ export function AuthPage() {
       }
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) {
+        const isUnverified = /confirm|verif/i.test(error.message);
         setError(error.message);
-        if (/confirm|verif/i.test(error.message)) {
+        setVerificationStatus({
+          state: isUnverified ? "unverified" : "unknown",
+          email: loginEmail,
+          checkedAt: new Date(),
+        });
+        if (isUnverified) {
           setUnverifiedEmail(loginEmail);
+          await loadResendHistory(loginEmail);
         }
+      } else {
+        setVerificationStatus({ state: "verified", email: loginEmail, checkedAt: new Date() });
       }
     } finally {
       setBusy(false);
@@ -106,14 +127,32 @@ export function AuthPage() {
     setError(null);
     setInfo(null);
     setBusy(true);
+    const startedAt = new Date();
     try {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: addr,
         options: { emailRedirectTo: `${window.location.origin}/` },
       });
-      if (error) setError(error.message);
-      else setInfo(`Verification email resent to ${addr}. Check your inbox (and spam).`);
+      const status = error ? "failed" : "sent";
+      const errMsg = error?.message ?? null;
+      // Backend log
+      await supabase.rpc("log_verification_resend", {
+        _email: addr,
+        _status: status,
+        _error_message: errMsg,
+        _message_id: null,
+      });
+      // UI feedback
+      const ts = startedAt.toLocaleString();
+      if (error) {
+        setError(`Resend failed at ${ts}: ${error.message}`);
+      } else {
+        setInfo(
+          `Verification email resent to ${addr} at ${ts}. Allow up to a few minutes; also check spam/junk and any quarantine folder.`,
+        );
+      }
+      await loadResendHistory(addr);
     } finally {
       setBusy(false);
     }
