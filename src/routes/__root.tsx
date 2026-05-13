@@ -84,6 +84,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { AuthProvider } from "@/hooks/useAuth";
+import { UserMenu } from "@/components/UserMenu";
+
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <UserMenu />
+      <Outlet />
+    </AuthProvider>
+  );
 }

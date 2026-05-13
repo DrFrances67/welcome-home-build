@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TheTechSavvyTeacherApp } from "@/components/TheTechSavvyTeacherApp";
+import { AuthGate } from "@/components/AuthGate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "The Tech Savvy Teacher — Tools For Educators" },
+      { title: "The Tech Savvy Teacher — Tools For New York Educators" },
       {
         name: "description",
         content:
@@ -23,5 +24,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return <TheTechSavvyTeacherApp />;
+  return (
+    <AuthGate>
+      <TheTechSavvyTeacherApp />
+    </AuthGate>
+  );
 }
