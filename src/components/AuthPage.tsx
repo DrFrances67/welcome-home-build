@@ -228,9 +228,19 @@ export function AuthPage() {
             <Field label="Username or email" value={identifier} onChange={setIdentifier} autoComplete="username" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" required />
             <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>{busy ? "Signing in…" : "Sign in"}</button>
+            {unverifiedEmail && (
+              <button type="button" disabled={busy} onClick={() => handleResendVerification(unverifiedEmail)} style={{ ...primaryBtn, background: "transparent", color: "var(--auth-primary)", border: "1px solid var(--auth-primary)", marginTop: 0 }}>
+                Resend verification email
+              </button>
+            )}
             <div style={linkRow}>
-              <button type="button" onClick={() => { setMode("signup"); setError(null); setInfo(null); }} style={linkBtn}>Create account</button>
-              <button type="button" onClick={() => { setMode("reset"); setError(null); setInfo(null); }} style={linkBtn}>Forgot password?</button>
+              <button type="button" onClick={() => { setMode("signup"); setError(null); setInfo(null); setUnverifiedEmail(null); }} style={linkBtn}>Create account</button>
+              <button type="button" onClick={() => { setMode("reset"); setError(null); setInfo(null); setUnverifiedEmail(null); }} style={linkBtn}>Forgot password?</button>
+            </div>
+            <div style={{ textAlign: "center", marginTop: 4 }}>
+              <button type="button" onClick={() => handleResendVerification(identifier.includes("@") ? identifier : undefined)} disabled={busy} style={linkBtn}>
+                Didn't get the verification email? Resend
+              </button>
             </div>
           </form>
         )}
