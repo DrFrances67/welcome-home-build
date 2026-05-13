@@ -114,8 +114,16 @@ export function AuthPage() {
           await loadResendHistory(loginEmail);
         }
       } else if (data?.session) {
-        // Successful sign-in: force a clean reload so the app rehydrates with the new session
-        // (avoids the "verified but stuck on auth page" race during SSR/session hydration).
+        // Remember-me: when unchecked, mark this session as tab-scoped so the
+        // app signs the user out on the next cold load (after the tab closes).
+        try {
+          if (rememberMe) {
+            localStorage.removeItem("tst-session-only");
+          } else {
+            localStorage.setItem("tst-session-only", "1");
+            sessionStorage.setItem("tst-session-alive", "1");
+          }
+        } catch { /* storage unavailable */ }
         setInfo("Signed in. Loading your account…");
         window.location.assign("/");
       } else {
