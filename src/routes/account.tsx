@@ -5,7 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { scorePassword } from "@/components/AuthPage";
 
 export const Route = createFileRoute("/account")({
-  head: () => ({ meta: [{ title: "Account — The Tech Savvy Teacher" }] }),
+  head: () => ({
+    meta: [
+      { title: "Your Account — The Tech Savvy Teacher" },
+      { name: "description", content: "Manage your Tech Savvy Teacher profile: update your name, username, password, school details, and home address." },
+      { property: "og:title", content: "Your Account — The Tech Savvy Teacher" },
+      { property: "og:description", content: "Update your profile, password, and school details on The Tech Savvy Teacher." },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/account" }],
+  }),
   component: AccountPage,
 });
 
