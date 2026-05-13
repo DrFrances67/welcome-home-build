@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function strengthExplanation(label: string): string {
+export function strengthExplanation(label: string): string {
   switch (label) {
     case "Very weak":
       return "Easy to guess. Add length and a mix of upper, lower, numbers, and symbols.";
