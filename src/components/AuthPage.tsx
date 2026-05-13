@@ -119,15 +119,15 @@ export function AuthPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "radial-gradient(ellipse at top, #2A0F4F 0%, #14071F 60%, #0A0413 100%)", fontFamily: "Inter, 'Segoe UI', sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 460, background: "#1A0F2E", borderRadius: 16, padding: 32, boxShadow: "0 20px 60px rgba(109,40,217,0.35), 0 0 0 1px rgba(167,139,250,0.15)", borderTop: "6px solid #A78BFA" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: "#F5F3FF", letterSpacing: 0.2 }}>The Tech Savvy Teacher</h1>
-        <p style={{ color: "#A78BFA", marginBottom: 24, fontSize: 14 }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "linear-gradient(135deg, #1E3A5F 0%, #6D28D9 100%)", fontFamily: "Inter, 'Segoe UI', sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "white", borderRadius: 16, padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderTop: "6px solid #6D28D9" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: "#1E3A5F" }}>The Tech Savvy Teacher</h1>
+        <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
           {mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Sign in to continue"}
         </p>
 
-        {error && <div style={{ background: "rgba(220,38,38,0.15)", color: "#FCA5A5", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14, border: "1px solid rgba(220,38,38,0.35)" }}>{error}</div>}
-        {info && <div style={{ background: "rgba(16,185,129,0.15)", color: "#6EE7B7", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14, border: "1px solid rgba(16,185,129,0.35)" }}>{info}</div>}
+        {error && <div style={{ background: "#fef2f2", color: "#b91c1c", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+        {info && <div style={{ background: "#ecfdf5", color: "#047857", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{info}</div>}
 
         {mode === "signin" && (
           <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -147,21 +147,21 @@ export function AuthPage() {
             <Field label="Username" value={username} onChange={setUsername} autoComplete="username" required />
             <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" required />
             <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" required />
-            <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: -6 }}>
+            <p style={{ fontSize: 12, color: "#64748b", marginTop: -6 }}>
               Min 10 characters with upper, lower, number, and symbol.
             </p>
 
-            <div style={{ background: "rgba(109,40,217,0.12)", border: "1px solid rgba(167,139,250,0.25)", padding: 12, borderRadius: 8, fontSize: 12, color: "#CBD5E1", lineHeight: 1.5 }}>
-              <strong style={{ color: "#F5F3FF" }}>Privacy notice.</strong> By creating an account you agree we may store
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 12, borderRadius: 8, fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
+              <strong style={{ color: "#0f172a" }}>Privacy notice.</strong> By creating an account you agree we may store
               your full name, email, username, and account timestamp, and that we record your sign-in sessions, the
               features you use (Lesson Plan Generator, Danielson Review, Worksheet Builder, Professional Communication
               Support), the actions you take, and time spent per feature. This data is used to operate the service and
               is visible to the site owner. Read the full{" "}
-              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#C4B5FD" }}>privacy statement</a>.
+              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#6D28D9" }}>privacy statement</a>.
             </div>
 
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#CBD5E1" }}>
-              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 3, accentColor: "#A78BFA" }} />
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#334155" }}>
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 3 }} />
               <span>I have read and agree to the privacy notice above.</span>
             </label>
 
@@ -188,7 +188,7 @@ export function AuthPage() {
 
 function Field({ label, value, onChange, type = "text", required, autoComplete }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; autoComplete?: string }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: "#CBD5E1", fontWeight: 500 }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: "#334155" }}>
       {label}
       <input
         type={type}
@@ -196,14 +196,14 @@ function Field({ label, value, onChange, type = "text", required, autoComplete }
         onChange={(e) => onChange(e.target.value)}
         required={required}
         autoComplete={autoComplete}
-        style={{ padding: "10px 12px", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 8, fontSize: 14, outline: "none", background: "#0F0820", color: "#F5F3FF" }}
+        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, outline: "none" }}
       />
     </label>
   );
 }
 
 const primaryBtn: React.CSSProperties = {
-  background: "linear-gradient(135deg, #6D28D9, #A78BFA)",
+  background: "linear-gradient(135deg, #1E3A5F, #6D28D9)",
   color: "white",
   border: "none",
   padding: "12px 16px",
@@ -212,9 +212,7 @@ const primaryBtn: React.CSSProperties = {
   fontWeight: 700,
   cursor: "pointer",
   marginTop: 4,
-  letterSpacing: 0.3,
-  boxShadow: "0 4px 14px rgba(109,40,217,0.45)",
+  letterSpacing: 0.2,
 };
 const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
-const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "#C4B5FD", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
-
+const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "#6D28D9", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
