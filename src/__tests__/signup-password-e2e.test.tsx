@@ -35,8 +35,12 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 function setInput(label: RegExp, value: string) {
-  const el = screen.getByText(label).parentElement!.querySelector("input")!;
-  fireEvent.change(el, { target: { value } });
+  const matches = screen.getAllByText(label);
+  // pick the LABEL element (the input is its descendant)
+  const labelEl = matches.find((m) => m.tagName === "LABEL" || m.closest("label")) ?? matches[0];
+  const wrapper = labelEl.tagName === "LABEL" ? labelEl : labelEl.closest("label")!;
+  const input = wrapper.querySelector("input")!;
+  fireEvent.change(input, { target: { value } });
 }
 
 async function gotoSignup() {
