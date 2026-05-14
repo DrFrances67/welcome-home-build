@@ -33,8 +33,8 @@ const signupSchema = z.object({
     .string()
     .trim()
     .min(3, "Username must be 3+ characters")
-    .max(30)
-    .regex(/^[a-zA-Z0-9_.-]+$/, "Letters, numbers, _ . - only"),
+    .max(100)
+    .regex(/^[a-zA-Z0-9_.@+-]+$/, "Letters, numbers, _ . @ + - only"),
   email: z.string().trim().email("Invalid email").max(255),
   password: passwordSchema,
   agreedPrivacy: z.literal(true, { errorMap: () => ({ message: "You must accept the privacy notice" }) }),
