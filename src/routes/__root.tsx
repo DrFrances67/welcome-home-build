@@ -65,6 +65,30 @@ export const Route = createRootRoute({
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap",
       },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "The Tech Savvy Teacher",
+          url: "https://techsavvyteacher.app",
+          description:
+            "AI-powered classroom toolkit for K–12 teachers: lesson plans, NY-standards worksheets, and parent emails.",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "The Tech Savvy Teacher",
+          url: "https://techsavvyteacher.app",
+          description:
+            "AI lesson plans, NY-standards worksheets, and polished parent emails — one classroom-ready toolkit built for K–12 teachers.",
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
