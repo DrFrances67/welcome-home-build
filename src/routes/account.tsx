@@ -11,6 +11,8 @@ export const Route = createFileRoute("/account")({
       { name: "description", content: "Manage your Tech Savvy Teacher profile: update your name, username, password, school details, and home address." },
       { property: "og:title", content: "Your Account — The Tech Savvy Teacher" },
       { property: "og:description", content: "Update your profile, password, and school details on The Tech Savvy Teacher." },
+      { property: "og:url", content: "https://techsavvyteacher.app/account" },
+      { property: "og:type", content: "website" },
       { name: "robots", content: "noindex" },
     ],
     links: [{ rel: "canonical", href: "https://techsavvyteacher.app/account" }],
