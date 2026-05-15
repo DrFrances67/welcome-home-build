@@ -3175,6 +3175,7 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [piiHits, setPiiHits] = useState<{ type: string; match: string }[]>([]);
   const endRef = useRef();
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
