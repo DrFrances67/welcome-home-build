@@ -8199,6 +8199,7 @@ function TheTechSavvyTeacherAppRoot() {
         .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
         .worksheet-paper { background:white; }
         .canvas-area { background:#F1F3F5; }
+        .email-draft-textarea::placeholder { color: rgba(255,255,255,0.6); }
         .ws-element:hover .el-delete-btn { opacity: 1 !important; }
         .el-delete-btn { opacity: 0; transition: opacity 0.15s; }
         .app-shell { background:#F8F9FA; }
