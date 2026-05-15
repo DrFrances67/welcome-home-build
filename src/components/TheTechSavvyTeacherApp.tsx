@@ -5679,7 +5679,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 
       {/* RIGHT: Result */}
       <div style={{ ...card, minHeight:500, display:"flex", flexDirection:"column" }}>
-        <div style={cardHead}><span style={cardHeadTxt}>📨  Polished Email</span></div>
+        <div style={cardHead}><span style={cardHeadTxt}>📨  Polished Communication</span></div>
         <div style={{ padding:"20px", flex:1, display:"flex", flexDirection:"column" }}>
           {loading ? (
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14 }}>
