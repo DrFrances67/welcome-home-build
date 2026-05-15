@@ -132,23 +132,20 @@ function AccountPage() {
         </div>
 
         <div style={field}>
-          <label style={label} htmlFor="fullName">
-            Name <span style={{ color: "#dc2626" }} aria-hidden="true">*</span>
-          </label>
+          <label style={label} htmlFor="fullName">Name</label>
+          <span style={{ color: "#dc2626", marginLeft: 4 }} aria-hidden="true">*</span>
           <input id="fullName" style={input} value={fullName} onChange={(e) => setFullName(e.target.value)} required />
         </div>
 
         <div style={field}>
-          <label style={label} htmlFor="username">
-            Username <span style={{ color: "#dc2626" }} aria-hidden="true">*</span>
-          </label>
+          <label style={label} htmlFor="username">Username</label>
+          <span style={{ color: "#dc2626", marginLeft: 4 }} aria-hidden="true">*</span>
           <input id="username" style={input} value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} />
         </div>
 
         <div style={field}>
-          <label style={label} htmlFor="password">
-            Password <span style={{ color: "#dc2626" }} aria-hidden="true">*</span>
-          </label>
+          <label style={label} htmlFor="password">Password</label>
+          <span style={{ color: "#dc2626", marginLeft: 4 }} aria-hidden="true">*</span>
           <input id="password" type="password" style={input} value={password}
             onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to keep current password" autoComplete="new-password" />
           <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Only fill in to change your password (must reach &ldquo;Good&rdquo; strength).</p>
