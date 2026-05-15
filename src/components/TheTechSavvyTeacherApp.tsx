@@ -5463,7 +5463,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
   const BRAND = "#6D28D9";
   const LIGHT  = "#F5F3FF";
   const card = { background:"white", borderRadius:10, border:"1px solid #E5E7EB", overflow:"hidden" };
-  const cardHead = { background:BRAND, padding:"12px 18px", display:"flex", alignItems:"center", gap:8 };
+  const cardHead = { background: SITE_COLOR, padding:"12px 18px", display:"flex", alignItems:"center", gap:8 };
   const cardHeadTxt = { fontFamily:"'Playfair Display',serif", color:"white", fontSize:15, fontWeight:700 };
   const lbl = { fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", display:"block", marginBottom:6 };
   const inp = { width:"100%", padding:"9px 11px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:13, color:"#111827", outline:"none", boxSizing:"border-box", background:"white" };
