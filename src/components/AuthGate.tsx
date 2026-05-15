@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthPage } from "@/components/AuthPage";
 import { startTrackingSession, endTrackingSession } from "@/lib/tracking";
+import { supabase } from "@/integrations/supabase/client";
+
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -13,6 +16,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         endTrackingSession();
       };
     }
+  }, [user?.id]);
+
+  // Auto-logout after 30 minutes of inactivity.
+  useEffect(() => {
+    if (!user) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        supabase.auth.signOut();
+      }, IDLE_TIMEOUT_MS);
+    };
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove", "mousedown", "keydown", "touchstart", "scroll", "wheel", "click",
+    ];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
   }, [user?.id]);
 
   if (loading) {
