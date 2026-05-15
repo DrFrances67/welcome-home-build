@@ -5,6 +5,7 @@ import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
+import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DATA
