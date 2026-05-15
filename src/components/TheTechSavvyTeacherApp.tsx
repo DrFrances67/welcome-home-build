@@ -3320,9 +3320,27 @@ Grade-level calibration:
         )}
         <div ref={endRef} />
       </div>
-      <div style={{ padding: "10px 12px", borderTop: "1px solid #EEE", display: "flex", gap: 8 }}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())} spellCheck placeholder="Ask for ideas or 'make a worksheet about…'" style={{ flex: 1, padding: "9px 13px", borderRadius: 18, border: `2px solid ${gv.color}35`, fontSize: 13, fontFamily: F, outline: "none", background: "#FAFAFA" }} />
-        <button onClick={send} disabled={loading} style={{ padding: "9px 14px", borderRadius: 18, border: "none", background: gv.color, color: "white", fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: loading ? 0.6 : 1, fontFamily: F }}>→</button>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid #EEE", display: "flex", flexDirection: "column", gap: 6 }}>
+        {piiHits.length > 0 && (
+          <div role="alert" aria-live="polite" style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontFamily: F, lineHeight: 1.45 }}>
+            <strong>{PII_BLOCK_MESSAGE}</strong>
+            <div style={{ marginTop: 3, color: "#7F1D1D" }}>
+              Detected: {piiHits.slice(0, 4).map(h => `${h.type} "${h.match}"`).join(", ")}{piiHits.length > 4 ? "…" : ""}
+            </div>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={input}
+            onChange={e => { setInput(e.target.value); if (piiHits.length) setPiiHits([]); }}
+            onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
+            spellCheck
+            placeholder="Ask for ideas or 'make a worksheet about…'"
+            aria-invalid={piiHits.length > 0}
+            style={{ flex: 1, padding: "9px 13px", borderRadius: 18, border: piiHits.length ? "2px solid #DC2626" : `2px solid ${gv.color}35`, fontSize: 13, fontFamily: F, outline: "none", background: piiHits.length ? "#FEF2F2" : "#FAFAFA" }}
+          />
+          <button onClick={send} disabled={loading} style={{ padding: "9px 14px", borderRadius: 18, border: "none", background: gv.color, color: "white", fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: loading ? 0.6 : 1, fontFamily: F }}>→</button>
+        </div>
       </div>
     </div>
   );
