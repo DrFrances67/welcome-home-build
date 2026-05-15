@@ -3236,6 +3236,9 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
   const send = async () => {
     if (!input.trim() || loading) return;
     const userText = input;
+    const hits = detectPII(userText);
+    if (hits.length) { setPiiHits(hits); return; }
+    setPiiHits([]);
     const userMsg = { role: "user", content: userText };
     const next = [...msgs, userMsg];
     setMsgs(next); setInput(""); setLoading(true);
