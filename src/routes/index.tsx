@@ -5,7 +5,7 @@ import { AuthGate } from "@/components/AuthGate";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "The Tech Savvy Teacher — Tools For New York Educators" },
+      { title: "The Tech Savvy Teacher — Tools For Educators" },
       {
         name: "description",
         content:
