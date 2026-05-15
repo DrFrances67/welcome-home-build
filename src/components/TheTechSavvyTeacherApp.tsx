@@ -1421,7 +1421,7 @@ const resizeScaleFor = (el) => {
   // `s` is the unified scale used for typography/spacing. For horizontal-only
   // resize we follow sx (so widening a box scales text up too); otherwise the
   // larger of the two so growth feels uniform.
-  return { sx, sy, s: horizontalOnly ? sy : Math.max(sx, sy) };
+  return { sx, sy, s: horizontalOnly ? sx : Math.max(sx, sy) };
 };
 
 function ScaledContent({ el, children }) {
