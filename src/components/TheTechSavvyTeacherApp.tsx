@@ -5655,8 +5655,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
           <textarea id="email-draft" value={draft} onChange={e => setDraft(e.target.value)} spellCheck
             placeholder="Write your rough draft, key points, or anything you want to say. Don't worry about being polished — that's our job!"
             aria-label="Rough draft or key points for your email"
-            className="email-draft-textarea"
-            style={{ ...inp, minHeight:160, resize:"vertical", lineHeight:1.6, background:BRAND, color:"white" }} />
+            style={{ ...inp, minHeight:160, resize:"vertical", lineHeight:1.6, background:"#FAFAFA" }} />
 
           {error && <div role="alert" aria-live="assertive"
             style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:7, padding:"10px 14px", color:"#DC2626", fontSize:13, marginTop:10, marginBottom:4 }}>{error}</div>}
@@ -5680,29 +5679,29 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 
       {/* RIGHT: Result */}
       <div style={{ ...card, minHeight:500, display:"flex", flexDirection:"column" }}>
-        <div style={cardHead}><span style={cardHeadTxt}>📨  Polished Communication</span></div>
-        <div style={{ padding:"20px", flex:1, display:"flex", flexDirection:"column", background:BRAND }}>
+        <div style={cardHead}><span style={cardHeadTxt}>📨  Polished Email</span></div>
+        <div style={{ padding:"20px", flex:1, display:"flex", flexDirection:"column" }}>
           {loading ? (
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14 }}>
-              <div style={{ width:36, height:36, border:`3px solid rgba(255,255,255,0.25)`, borderTopColor:"white", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"rgba(255,255,255,0.85)", fontStyle:"italic" }}>Crafting your professional email…</p>
+              <div style={{ width:36, height:36, border:`3px solid #E5E7EB`, borderTopColor:BRAND, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"#6B7280", fontStyle:"italic" }}>Crafting your professional email…</p>
             </div>
           ) : result ? (
             <>
-              <div style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:7, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"baseline" }}>
-                <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"rgba(255,255,255,0.7)", whiteSpace:"nowrap" }}>Subject</span>
-                <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"white" }}>{result.subject}</span>
+              <div style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:7, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"baseline" }}>
+                <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", whiteSpace:"nowrap" }}>Subject</span>
+                <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"#111827" }}>{result.subject}</span>
               </div>
-              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"white", whiteSpace:"pre-wrap", flex:1 }}>{result.email}</div>
+              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap", flex:1 }}>{result.email}</div>
               <button onClick={copyEmail}
-                style={{ marginTop:18, padding:"10px", borderRadius:8, border:`1.5px solid white`, background: copied ? "#D1FAE5" : "transparent", color: copied ? "#059669" : "white", fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
+                style={{ marginTop:18, padding:"10px", borderRadius:8, border:`1.5px solid ${copied ? "#059669" : BRAND}`, background: copied ? "#D1FAE5" : "white", color: copied ? "#059669" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
                 {copied ? "✓  Copied to Clipboard!" : "Copy Full Email"}
               </button>
             </>
           ) : (
-            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center", color:"rgba(255,255,255,0.7)" }}>
-              <div style={{ fontSize:44, opacity:0.5 }}>📝</div>
-              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.7 }}>Fill in your details and rough draft,<br/>then click <strong style={{ color:"white" }}>Polish My Communication</strong> to see<br/>your professional version here.</p>
+            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center", color:"#9CA3AF" }}>
+              <div style={{ fontSize:44, opacity:0.35 }}>📝</div>
+              <p style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.7 }}>Fill in your details and rough draft,<br/>then click <strong style={{ color:"#6B7280" }}>Polish My Communication</strong> to see<br/>your professional version here.</p>
             </div>
           )}
         </div>
@@ -8199,7 +8198,6 @@ function TheTechSavvyTeacherAppRoot() {
         .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
         .worksheet-paper { background:white; }
         .canvas-area { background:#F1F3F5; }
-        .email-draft-textarea::placeholder { color: rgba(255,255,255,0.6); }
         .ws-element:hover .el-delete-btn { opacity: 1 !important; }
         .el-delete-btn { opacity: 0; transition: opacity 0.15s; }
         .app-shell { background:#F8F9FA; }
