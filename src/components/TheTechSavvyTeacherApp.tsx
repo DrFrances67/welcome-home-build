@@ -5050,7 +5050,7 @@ Output ONLY the JSON array.`,
                 <span style={{ fontSize: 20 }} aria-hidden="true">📥</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>Upload Worksheet</span>
                 <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>PDF · CSV · TXT</span>
-                <input type="file" accept=".pdf,.csv,.txt,.md,text/csv,text/plain,application/pdf" aria-label="Upload worksheet file to recreate"
+                <input type="file" accept=".pdf,.csv,.txt,.md,text/csv,text/plain,application/pdf" aria-label="Upload reference worksheet file to recreate"
                   onChange={e => e.target.files[0] && handleWsFileUpload(e.target.files[0])} style={{ display: "none" }} />
               </label>
             )}
