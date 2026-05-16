@@ -1839,7 +1839,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     // When the user resizes vertically, distribute extra space as gap so items spread to fill the box.
     const horizontalOnly = el.resizeAxis === "horizontal";
     const extraV = (el.heightOverride && !horizontalOnly) ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
-    const itemGap = (8 * sc.s) + (extraV / (itemCount + 1));
+    const itemGap = (8 * (horizontalOnly ? 1 : sc.s)) + (extraV / (itemCount + 1));
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `${6 * sc.s}px solid ${accent}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
