@@ -5020,6 +5020,19 @@ Output ONLY the JSON array.`,
             </div>
           )}
 
+          {/* Reference Worksheet — image upload for AI inspiration */}
+          <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Reference Worksheet</p>
+            <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 8px", borderRadius: 8, border: `1.5px dashed ${gv.color}45`, background: "white", cursor: "pointer", textAlign: "center" }}>
+              <span style={{ fontSize: 20 }} aria-hidden="true">📎</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: gv.color, lineHeight: 1.3, fontFamily: F }}>{refImg ? "Reference uploaded" : "Upload reference"}</span>
+              <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: F }}>Image of a worksheet for AI to riff on</span>
+              <input type="file" accept="image/*,application/pdf" aria-label="Upload reference worksheet image"
+                onChange={e => e.target.files?.[0] && handleRefUpload(e.target.files[0])} style={{ display: "none" }} />
+            </label>
+            {refDesc && <p style={{ fontSize: 10, color: "#6B7280", margin: "6px 0 0", lineHeight: 1.4, fontFamily: F }}>{refDesc}</p>}
+          </div>
+
           {/* Worksheet Upload — PDF/CSV/TXT, AI recreates as editable blocks */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px 0", fontFamily: F }}>Upload Worksheet</p>
