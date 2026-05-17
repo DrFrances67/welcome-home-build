@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { endAllActiveSessions } from "@/lib/admin-sessions.functions";
 
 interface ProfileRow {
   id: string;
@@ -31,6 +33,9 @@ export function AdminDashboard() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [endingSessions, setEndingSessions] = useState(false);
+  const [endMessage, setEndMessage] = useState<string | null>(null);
+  const endAll = useServerFn(endAllActiveSessions);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -109,6 +114,45 @@ export function AdminDashboard() {
           </Section>
 
           <Section title="Recent sessions">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={async () => {
+                  if (endingSessions) return;
+                  if (!confirm("End all active sessions?")) return;
+                  setEndingSessions(true);
+                  setEndMessage(null);
+                  try {
+                    const res = await endAll();
+                    setEndMessage(`All sessions terminated.${res?.ended != null ? ` (${res.ended})` : ""}`);
+                    const { data } = await supabase
+                      .from("user_sessions")
+                      .select("*")
+                      .order("started_at", { ascending: false })
+                      .limit(500);
+                    setSessions((data as SessionRow[]) ?? []);
+                  } catch (e) {
+                    setEndMessage(`Failed: ${(e as Error).message}`);
+                  } finally {
+                    setEndingSessions(false);
+                  }
+                }}
+                disabled={endingSessions}
+                style={{
+                  background: "#dc2626",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 14px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: endingSessions ? "not-allowed" : "pointer",
+                  opacity: endingSessions ? 0.7 : 1,
+                }}
+              >
+                {endingSessions ? "Ending…" : "End All Active Sessions"}
+              </button>
+              {endMessage && <span style={{ fontSize: 13, color: "#475569" }}>{endMessage}</span>}
+            </div>
             <Table headers={["User", "Started", "Ended", "Duration"]}>
               {sessions.slice(0, 100).map((s) => {
                 const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;

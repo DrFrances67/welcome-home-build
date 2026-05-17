@@ -227,6 +227,7 @@ export type Database = {
         Row: {
           ended_at: string | null
           id: string
+          last_active: string
           started_at: string
           user_agent: string | null
           user_id: string
@@ -234,6 +235,7 @@ export type Database = {
         Insert: {
           ended_at?: string | null
           id?: string
+          last_active?: string
           started_at?: string
           user_agent?: string | null
           user_id: string
@@ -241,6 +243,7 @@ export type Database = {
         Update: {
           ended_at?: string | null
           id?: string
+          last_active?: string
           started_at?: string
           user_agent?: string | null
           user_id?: string
@@ -287,6 +290,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      expire_idle_user_sessions: { Args: never; Returns: number }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       get_recent_verification_resends: {
         Args: { _email: string }
