@@ -7668,8 +7668,9 @@ function DanielsonReview() {
       if (!text || text.length < 30) throw new Error("Could not extract enough text from the file. If it's a scanned PDF, please try a text-based PDF or paste the lesson plan as a .txt file.");
       setExtractedText(text);
       setFile({ name: f.name, size: f.size });
-    } catch (e) {
-      setError(e.message || "Could not read file.");
+    } catch (e: any) {
+      console.error("[DanielsonReview] file extraction failed:", e);
+      setError(e?.message ? `Could not read file: ${e.message}` : "Could not read file.");
     }
     setLoading(false);
   };
