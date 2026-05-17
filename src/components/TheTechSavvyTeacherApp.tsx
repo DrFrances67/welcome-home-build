@@ -7622,9 +7622,11 @@ function DanielsonReview() {
   });
 
   const extractPdfText = async (f) => {
-    const pdfjs = await import("pdfjs-dist");
-    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    const pdfjsMod: any = await import("pdfjs-dist");
+    const pdfjs = pdfjsMod.default ?? pdfjsMod;
+    const workerMod: any = await import("pdfjs-dist/build/pdf.worker.mjs?url");
+    const workerUrl = workerMod.default ?? workerMod;
+    if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
     const buf = await f.arrayBuffer();
     const doc = await pdfjs.getDocument({ data: buf }).promise;
     const pages = Math.min(doc.numPages, 25);
@@ -7632,16 +7634,22 @@ function DanielsonReview() {
     for (let p = 1; p <= pages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
-      text += content.items.map((it) => it.str).join(" ") + "\n\n";
+      const items = Array.isArray(content?.items) ? content.items : [];
+      text += items.map((it: any) => (it && typeof it.str === "string" ? it.str : "")).join(" ") + "\n\n";
     }
     return text.trim();
   };
 
   const extractDocxText = async (f) => {
-    const mammoth = await import("mammoth/mammoth.browser.js");
+    const mammothMod: any = await import("mammoth/mammoth.browser.js");
+    const mammoth = mammothMod.default ?? mammothMod;
     const buf = await f.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: buf });
-    return (result.value || "").trim();
+    const extractFn = mammoth.extractRawText || mammothMod.extractRawText;
+    if (typeof extractFn !== "function") {
+      throw new Error("Word document reader failed to load. Please try a PDF or .txt file.");
+    }
+    const result = await extractFn.call(mammoth, { arrayBuffer: buf });
+    return (result?.value || "").trim();
   };
 
   const handleFile = async (f) => {
@@ -7660,8 +7668,9 @@ function DanielsonReview() {
       if (!text || text.length < 30) throw new Error("Could not extract enough text from the file. If it's a scanned PDF, please try a text-based PDF or paste the lesson plan as a .txt file.");
       setExtractedText(text);
       setFile({ name: f.name, size: f.size });
-    } catch (e) {
-      setError(e.message || "Could not read file.");
+    } catch (e: any) {
+      console.error("[DanielsonReview] file extraction failed:", e);
+      setError(e?.message ? `Could not read file: ${e.message}` : "Could not read file.");
     }
     setLoading(false);
   };
