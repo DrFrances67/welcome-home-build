@@ -221,7 +221,7 @@ export function AuthPage() {
     setWeakAttempt(false);
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
@@ -235,6 +235,21 @@ export function AuthPage() {
       if (error) {
         setError(error.message);
       } else {
+        // Fire-and-forget admin notification — don't block signup UX on failures.
+        try {
+          const userId = signUpData?.user?.id ?? parsed.data.email;
+          fetch("/api/public/notify-admin-signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userId,
+              username: parsed.data.username,
+              name: parsed.data.full_name,
+              email: parsed.data.email,
+              timestamp: new Date().toISOString(),
+            }),
+          }).catch(() => { /* ignore */ });
+        } catch { /* ignore */ }
         setInfo("Check your email to verify your account, then sign in.");
         setMode("signin");
       }
