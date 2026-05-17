@@ -33,6 +33,9 @@ export function AdminDashboard() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [endingSessions, setEndingSessions] = useState(false);
+  const [endMessage, setEndMessage] = useState<string | null>(null);
+  const endAll = useServerFn(endAllActiveSessions);
 
   useEffect(() => {
     if (!isAdmin) return;
