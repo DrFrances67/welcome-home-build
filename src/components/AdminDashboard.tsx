@@ -65,6 +65,25 @@ export function AdminDashboard() {
 
   const userMap = new Map(users.map((u) => [u.id, u]));
 
+  const FEATURE_LABELS: Record<string, string> = {
+    lesson: "Lesson Plan Generator",
+    danielson: "Danielson Review",
+    worksheet: "Worksheet Builder",
+    email: "Professional Communication",
+  };
+  const CREDIT_ACTIONS = new Set(["generate", "run", "send", "create", "analyze"]);
+
+  // Aggregate per-session usage: app labels + credits consumed.
+  const sessionUsage = new Map<string, { apps: string[]; credits: number }>();
+  for (const r of usage) {
+    if (!r.session_id) continue;
+    const entry = sessionUsage.get(r.session_id) ?? { apps: [], credits: 0 };
+    const label = FEATURE_LABELS[r.feature] ?? r.feature;
+    if (!entry.apps.includes(label)) entry.apps.push(label);
+    if (!r.action || CREDIT_ACTIONS.has(r.action)) entry.credits += 1;
+    sessionUsage.set(r.session_id, entry);
+  }
+
   return (
     <div style={pageStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
