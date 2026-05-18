@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { endAllActiveSessions } from "@/lib/admin-sessions.functions";
+import { isBillableAction } from "@/lib/billable-actions";
 
 interface ProfileRow {
   id: string;
