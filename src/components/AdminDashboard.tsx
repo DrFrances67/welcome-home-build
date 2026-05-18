@@ -190,7 +190,7 @@ export function AdminDashboard() {
               </button>
               {endMessage && <span style={{ fontSize: 13, color: "#475569" }}>{endMessage}</span>}
             </div>
-            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used"]}>
+            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used", "Details"]}>
               {sessions.slice(0, 100).map((s) => {
                 const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;
                 const u = userMap.get(s.user_id);
@@ -206,11 +206,94 @@ export function AdminDashboard() {
                     <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
                     <td style={td}>{appsLabel}</td>
                     <td style={td}>{credits}</td>
+                    <td style={td}>
+                      <button
+                        onClick={() => openSessionDetails(s.id)}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 6,
+                          padding: "4px 10px",
+                          fontSize: 12,
+                          color: "#4f46e5",
+                          cursor: "pointer",
+                        }}
+                      >
+                        View details
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
             </Table>
           </Section>
+
+          {detailSessionId && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setDetailSessionId(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(15, 23, 42, 0.55)",
+                display: "flex",
+                justifyContent: "flex-end",
+                zIndex: 50,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "min(640px, 100%)",
+                  height: "100%",
+                  background: "white",
+                  boxShadow: "-8px 0 24px rgba(0,0,0,0.12)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>Session activity</div>
+                    <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>{detailSessionId}</div>
+                  </div>
+                  <button
+                    onClick={() => setDetailSessionId(null)}
+                    style={{ background: "transparent", border: "none", fontSize: 22, cursor: "pointer", color: "#475569" }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div style={{ padding: 20, overflow: "auto" }}>
+                  {detailLoading ? (
+                    <p style={muted}>Loading…</p>
+                  ) : !detailRows || detailRows.length === 0 ? (
+                    <p style={muted}>No activity recorded for this session.</p>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: 12, fontSize: 13, color: "#475569" }}>
+                        {detailRows.length} event{detailRows.length === 1 ? "" : "s"} •{" "}
+                        {detailRows.filter((r) => isBillableAction(r.action)).length} billable
+                      </div>
+                      <Table headers={["Feature", "Action", "Billable", "Duration", "When"]}>
+                        {detailRows.map((r) => (
+                          <tr key={r.id}>
+                            <td style={td}>{FEATURE_LABELS[r.feature] ?? r.feature}</td>
+                            <td style={td}>{r.action ?? "—"}</td>
+                            <td style={td}>{isBillableAction(r.action) ? "Yes" : "No"}</td>
+                            <td style={td}>{r.duration_ms != null ? `${Math.round(r.duration_ms / 1000)}s` : "—"}</td>
+                            <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <Section title="Recent activity">
             <Table headers={["User", "Feature", "Action", "Duration", "When"]}>
