@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { endAllActiveSessions } from "@/lib/admin-sessions.functions";
+import { isBillableAction } from "@/lib/billable-actions";
 
 interface ProfileRow {
   id: string;
@@ -36,7 +37,23 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [endingSessions, setEndingSessions] = useState(false);
   const [endMessage, setEndMessage] = useState<string | null>(null);
+  const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
+  const [detailRows, setDetailRows] = useState<UsageRow[] | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const endAll = useServerFn(endAllActiveSessions);
+
+  async function openSessionDetails(sessionId: string) {
+    setDetailSessionId(sessionId);
+    setDetailRows(null);
+    setDetailLoading(true);
+    const { data } = await supabase
+      .from("feature_usage")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+    setDetailRows((data as UsageRow[]) ?? []);
+    setDetailLoading(false);
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -72,16 +89,16 @@ export function AdminDashboard() {
     worksheet: "Worksheet Builder",
     email: "Professional Communication",
   };
-  const CREDIT_ACTIONS = new Set(["generate", "run", "send", "create", "analyze"]);
 
-  // Aggregate per-session usage: app labels + credits consumed.
+  // Aggregate per-session usage: app labels + billable credits consumed.
+  // Only cloud/AI generation-style actions count toward credits.
   const sessionUsage = new Map<string, { apps: string[]; credits: number }>();
   for (const r of usage) {
     if (!r.session_id) continue;
     const entry = sessionUsage.get(r.session_id) ?? { apps: [], credits: 0 };
     const label = FEATURE_LABELS[r.feature] ?? r.feature;
     if (!entry.apps.includes(label)) entry.apps.push(label);
-    if (!r.action || CREDIT_ACTIONS.has(r.action)) entry.credits += 1;
+    if (isBillableAction(r.action)) entry.credits += 1;
     sessionUsage.set(r.session_id, entry);
   }
 
@@ -173,7 +190,7 @@ export function AdminDashboard() {
               </button>
               {endMessage && <span style={{ fontSize: 13, color: "#475569" }}>{endMessage}</span>}
             </div>
-            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used"]}>
+            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used", "Details"]}>
               {sessions.slice(0, 100).map((s) => {
                 const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;
                 const u = userMap.get(s.user_id);
@@ -189,11 +206,94 @@ export function AdminDashboard() {
                     <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
                     <td style={td}>{appsLabel}</td>
                     <td style={td}>{credits}</td>
+                    <td style={td}>
+                      <button
+                        onClick={() => openSessionDetails(s.id)}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 6,
+                          padding: "4px 10px",
+                          fontSize: 12,
+                          color: "#4f46e5",
+                          cursor: "pointer",
+                        }}
+                      >
+                        View details
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
             </Table>
           </Section>
+
+          {detailSessionId && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setDetailSessionId(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(15, 23, 42, 0.55)",
+                display: "flex",
+                justifyContent: "flex-end",
+                zIndex: 50,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "min(640px, 100%)",
+                  height: "100%",
+                  background: "white",
+                  boxShadow: "-8px 0 24px rgba(0,0,0,0.12)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>Session activity</div>
+                    <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>{detailSessionId}</div>
+                  </div>
+                  <button
+                    onClick={() => setDetailSessionId(null)}
+                    style={{ background: "transparent", border: "none", fontSize: 22, cursor: "pointer", color: "#475569" }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div style={{ padding: 20, overflow: "auto" }}>
+                  {detailLoading ? (
+                    <p style={muted}>Loading…</p>
+                  ) : !detailRows || detailRows.length === 0 ? (
+                    <p style={muted}>No activity recorded for this session.</p>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: 12, fontSize: 13, color: "#475569" }}>
+                        {detailRows.length} event{detailRows.length === 1 ? "" : "s"} •{" "}
+                        {detailRows.filter((r) => isBillableAction(r.action)).length} billable
+                      </div>
+                      <Table headers={["Feature", "Action", "Billable", "Duration", "When"]}>
+                        {detailRows.map((r) => (
+                          <tr key={r.id}>
+                            <td style={td}>{FEATURE_LABELS[r.feature] ?? r.feature}</td>
+                            <td style={td}>{r.action ?? "—"}</td>
+                            <td style={td}>{isBillableAction(r.action) ? "Yes" : "No"}</td>
+                            <td style={td}>{r.duration_ms != null ? `${Math.round(r.duration_ms / 1000)}s` : "—"}</td>
+                            <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <Section title="Recent activity">
             <Table headers={["User", "Feature", "Action", "Duration", "When"]}>
