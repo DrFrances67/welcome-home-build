@@ -21,6 +21,7 @@ interface SessionRow {
 interface UsageRow {
   id: string;
   user_id: string;
+  session_id: string | null;
   feature: string;
   action: string | null;
   duration_ms: number | null;
