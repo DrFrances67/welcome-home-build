@@ -89,16 +89,16 @@ export function AdminDashboard() {
     worksheet: "Worksheet Builder",
     email: "Professional Communication",
   };
-  const CREDIT_ACTIONS = new Set(["generate", "run", "send", "create", "analyze"]);
 
-  // Aggregate per-session usage: app labels + credits consumed.
+  // Aggregate per-session usage: app labels + billable credits consumed.
+  // Only cloud/AI generation-style actions count toward credits.
   const sessionUsage = new Map<string, { apps: string[]; credits: number }>();
   for (const r of usage) {
     if (!r.session_id) continue;
     const entry = sessionUsage.get(r.session_id) ?? { apps: [], credits: 0 };
     const label = FEATURE_LABELS[r.feature] ?? r.feature;
     if (!entry.apps.includes(label)) entry.apps.push(label);
-    if (!r.action || CREDIT_ACTIONS.has(r.action)) entry.credits += 1;
+    if (isBillableAction(r.action)) entry.credits += 1;
     sessionUsage.set(r.session_id, entry);
   }
 
