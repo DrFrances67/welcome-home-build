@@ -173,16 +173,22 @@ export function AdminDashboard() {
               </button>
               {endMessage && <span style={{ fontSize: 13, color: "#475569" }}>{endMessage}</span>}
             </div>
-            <Table headers={["User", "Started", "Ended", "Duration"]}>
+            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used"]}>
               {sessions.slice(0, 100).map((s) => {
                 const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;
                 const u = userMap.get(s.user_id);
+                const usageEntry = sessionUsage.get(s.id);
+                const apps = usageEntry?.apps ?? [];
+                const appsLabel = apps.length === 0 ? "—" : apps.length === 1 ? apps[0] : apps.join(", ");
+                const credits = usageEntry?.credits ?? 0;
                 return (
                   <tr key={s.id}>
                     <td style={td}>{u?.username ?? s.user_id.slice(0, 8)}</td>
                     <td style={td}>{new Date(s.started_at).toLocaleString()}</td>
                     <td style={td}>{s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}</td>
                     <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
+                    <td style={td}>{appsLabel}</td>
+                    <td style={td}>{credits}</td>
                   </tr>
                 );
               })}
