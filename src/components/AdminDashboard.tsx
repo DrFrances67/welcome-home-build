@@ -37,7 +37,23 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [endingSessions, setEndingSessions] = useState(false);
   const [endMessage, setEndMessage] = useState<string | null>(null);
+  const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
+  const [detailRows, setDetailRows] = useState<UsageRow[] | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const endAll = useServerFn(endAllActiveSessions);
+
+  async function openSessionDetails(sessionId: string) {
+    setDetailSessionId(sessionId);
+    setDetailRows(null);
+    setDetailLoading(true);
+    const { data } = await supabase
+      .from("feature_usage")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+    setDetailRows((data as UsageRow[]) ?? []);
+    setDetailLoading(false);
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
