@@ -1413,15 +1413,15 @@ const SCALE_MIN = 0.55;
 const SCALE_MAX = 4;
 const clampScale = (v) => Math.max(SCALE_MIN, Math.min(SCALE_MAX, v));
 const resizeScaleFor = (el) => {
+  // Width scale is the source of truth for typography/spacing. Dividing the
+  // height override by a fixed BASELINE_HEIGHT_PX (80) used to inflate `sy`
+  // to SCALE_MAX for any moderately tall box, which made inner content
+  // render at maximum size no matter how the box was actually sized. Now
+  // both `sy` and the unified `s` track the width scale, so content always
+  // scales proportionally to the box's current width. Vertical fit is
+  // handled separately by ScaledContent's measured transform.
   const sx = clampScale((el.widthOverride ?? BASELINE_WIDTH_PCT) / BASELINE_WIDTH_PCT);
-  const horizontalOnly = el.resizeAxis === "horizontal";
-  const sy = el.heightOverride
-    ? (horizontalOnly && !el.verticalScale ? 1 : clampScale(el.heightOverride / BASELINE_HEIGHT_PX))
-    : (horizontalOnly ? 1 : sx);
-  // `s` is the unified scale used for typography/spacing. For horizontal-only
-  // resize we follow sx (so widening a box scales text up too); otherwise the
-  // larger of the two so growth feels uniform.
-  return { sx, sy, s: horizontalOnly ? sx : Math.max(sx, sy) };
+  return { sx, sy: sx, s: sx };
 };
 
 function ScaledContent({ el, children }) {
