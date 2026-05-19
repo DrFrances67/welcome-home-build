@@ -4317,8 +4317,15 @@ export function WorksheetBuilder() {
       paperWidth,
     };
     setSelId(elId);
-    const onMove = (mv) => {
-      if (!dragRef.current) return;
+    // rAF-throttle to one position update per frame for smooth movement
+    // without layout jumps from queued state updates.
+    let pendingMv = null;
+    let rafId = 0;
+    const flush = () => {
+      rafId = 0;
+      const mv = pendingMv;
+      pendingMv = null;
+      if (!mv || !dragRef.current) return;
       const { startX, startY, startElX, startElY, paperWidth } = dragRef.current;
       const dxPct = ((mv.clientX - startX) / paperWidth) * 100;
       const dyPx  = mv.clientY - startY;
@@ -4326,7 +4333,14 @@ export function WorksheetBuilder() {
       const newY = Math.max(0, startElY + dyPx);
       updEl(elId, { x: newX, y: newY });
     };
+    const onMove = (mv) => {
+      if (!dragRef.current) return;
+      pendingMv = mv;
+      if (!rafId) rafId = requestAnimationFrame(flush);
+    };
     const onUp = () => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      if (pendingMv) flush();
       dragRef.current = null;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
