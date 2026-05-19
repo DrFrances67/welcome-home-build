@@ -4245,8 +4245,17 @@ export function WorksheetBuilder() {
 
     resizeRef.current = { elId, startX, startY, startH, startW, startElX, startElY, paperWidth, direction };
 
-    const onMove = (mv) => {
-      if (!resizeRef.current) return;
+    // rAF-throttle pointermove so we commit at most one state update per
+    // frame. Without this, multiple updEl calls per frame cause the
+    // ResizeObserver inside ScaledContent to re-measure mid-frame and the
+    // box visibly jumps during the drag.
+    let pendingMv = null;
+    let rafId = 0;
+    const flush = () => {
+      rafId = 0;
+      const mv = pendingMv;
+      pendingMv = null;
+      if (!mv || !resizeRef.current) return;
       const { direction, startX, startY, startH, startW, startElX, startElY, paperWidth } = resizeRef.current;
       const dy = mv.clientY - startY;
       const dx = mv.clientX - startX;
@@ -4272,7 +4281,14 @@ export function WorksheetBuilder() {
         });
       }
     };
+    const onMove = (mv) => {
+      if (!resizeRef.current) return;
+      pendingMv = mv;
+      if (!rafId) rafId = requestAnimationFrame(flush);
+    };
     const onUp = () => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      if (pendingMv) flush();
       resizeRef.current = null;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
