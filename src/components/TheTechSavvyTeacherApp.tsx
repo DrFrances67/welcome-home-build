@@ -5139,9 +5139,49 @@ Output ONLY the JSON array.`,
           )}
 
           {(() => {
+            // Maximum y+height of inner content that fits cleanly on a single
+            // page. The paper is 970px tall with 52px vertical padding on each
+            // side (~866px inner). The Name/Date header consumes ~80px when
+            // visible. We compare element bottoms against this threshold and
+            // prompt the user to overflow content onto a new page.
+            const PAGE_CONTENT_MAX = 770;
+
+            const overflowToNewPage = (fromPage: number) => {
+              setWs(p => {
+                const insertAt = fromPage + 1;
+                const movedIds = new Set<string>();
+                const overflowing = p.elements.filter(e => {
+                  if ((e.page || 0) !== fromPage) return false;
+                  const bottom = (e.y || 0) + (e.heightOverride || 180);
+                  return bottom > PAGE_CONTENT_MAX;
+                });
+                overflowing.forEach(e => movedIds.add(e.id));
+                const minY = overflowing.length
+                  ? Math.min(...overflowing.map(e => e.y || 0))
+                  : 0;
+                const remapped = p.elements.map(e => {
+                  if (movedIds.has(e.id)) {
+                    return { ...e, page: insertAt, y: Math.max(0, (e.y || 0) - minY) };
+                  }
+                  if ((e.page || 0) >= insertAt) {
+                    return { ...e, page: (e.page || 0) + 1 };
+                  }
+                  return e;
+                });
+                return { ...p, elements: remapped, pageCount: (p.pageCount || 1) + 1 };
+              });
+              setCurrentPage(fromPage + 1);
+              setSelId(null);
+              announce(`Overflowing content moved to page ${fromPage + 2}`);
+            };
+
             const renderPage = (pIdx) => {
               const els = ws.elements.filter(e => pageOf(e) === pIdx);
               const hideHeader = isPageHeaderHidden(pIdx);
+              const maxBottom = els.length
+                ? Math.max(...els.map(e => (e.y || 0) + (e.heightOverride || 180)))
+                : 0;
+              const overflows = maxBottom > PAGE_CONTENT_MAX;
               return (
                 <div key={pIdx} className="worksheet-paper" style={{ width: 760, minHeight: 970, background: "white", boxShadow: "0 2px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)", borderRadius: 4, padding: "52px 64px", position: "relative" }}>
 
@@ -5181,6 +5221,25 @@ Output ONLY the JSON array.`,
                   {pageCount > 1 && (
                     <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
                       Page {pIdx + 1} of {pageCount}
+                    </div>
+                  )}
+
+                  {/* Page-overflow prompt: shown when any element extends past
+                      the single-page content cap. Lets the user spill the
+                      overflowing blocks onto a new page instead of letting
+                      content silently fall off the printed sheet. */}
+                  {overflows && (
+                    <div role="alert" className="no-print" style={{ background: "#FEF3C7", border: "1.5px solid #F59E0B", borderRadius: 10, padding: "10px 14px", margin: "0 0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                      <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 700, color: "#92400E" }}>
+                        ⚠ Content exceeds one page. Add a second page to keep everything in print.
+                      </span>
+                      <button
+                        onClick={() => overflowToNewPage(pIdx)}
+                        style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 8, border: "1.5px solid #B45309", background: "#B45309", color: "white", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer" }}
+                        aria-label="Add second page and move overflowing content"
+                      >
+                        + Add second page
+                      </button>
                     </div>
                   )}
 
