@@ -1671,8 +1671,13 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const imgMaxW = isSmall ? "32%" : isLarge ? "94%" : "62%";
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
+    // When the user resizes the wrapper, the image must scale proportionally
+    // with the box on BOTH axes and never get cut off. width:100% + height:100%
+    // (when a heightOverride exists) + object-fit:contain guarantees the image
+    // always fits inside the resized box, preserves aspect ratio, and shrinks
+    // when the box shrinks — no clipping, no letterbox-pinned pixel height.
     const fillImgStyle = userSized && !floated
-      ? { width: "100%", height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto", maxWidth: "none", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
+      ? { width: "100%", height: el.heightOverride ? "100%" : "auto", maxWidth: "none", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
       : { ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" };
     return (
       <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
@@ -1835,17 +1840,16 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const accent = el.type === "successCriteria" ? gv.color : "#0369A1";
     const bg = el.type === "successCriteria" ? gv.light : "#EFF6FF";
     const sc = resizeScaleFor(el);
-    const itemCount = Math.max(1, (el.items || []).length);
-    // When the user resizes vertically, distribute extra space as gap so items spread to fill the box.
-    const horizontalOnly = el.resizeAxis === "horizontal";
-    const extraV = (el.heightOverride && !horizontalOnly) ? Math.max(0, el.heightOverride - BASELINE_HEIGHT_PX * sc.sx) : 0;
-    const itemGap = (8 * (horizontalOnly ? 1 : sc.s)) + (extraV / (itemCount + 1));
+    // Line spacing must stay CONSTANT regardless of box height — vertical
+    // resizing should never add gaps between items. Items always pack from
+    // the top with a fixed gap that only scales with width (sc.s tracks width).
+    const itemGap = 8 * sc.s;
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `${6 * sc.s}px solid ${accent}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
           {el.title && <p style={{ fontSize: Math.max(fs - 2, 13) * tScale(sc), fontWeight: 800, color: accent, margin: `0 0 ${6 * sc.s}px 0`, fontFamily: FF, letterSpacing: 0.2 }}>{el.title}</p>}
           {el.intro && <p style={{ fontSize: Math.max(fs - 4, 11) * tScale(sc), fontWeight: 600, color: "#374151", margin: `0 0 ${10 * sc.s}px 0`, fontFamily: F, lineHeight: 1.5 }}>{renderInlineMarkdown(el.intro)}</p>}
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: itemGap, flex: 1, justifyContent: extraV > 0 ? "space-around" : "flex-start" }}>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: itemGap, justifyContent: "flex-start" }}>
             {(el.items || []).map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 * sc.s }}>
                 <span aria-hidden="true" style={{ flexShrink: 0, width: 18 * sc.s, height: 18 * sc.s, marginTop: 2 * sc.s, border: `2px solid ${accent}`, borderRadius: 4, background: "white" }} />
@@ -5135,9 +5139,49 @@ Output ONLY the JSON array.`,
           )}
 
           {(() => {
+            // Maximum y+height of inner content that fits cleanly on a single
+            // page. The paper is 970px tall with 52px vertical padding on each
+            // side (~866px inner). The Name/Date header consumes ~80px when
+            // visible. We compare element bottoms against this threshold and
+            // prompt the user to overflow content onto a new page.
+            const PAGE_CONTENT_MAX = 770;
+
+            const overflowToNewPage = (fromPage: number) => {
+              setWs(p => {
+                const insertAt = fromPage + 1;
+                const movedIds = new Set<string>();
+                const overflowing = p.elements.filter(e => {
+                  if ((e.page || 0) !== fromPage) return false;
+                  const bottom = (e.y || 0) + (e.heightOverride || 180);
+                  return bottom > PAGE_CONTENT_MAX;
+                });
+                overflowing.forEach(e => movedIds.add(e.id));
+                const minY = overflowing.length
+                  ? Math.min(...overflowing.map(e => e.y || 0))
+                  : 0;
+                const remapped = p.elements.map(e => {
+                  if (movedIds.has(e.id)) {
+                    return { ...e, page: insertAt, y: Math.max(0, (e.y || 0) - minY) };
+                  }
+                  if ((e.page || 0) >= insertAt) {
+                    return { ...e, page: (e.page || 0) + 1 };
+                  }
+                  return e;
+                });
+                return { ...p, elements: remapped, pageCount: (p.pageCount || 1) + 1 };
+              });
+              setCurrentPage(fromPage + 1);
+              setSelId(null);
+              announce(`Overflowing content moved to page ${fromPage + 2}`);
+            };
+
             const renderPage = (pIdx) => {
               const els = ws.elements.filter(e => pageOf(e) === pIdx);
               const hideHeader = isPageHeaderHidden(pIdx);
+              const maxBottom = els.length
+                ? Math.max(...els.map(e => (e.y || 0) + (e.heightOverride || 180)))
+                : 0;
+              const overflows = maxBottom > PAGE_CONTENT_MAX;
               return (
                 <div key={pIdx} className="worksheet-paper" style={{ width: 760, minHeight: 970, background: "white", boxShadow: "0 2px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)", borderRadius: 4, padding: "52px 64px", position: "relative" }}>
 
@@ -5177,6 +5221,25 @@ Output ONLY the JSON array.`,
                   {pageCount > 1 && (
                     <div className="no-print" style={{ position: "absolute", top: 14, left: 18, background: gv.light, border: `1.5px solid ${gv.color}35`, borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 700, color: gv.color, fontFamily: F }}>
                       Page {pIdx + 1} of {pageCount}
+                    </div>
+                  )}
+
+                  {/* Page-overflow prompt: shown when any element extends past
+                      the single-page content cap. Lets the user spill the
+                      overflowing blocks onto a new page instead of letting
+                      content silently fall off the printed sheet. */}
+                  {overflows && (
+                    <div role="alert" className="no-print" style={{ background: "#FEF3C7", border: "1.5px solid #F59E0B", borderRadius: 10, padding: "10px 14px", margin: "0 0 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                      <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 700, color: "#92400E" }}>
+                        ⚠ Content exceeds one page. Add a second page to keep everything in print.
+                      </span>
+                      <button
+                        onClick={() => overflowToNewPage(pIdx)}
+                        style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 8, border: "1.5px solid #B45309", background: "#B45309", color: "white", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer" }}
+                        aria-label="Add second page and move overflowing content"
+                      >
+                        + Add second page
+                      </button>
                     </div>
                   )}
 
