@@ -1671,8 +1671,13 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const imgMaxW = isSmall ? "32%" : isLarge ? "94%" : "62%";
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
     const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
+    // When the user resizes the wrapper, the image must scale proportionally
+    // with the box on BOTH axes and never get cut off. width:100% + height:100%
+    // (when a heightOverride exists) + object-fit:contain guarantees the image
+    // always fits inside the resized box, preserves aspect ratio, and shrinks
+    // when the box shrinks — no clipping, no letterbox-pinned pixel height.
     const fillImgStyle = userSized && !floated
-      ? { width: "100%", height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto", maxWidth: "none", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
+      ? { width: "100%", height: el.heightOverride ? "100%" : "auto", maxWidth: "none", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
       : { ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" };
     return (
       <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
