@@ -1670,18 +1670,32 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const userSized = !!(el.widthOverride || el.heightOverride);
     const imgMaxW = isSmall ? "32%" : isLarge ? "94%" : "62%";
     const floatStyle = floated ? { float: el.align, marginRight: el.align === "left" ? 18 : 0, marginLeft: el.align === "right" ? 18 : 0, marginBottom: 10, width: "32%" } : {};
-    const containerStyle = floated ? { ...wrap, overflow: "hidden" } : { ...wrap, textAlign: el.align || "center" };
+    const resizedInlineImage = userSized && !floated;
+    const containerStyle = floated
+      ? { ...wrap, overflow: "hidden" }
+      : {
+          ...wrap,
+          textAlign: el.align || "center",
+          ...(resizedInlineImage ? { display: "flex", flexDirection: "column", alignItems: "stretch" } : {}),
+        };
+    const imageFrameStyle = resizedInlineImage
+      ? { width: "100%", flex: el.heightOverride ? "1 1 auto" : "0 0 auto", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }
+      : null;
     // When the user resizes the wrapper, the image must scale proportionally
     // with the box on BOTH axes and never get cut off. width:100% + height:100%
     // (when a heightOverride exists) + object-fit:contain guarantees the image
     // always fits inside the resized box, preserves aspect ratio, and shrinks
     // when the box shrinks — no clipping, no letterbox-pinned pixel height.
-    const fillImgStyle = userSized && !floated
-      ? { width: "100%", height: el.heightOverride ? "100%" : "auto", maxWidth: "none", maxHeight: "none", objectFit: "contain", display: "block", borderRadius: 8, border: "1.5px solid #E5E7EB" }
+    const fillImgStyle = resizedInlineImage
+      ? { width: "100%", height: el.heightOverride ? "100%" : "auto", maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block", boxSizing: "border-box", borderRadius: 8, border: "1.5px solid #E5E7EB" }
       : { ...floatStyle, ...(!floated ? { maxWidth: imgMaxW } : {}), borderRadius: 8, border: "1.5px solid #E5E7EB", maxHeight: floated ? 200 : 360, objectFit: "contain", display: floated ? "block" : "inline-block" };
     return (
       <div className="ws-element" style={containerStyle} onPointerDown={handleMouseDown} onClick={onClick} role="button" tabIndex={0} aria-label="Image element — click to edit" onKeyDown={e => e.key === "Enter" && onClick()}>
-        {el.url ? (
+        {el.url && resizedInlineImage ? (
+          <div style={imageFrameStyle}>
+            <img src={el.url} alt={el.caption || "Worksheet illustration"} style={fillImgStyle} />
+          </div>
+        ) : el.url ? (
           <img src={el.url} alt={el.caption || "Worksheet illustration"} style={fillImgStyle} />
         ) : (
           <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: isSmall ? 150 : isLarge ? 400 : 260, height: isSmall ? 110 : isLarge ? 290 : 190, border: `2px dashed ${gv.color}50`, borderRadius: 10, background: gv.light, gap: 8, ...floatStyle }}>
@@ -1696,7 +1710,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
             ))}
           </div>
         )}
-        {!floated && el.caption && <p style={{ fontSize: Math.max(fs - 10, 11), color: "#6B7280", textAlign: "center", margin: "6px 0 0", fontFamily: F, fontWeight: 600 }}>{el.caption}</p>}
+        {!floated && el.caption && <p style={{ fontSize: Math.max(fs - 10, 11), color: "#6B7280", textAlign: "center", margin: "6px 0 0", fontFamily: F, fontWeight: 600, flex: resizedInlineImage ? "0 0 auto" : undefined, maxWidth: resizedInlineImage ? "100%" : undefined }}>{el.caption}</p>}
         {floated && <div style={{ clear: "both" }} />}
         <DeleteBtn /><ResetBtn /><ResizeHandles />
       </div>
