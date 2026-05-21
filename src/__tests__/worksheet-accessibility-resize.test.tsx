@@ -37,7 +37,8 @@ function scaledContent(opts: {
 }
 
 // Mirrors the image element's "userSized && !floated" fill style decisions
-// from ElView so we can assert no axis cap blocks growth.
+// from ElView so we can assert preset caps do not block growth, while the
+// image is still constrained to the resized frame and cannot be clipped.
 function imageFillStyle(el: { widthOverride?: number; heightOverride?: number }) {
   const userSized = !!(el.widthOverride || el.heightOverride);
   if (!userSized) {
@@ -53,9 +54,9 @@ function imageFillStyle(el: { widthOverride?: number; heightOverride?: number })
   return {
     userSized: true,
     width: "100%",
-    height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto",
-    maxWidth: "none",
-    maxHeight: "none",
+    height: el.heightOverride ? "100%" : "auto",
+    maxWidth: "100%",
+    maxHeight: "100%",
     objectFit: "contain" as const,
   };
 }
