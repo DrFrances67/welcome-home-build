@@ -37,7 +37,8 @@ function scaledContent(opts: {
 }
 
 // Mirrors the image element's "userSized && !floated" fill style decisions
-// from ElView so we can assert no axis cap blocks growth.
+// from ElView so we can assert preset caps do not block growth, while the
+// image is still constrained to the resized frame and cannot be clipped.
 function imageFillStyle(el: { widthOverride?: number; heightOverride?: number }) {
   const userSized = !!(el.widthOverride || el.heightOverride);
   if (!userSized) {
@@ -53,9 +54,9 @@ function imageFillStyle(el: { widthOverride?: number; heightOverride?: number })
   return {
     userSized: true,
     width: "100%",
-    height: el.heightOverride ? (el.heightOverride - 28) + "px" : "auto",
-    maxWidth: "none",
-    maxHeight: "none",
+    height: el.heightOverride ? "100%" : "auto",
+    maxWidth: "100%",
+    maxHeight: "100%",
     objectFit: "contain" as const,
   };
 }
@@ -173,40 +174,40 @@ describe("extreme image resizing: edge cases stay valid", () => {
     expect(s.objectFit).toBe("contain");
   });
 
-  it("user-resized image removes BOTH axis caps so it can grow on both planes", () => {
+  it("user-resized image fills the resized frame without exceeding either axis", () => {
     const s = imageFillStyle({ widthOverride: 80, heightOverride: 500 });
     expect(s.userSized).toBe(true);
-    expect(s.maxWidth).toBe("none");
-    expect(s.maxHeight).toBe("none");
+    expect(s.maxWidth).toBe("100%");
+    expect(s.maxHeight).toBe("100%");
     expect(s.width).toBe("100%");
-    expect(s.height).toBe("472px"); // 500 - 28 padding
+    expect(s.height).toBe("100%");
     expect(s.objectFit).toBe("contain"); // proportional, never distorted
   });
 
-  it("extreme: huge image (full-page width, very tall) computes valid pixel height", () => {
+  it("extreme: huge image (full-page width, very tall) remains bounded to the resized frame", () => {
     const s = imageFillStyle({ widthOverride: 100, heightOverride: 1200 });
-    expect(s.height).toBe("1172px");
-    expect(s.maxHeight).toBe("none");
+    expect(s.height).toBe("100%");
+    expect(s.maxHeight).toBe("100%");
   });
 
-  it("extreme: tiny image (minimum allowed sizes) stays positive and valid", () => {
+  it("extreme: tiny image (minimum allowed sizes) stays bounded and valid", () => {
     // widthOverride is clamped to 20% min and heightOverride to 48px min by the resize handler.
     const s = imageFillStyle({ widthOverride: 20, heightOverride: 48 });
     expect(s.userSized).toBe(true);
-    expect(s.height).toBe("20px"); // 48 - 28
-    expect(parseInt((s.height as string), 10)).toBeGreaterThan(0);
+    expect(s.height).toBe("100%");
+    expect(s.maxHeight).toBe("100%");
   });
 
   it("extreme: very wide thin image (large width, small height) stays valid", () => {
     const s = imageFillStyle({ widthOverride: 100, heightOverride: 60 });
-    expect(s.height).toBe("32px");
-    expect(parseInt((s.height as string), 10)).toBeGreaterThan(0);
+    expect(s.height).toBe("100%");
+    expect(s.maxHeight).toBe("100%");
   });
 
   it("extreme: very tall narrow image (small width, huge height) stays valid", () => {
     const s = imageFillStyle({ widthOverride: 25, heightOverride: 1500 });
-    expect(s.height).toBe("1472px");
-    expect(s.maxWidth).toBe("none");
+    expect(s.height).toBe("100%");
+    expect(s.maxWidth).toBe("100%");
   });
 
   it("width-only resize (no heightOverride) preserves aspect ratio via height: auto", () => {
