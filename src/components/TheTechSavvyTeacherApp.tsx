@@ -1680,7 +1680,7 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
         };
     const imageFrameStyle = resizedInlineImage
       ? { width: "100%", flex: el.heightOverride ? "1 1 auto" : "0 0 auto", minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }
-      : null;
+      : undefined;
     // When the user resizes the wrapper, the image must scale proportionally
     // with the box on BOTH axes and never get cut off. width:100% + height:100%
     // (when a heightOverride exists) + object-fit:contain guarantees the image
