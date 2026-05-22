@@ -8057,7 +8057,7 @@ function DanielsonReview() {
                   </div>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: isHighest ? "#16A34A" : BRAND, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
-                      {isHighest ? "✓ What makes this Highly Effective" : "💡 How to reach Highly Effective"}
+                      {isHighest ? "✓ Highly Effective — ways to extend & further support students" : "💡 How to reach Highly Effective"}
                     </div>
                     <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{s.suggestions}</div>
                   </div>
