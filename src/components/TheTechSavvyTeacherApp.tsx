@@ -7806,17 +7806,45 @@ function DanielsonReview() {
     if (!extractedText) { setError("Please upload a lesson plan first."); return; }
     setAnalyzing(true); setError(""); setResult(null);
     try {
-      const system = `You are an experienced school administrator (assistant principal or principal) conducting a formal observation review using the Danielson 2014-15 Framework for Teaching. You will score a lesson plan against EXACTLY 8 components (1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e). Use the rubric below as your sole authoritative source.\n\n${DANIELSON_RUBRIC_REFERENCE}\n\nCRITICAL INSTRUCTIONS:\n- Score each of the 8 components on a 1-4 scale: 1 (Ineffective), 2 (Developing), 3 (Effective), 4 (Highly Effective).\n- Be honest and rigorous — do NOT inflate scores. Only award 4 (Highly Effective) when the lesson clearly demonstrates the highly effective criteria from the rubric.\n- For each component, you MUST cite "quotes": an array of 1–3 EXACT verbatim text snippets copied character-for-character from the lesson plan that justify your score. Do not paraphrase, summarize, or add words to these quotes — they must appear in the lesson plan exactly as written so they can be highlighted. Keep each quote between 8 and 200 characters. If the lesson plan provides no relevant text for a component (which itself is evidence of a low score), return an empty quotes array.\n- For ANY component scored 1, 2, or 3 (anything below Highly Effective), provide concrete, actionable suggestions rooted in the rubric language for how to reach a 4.\n- For ANY component scored 4 (Highly Effective), the "suggestions" field MUST: (1) explicitly acknowledge and celebrate the Highly Effective rating in 1 sentence naming the specific strength observed, then (2) provide 2–3 concrete, actionable next-step ideas for EXTENDING student learning beyond proficiency (e.g., deeper enrichment, student-led extensions, cross-disciplinary connections, leadership opportunities, authentic audiences, advanced inquiry) AND for FURTHER SUPPORTING students who may still need scaffolding even within a highly effective lesson (e.g., targeted small-group supports, tiered options, additional modalities, formative checkpoints). Frame these as "ways to extend and further support" rather than corrective feedback. Format clearly using short labeled bullet-style lines separated by line breaks.\n- Return ONLY valid JSON, no preamble.`;
+      const system = `You are an experienced school administrator (assistant principal or principal) conducting a formal observation review using the Danielson 2014-15 Framework for Teaching. You will score a lesson plan against EXACTLY 8 components (1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e). Use the rubric below as your sole authoritative source.\n\n${DANIELSON_RUBRIC_REFERENCE}\n\nCRITICAL INSTRUCTIONS:\n- Score each of the 8 components on a 1-4 scale: 1 (Ineffective), 2 (Developing), 3 (Effective), 4 (Highly Effective).\n- Be honest and rigorous — do NOT inflate scores. Only award 4 (Highly Effective) when the lesson clearly demonstrates the highly effective criteria.\n- For each component, cite "quotes": an array of 1–3 EXACT verbatim snippets (8–200 chars). Do not paraphrase. Empty array allowed if none exist.\n- The "suggestions" field is REQUIRED for every component and MUST be a non-empty string.\n\nSUGGESTIONS FORMAT — STRICT:\nIf score is 1, 2, or 3: provide concrete, actionable steps rooted in the rubric to reach Highly Effective.\n\nIf score is 4 (Highly Effective): the "suggestions" string MUST follow this EXACT template, including labels and line breaks. Do NOT omit any section. Do NOT collapse into one paragraph.\n\nStrength: <1 sentence acknowledging the Highly Effective rating and naming the specific strength observed>\n\nExtend learning:\n- <actionable extension idea #1>\n- <actionable extension idea #2>\n- <actionable extension idea #3 — optional>\n\nFurther support:\n- <scaffold / support idea #1 for students who still need help>\n- <scaffold / support idea #2 — optional>\n\nYou MUST include AT LEAST 2 bullets under "Extend learning:" and AT LEAST 1 bullet under "Further support:" for every score=4 component. This is non-negotiable.\n\n- Return ONLY valid JSON, no preamble, no markdown fences.`;
 
-      const user = `Review the following lesson plan and return JSON in this EXACT shape:\n\n{\n  "summary": "2-3 sentence overall observation summary",\n  "scores": [\n    { "id": "1a", "score": 1-4, "rating": "Ineffective|Developing|Effective|Highly Effective", "evidence": "1-2 sentence reasoning that explains why these quotes earn this score", "quotes": ["exact verbatim snippet from the lesson plan", "another exact snippet"], "suggestions": "if score<4: concrete steps to reach Highly Effective. if score=4: first acknowledge the Highly Effective rating and the specific strength, then list 2-3 actionable ways to EXTEND learning and 1-2 ways to FURTHER SUPPORT students who need scaffolding." },\n    ... (one entry for each of 1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e in this order)\n  ]\n}\n\nLESSON PLAN:\n${extractedText.slice(0, 12000)}`;
+      const user = `Review the following lesson plan and return JSON in this EXACT shape:\n\n{\n  "summary": "2-3 sentence overall observation summary",\n  "scores": [\n    { "id": "1a", "score": 1-4, "rating": "Ineffective|Developing|Effective|Highly Effective", "evidence": "1-2 sentence reasoning", "quotes": ["exact verbatim snippet"], "suggestions": "REQUIRED. If score<4: concrete steps to reach Highly Effective. If score=4: MUST use the Strength / Extend learning / Further support template with bullet lists exactly as specified in the system prompt." },\n    ... (one entry for each of 1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e in this order)\n  ]\n}\n\nLESSON PLAN:\n${extractedText.slice(0, 12000)}`;
 
-      const raw = await callClaude(system, user, 5000);
+      const raw = await callClaude(system, user, 6000);
       const match = raw.match(/\{[\s\S]*\}/);
       if (!match) throw new Error("AI response was not valid JSON. Please try again.");
       const parsed = JSON.parse(match[0]);
       if (!Array.isArray(parsed.scores) || parsed.scores.length !== 8) {
         throw new Error("AI did not return all 8 component scores. Please try again.");
       }
+
+      // Repair pass: for any score=4 missing required Extend/Further support sections, re-prompt just those.
+      const needsRepair = parsed.scores.filter((s) => {
+        if (s.score !== 4) return false;
+        const t = String(s.suggestions || "");
+        return !/extend/i.test(t) || !/further support/i.test(t);
+      });
+      if (needsRepair.length > 0) {
+        try {
+          const repairUser = `For the following Highly Effective (score = 4) components from this lesson plan, REWRITE the "suggestions" field to STRICTLY follow the required template:\n\nStrength: ...\n\nExtend learning:\n- ...\n- ... (2–3 bullets)\n\nFurther support:\n- ...\n- ... (1–2 bullets)\n\nReturn ONLY valid JSON of shape: { "fixes": [ { "id": "1a", "suggestions": "..." } ] }\n\nCOMPONENTS TO FIX (id + evidence):\n${needsRepair.map((s) => `- ${s.id}: ${s.evidence || ""}`).join("\n")}\n\nLESSON PLAN:\n${extractedText.slice(0, 8000)}`;
+          const repairRaw = await callClaude(system, repairUser, 3000);
+          const rm = repairRaw.match(/\{[\s\S]*\}/);
+          if (rm) {
+            const rep = JSON.parse(rm[0]);
+            if (Array.isArray(rep.fixes)) {
+              for (const fix of rep.fixes) {
+                const target = parsed.scores.find((x) => x.id === fix.id);
+                if (target && typeof fix.suggestions === "string" && fix.suggestions.trim()) {
+                  target.suggestions = fix.suggestions;
+                }
+              }
+            }
+          }
+        } catch (repairErr) {
+          console.warn("[DanielsonReview] repair pass failed:", repairErr);
+        }
+      }
+
       setResult(parsed);
     } catch (e) {
       setError(e.message || "Analysis failed.");
