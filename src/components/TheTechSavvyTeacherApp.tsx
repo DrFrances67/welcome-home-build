@@ -5501,6 +5501,7 @@ function EmailAssistant() {
 
   const polish = async () => {
     if (!draft.trim()) return;
+    void trackToolUse("Professional Communication");
     setLoading(true); setResult(null); setError(null);
     const rLabel = EMAIL_RECIPIENTS.find(r => r.id === recipient)?.label;
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
