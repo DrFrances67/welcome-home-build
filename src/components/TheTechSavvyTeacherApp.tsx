@@ -4724,6 +4724,7 @@ Output ONLY the JSON array.`,
 
   const generateWorksheetFromLessonPlan = async () => {
     if (!lpFile?.raw) return;
+    void trackToolUse("Worksheet Builder");
     setLpBusy(true); setLpMsg("Reading lesson plan…");
     try {
       const g = gInfo(ws.gradeId);
