@@ -66,14 +66,16 @@ export function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      const [u, s, f] = await Promise.all([
+      const [u, s, f, t] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("user_sessions").select("*").order("started_at", { ascending: false }).limit(500),
         supabase.from("feature_usage").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("tool_usage").select("*").order("used_at", { ascending: false }).limit(2000),
       ]);
       setUsers((u.data as ProfileRow[]) ?? []);
       setSessions((s.data as SessionRow[]) ?? []);
       setUsage((f.data as UsageRow[]) ?? []);
+      setToolUsage((t.data as ToolUsageRow[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
