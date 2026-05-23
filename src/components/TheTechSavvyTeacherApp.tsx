@@ -6121,6 +6121,7 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
       setError("Please fill in Subject and Topic before generating.");
       return;
     }
+    void trackToolUse("Lesson Plan Generator");
     setLoading(true);
     setResult(null);
     setError(null);
