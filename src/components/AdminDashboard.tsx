@@ -28,6 +28,13 @@ interface UsageRow {
   duration_ms: number | null;
   created_at: string;
 }
+interface ToolUsageRow {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  tool_name: string;
+  used_at: string;
+}
 
 export function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
