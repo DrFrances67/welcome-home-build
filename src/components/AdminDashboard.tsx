@@ -120,11 +120,11 @@ export function AdminDashboard() {
     if (!a.lastActive || +new Date(s.started_at) > +new Date(a.lastActive)) a.lastActive = s.started_at;
     userAgg.set(s.user_id, a);
   }
-  for (const r of usage) {
+  for (const r of toolUsage) {
     const a = userAgg.get(r.user_id) ?? { lastActive: null, sessions: 0, tools: new Set<string>(), total: 0 };
     a.total += 1;
-    a.tools.add(FEATURE_LABELS[r.feature] ?? r.feature);
-    if (!a.lastActive || +new Date(r.created_at) > +new Date(a.lastActive)) a.lastActive = r.created_at;
+    a.tools.add(r.tool_name);
+    if (!a.lastActive || +new Date(r.used_at) > +new Date(a.lastActive)) a.lastActive = r.used_at;
     userAgg.set(r.user_id, a);
   }
 
