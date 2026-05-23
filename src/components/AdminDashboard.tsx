@@ -102,6 +102,22 @@ export function AdminDashboard() {
     sessionUsage.set(r.session_id, entry);
   }
 
+  // Per-user aggregates for the Users table.
+  const userAgg = new Map<string, { lastActive: string | null; sessions: number; tools: Set<string>; total: number }>();
+  for (const s of sessions) {
+    const a = userAgg.get(s.user_id) ?? { lastActive: null, sessions: 0, tools: new Set<string>(), total: 0 };
+    a.sessions += 1;
+    if (!a.lastActive || +new Date(s.started_at) > +new Date(a.lastActive)) a.lastActive = s.started_at;
+    userAgg.set(s.user_id, a);
+  }
+  for (const r of usage) {
+    const a = userAgg.get(r.user_id) ?? { lastActive: null, sessions: 0, tools: new Set<string>(), total: 0 };
+    a.total += 1;
+    a.tools.add(FEATURE_LABELS[r.feature] ?? r.feature);
+    if (!a.lastActive || +new Date(r.created_at) > +new Date(a.lastActive)) a.lastActive = r.created_at;
+    userAgg.set(r.user_id, a);
+  }
+
   return (
     <div style={pageStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -138,15 +154,22 @@ export function AdminDashboard() {
           </Section>
 
           <Section title={`Users (${totalUsers})`}>
-            <Table headers={["Username", "Full name", "Email", "Joined"]}>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td style={td}>{u.username}</td>
-                  <td style={td}>{u.full_name}</td>
-                  <td style={td}>{u.email}</td>
-                  <td style={td}>{new Date(u.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
+            <Table headers={["Username", "Email", "Joined", "Last Active", "Sessions", "Tools Used", "Total Uses"]}>
+              {users.map((u) => {
+                const a = userAgg.get(u.id);
+                const tools = a ? Array.from(a.tools) : [];
+                return (
+                  <tr key={u.id}>
+                    <td style={td}>{u.username}</td>
+                    <td style={td}>{u.email}</td>
+                    <td style={td}>{new Date(u.created_at).toLocaleString()}</td>
+                    <td style={td}>{a?.lastActive ? new Date(a.lastActive).toLocaleString() : "—"}</td>
+                    <td style={td}>{a?.sessions ?? 0}</td>
+                    <td style={td}>{tools.length === 0 ? "—" : tools.join(", ")}</td>
+                    <td style={td}>{a?.total ?? 0}</td>
+                  </tr>
+                );
+              })}
             </Table>
           </Section>
 
