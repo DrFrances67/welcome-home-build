@@ -6,6 +6,7 @@ import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
+import { trackToolUse } from "@/lib/tracking";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DATA
@@ -4382,6 +4383,7 @@ export function WorksheetBuilder() {
   };
 
   const handleGenerateFromStd = async (std, showHeader) => {
+    void trackToolUse("Worksheet Builder");
     setGenerating(true);
     if (showHeader) {
       insertStandard(std, true);
@@ -4722,6 +4724,7 @@ Output ONLY the JSON array.`,
 
   const generateWorksheetFromLessonPlan = async () => {
     if (!lpFile?.raw) return;
+    void trackToolUse("Worksheet Builder");
     setLpBusy(true); setLpMsg("Reading lesson plan…");
     try {
       const g = gInfo(ws.gradeId);
@@ -5500,6 +5503,7 @@ function EmailAssistant() {
 
   const polish = async () => {
     if (!draft.trim()) return;
+    void trackToolUse("Professional Communication");
     setLoading(true); setResult(null); setError(null);
     const rLabel = EMAIL_RECIPIENTS.find(r => r.id === recipient)?.label;
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
@@ -6119,6 +6123,7 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
       setError("Please fill in Subject and Topic before generating.");
       return;
     }
+    void trackToolUse("Lesson Plan Generator");
     setLoading(true);
     setResult(null);
     setError(null);
@@ -7804,6 +7809,7 @@ function DanielsonReview() {
 
   const analyze = async () => {
     if (!extractedText) { setError("Please upload a lesson plan first."); return; }
+    void trackToolUse("Danielson Rubric Builder");
     setAnalyzing(true); setError(""); setResult(null);
     try {
       const system = `You are an experienced school administrator (assistant principal or principal) conducting a formal observation review using the Danielson 2014-15 Framework for Teaching. You will score a lesson plan against EXACTLY 8 components (1a, 1e, 2a, 2d, 3b, 3c, 3d, 4e). Use the rubric below as your SOLE authoritative source — do not invent criteria, do not rely on general teaching knowledge, and do not award credit for qualities not explicitly named in the rubric.\n\n${DANIELSON_RUBRIC_REFERENCE}\n\nCRITICAL INSTRUCTIONS:\n- Score each of the 8 components on a 1-4 scale: 1 (Ineffective), 2 (Developing), 3 (Effective), 4 (Highly Effective).\n- STRICT RUBRIC ADHERENCE: A rating of 4 (Highly Effective) may ONLY be awarded when the lesson plan contains explicit, verbatim evidence that satisfies EVERY descriptor listed under "Highly Effective" for that component in the rubric above. Partial fulfillment, implied intent, strong Effective-level evidence, or merely "above average" practice is NOT sufficient — those cases are a 3 at most. When in doubt, score lower. The default ceiling is 3 (Effective); 4 must be earned by clear rubric-criterion match.\n- Before assigning a 4, internally verify: (a) which exact Highly Effective descriptor(s) from the rubric are met, and (b) which exact lesson-plan quote(s) prove each one. If you cannot produce that mapping with verbatim quotes, the score is 3 or lower.\n- For each component, you MUST cite "quotes": an array of 1–3 EXACT verbatim text snippets copied character-for-character from the lesson plan that justify your score. Do not paraphrase, summarize, or add words to these quotes — they must appear in the lesson plan exactly as written so they can be highlighted. Keep each quote between 8 and 200 characters. If the lesson plan provides no relevant text for a component (which itself is evidence of a low score), return an empty quotes array — and in that case the score cannot be 4.\n- For ANY component scored 1, 2, or 3 (anything below Highly Effective), provide concrete, actionable suggestions rooted in the rubric language for how to reach a 4.\n- For ANY component scored 4 (Highly Effective), the "suggestions" field MUST: (1) explicitly acknowledge and celebrate the Highly Effective rating in 1 sentence naming the specific rubric descriptor(s) met, then (2) provide AT LEAST ONE concrete, classroom-ready EXTENSION ACTIVITY that improves the lesson further (describe exactly what students would do — e.g., a specific enrichment task, student-led extension, cross-disciplinary connection, authentic-audience project, or advanced inquiry — not a vague suggestion). Aim for 2–3 extension activities when possible, and also include 1–2 FURTHER SUPPORT scaffolds for students who may still need help (e.g., targeted small-group supports, tiered options, additional modalities, formative checkpoints). Label the extension activities clearly (e.g., "Extension Activity:") so they are easy to find. Frame everything as "ways to extend and further support" rather than corrective feedback. Format clearly using short labeled bullet-style lines separated by line breaks.\n- Return ONLY valid JSON, no preamble.`;

@@ -28,12 +28,20 @@ interface UsageRow {
   duration_ms: number | null;
   created_at: string;
 }
+interface ToolUsageRow {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  tool_name: string;
+  used_at: string;
+}
 
 export function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
+  const [toolUsage, setToolUsage] = useState<ToolUsageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [endingSessions, setEndingSessions] = useState(false);
   const [endMessage, setEndMessage] = useState<string | null>(null);
@@ -58,14 +66,16 @@ export function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      const [u, s, f] = await Promise.all([
+      const [u, s, f, t] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("user_sessions").select("*").order("started_at", { ascending: false }).limit(500),
         supabase.from("feature_usage").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("tool_usage").select("*").order("used_at", { ascending: false }).limit(2000),
       ]);
       setUsers((u.data as ProfileRow[]) ?? []);
       setSessions((s.data as SessionRow[]) ?? []);
       setUsage((f.data as UsageRow[]) ?? []);
+      setToolUsage((t.data as ToolUsageRow[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
@@ -110,11 +120,11 @@ export function AdminDashboard() {
     if (!a.lastActive || +new Date(s.started_at) > +new Date(a.lastActive)) a.lastActive = s.started_at;
     userAgg.set(s.user_id, a);
   }
-  for (const r of usage) {
+  for (const r of toolUsage) {
     const a = userAgg.get(r.user_id) ?? { lastActive: null, sessions: 0, tools: new Set<string>(), total: 0 };
     a.total += 1;
-    a.tools.add(FEATURE_LABELS[r.feature] ?? r.feature);
-    if (!a.lastActive || +new Date(r.created_at) > +new Date(a.lastActive)) a.lastActive = r.created_at;
+    a.tools.add(r.tool_name);
+    if (!a.lastActive || +new Date(r.used_at) > +new Date(a.lastActive)) a.lastActive = r.used_at;
     userAgg.set(r.user_id, a);
   }
 

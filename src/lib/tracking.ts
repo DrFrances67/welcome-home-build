@@ -97,3 +97,23 @@ export async function endFeatureTimer(userId: string, feature: string, action?: 
   featureTimers.delete(feature);
   await trackFeature(userId, feature, action, Date.now() - start);
 }
+
+export type ToolName =
+  | "Lesson Plan Generator"
+  | "Danielson Rubric Builder"
+  | "Worksheet Builder"
+  | "Professional Communication";
+
+export async function trackToolUse(toolName: ToolName) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("tool_usage").insert({
+      user_id: user.id,
+      session_id: currentSessionId,
+      tool_name: toolName,
+    });
+  } catch {
+    /* ignore */
+  }
+}

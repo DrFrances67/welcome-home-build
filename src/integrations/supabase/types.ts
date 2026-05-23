@@ -202,6 +202,30 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_usage: {
+        Row: {
+          id: string
+          session_id: string | null
+          tool_name: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          session_id?: string | null
+          tool_name: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          session_id?: string | null
+          tool_name?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
