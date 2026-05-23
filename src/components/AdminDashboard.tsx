@@ -41,6 +41,7 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
+  const [toolUsage, setToolUsage] = useState<ToolUsageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [endingSessions, setEndingSessions] = useState(false);
   const [endMessage, setEndMessage] = useState<string | null>(null);
