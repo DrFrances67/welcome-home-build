@@ -4383,6 +4383,7 @@ export function WorksheetBuilder() {
   };
 
   const handleGenerateFromStd = async (std, showHeader) => {
+    void trackToolUse("Worksheet Builder");
     setGenerating(true);
     if (showHeader) {
       insertStandard(std, true);
