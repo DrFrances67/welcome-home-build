@@ -7,6 +7,7 @@ import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
 import { trackToolUse } from "@/lib/tracking";
+import { aiHeaders } from "@/lib/aiFetch";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DATA
@@ -2341,7 +2342,7 @@ No markdown, no preamble, no commentary.`;
       ? `Topic / standard / text: ${promptTopic}\n\nAdditional context from the teacher: ${extraContext}`
       : `Topic / standard / text: ${promptTopic}`;
     const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: await aiHeaders(),
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514", max_tokens: 2000,
         system: sys,
@@ -2542,7 +2543,7 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
     const sysExit = `You design quick formative exit tickets for K–12 lessons. Exit tickets are brief (1–5 minute) end-of-lesson self-checks. Items should be checkable statements students can mark off, e.g. participation, completion, or demonstration of one specific concept. Calibrate vocabulary to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short statements — no markdown, no preamble. Example: ["I participated in class.","I completed the reading assignment.","I participated in at least two center activities."]`;
     try {
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 500,
           system: isSuccess ? sysSuccess : sysExit,
@@ -2961,7 +2962,7 @@ function AIImageGen({ gv, onAddImage }) {
 
     const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await aiHeaders(),
       body: JSON.stringify({ prompt: fullPrompt, style: styleKey }),
     });
 
@@ -3028,7 +3029,7 @@ function AIImageGen({ gv, onAddImage }) {
       try {
         const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await aiHeaders(),
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514",
             max_tokens: 200,
@@ -3210,7 +3211,7 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   // Build a full worksheet (returns an array of element objects) ──────────
   const buildWorksheet = async (userPrompt) => {
     const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: await aiHeaders(),
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514", max_tokens: 4000,
         system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 12–20 worksheet element objects spanning AT LEAST 2 PAGES (use a 0-based "page" field on every element: 0, 1, and optionally 2).
@@ -3275,7 +3276,7 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
             if (!prompt) continue;
             try {
               const ir = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
-                method: "POST", headers: { "Content-Type": "application/json" },
+                method: "POST", headers: await aiHeaders(),
                 body: JSON.stringify({ prompt, style: "cartoon" }),
               });
               if (ir.ok) { const d = await ir.json(); if (d?.url) el.url = d.url; }
@@ -3295,7 +3296,7 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
     // ─── Otherwise: normal conversational reply ───
     try {
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 1000,
           system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
@@ -4397,7 +4398,7 @@ export function WorksheetBuilder() {
     const bandLabel = BANDS[g.band]?.label || g.name;
     try {
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 1000,
           system: `You are an expert curriculum designer creating complete, print-ready worksheets for NY State teachers. Always respond with valid JSON only — no markdown, no preamble, no explanation outside the JSON array.`,
@@ -4465,7 +4466,7 @@ Include a variety of activity types. Make the content directly address the stand
       setRefImg(b64); setAnalyzing(true);
       try {
         const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-          method: "POST", headers: { "Content-Type": "application/json" },
+          method: "POST", headers: await aiHeaders(),
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514", max_tokens: 350,
             messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: file.type, data: b64.split(",")[1] } }, { type: "text", text: "A teacher uploaded this reference worksheet. In 2–3 sentences, describe its structure, activity types, subject area, and approximate grade level so I can help recreate or build similar worksheets. Be concise and practical." }] }]
@@ -4548,7 +4549,7 @@ Include a variety of activity types. Make the content directly address the stand
       while (attempt < 3) {
         try {
           const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST", headers: await aiHeaders(),
             body: JSON.stringify({ prompt, style: styleHint }),
           });
           if (r.status === 429) {
@@ -4623,7 +4624,7 @@ Include a variety of activity types. Make the content directly address the stand
       userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- The OUTPUT MUST SPAN AT LEAST 2 PAGES. Never compress everything onto page 0. If the source is short, expand it with additional varied items (more questions, deeper practice, extension activities, reflection) until you fill at least 2 full pages.\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- Vary activity types across pages (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay) — prioritize depth and variety over brevity.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n- GROUPING: Place each image block IMMEDIATELY next to the question/prompt it illustrates (right before or right after). Never separate an image from its related content with unrelated blocks.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 5000,
           system: `You convert a teacher's existing worksheet into structured worksheet blocks for a ${g.name} class. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
@@ -4732,7 +4733,7 @@ Output ONLY the JSON array.`,
       const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- The OUTPUT MUST SPAN AT LEAST 2 PAGES (use page 0 and page 1, optionally page 2). Never compress everything onto one page.\n- Distribute content across distinct lesson sections: page 0 = warm-up + core practice, page 1 = extension / deeper practice / varied question types, optional page 2 = reflection / exit ticket / challenge.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so each page is full but not crowded.\n- Output 12–20 total blocks covering the lesson's objectives, vocabulary, and key concepts in depth. Prioritize depth and variety over brevity.\n- Vary activity types across pages (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay, table) — do not repeat the same format.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".\n- GROUPING: Place each image block IMMEDIATELY adjacent to the question, prompt, or task it illustrates (right before or right after). Never separate an image from its associated content with unrelated blocks. Keep instruction → activity and wordBank → fillBlank pairs together on the same page.`;
 
       const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 5000,
           system: `You are an expert curriculum designer. The teacher has uploaded a lesson plan and wants a "${typeLabel}" worksheet for ${g.name} students that is directly aligned to the lesson's objectives, vocabulary, and content. The worksheet MUST span AT LEAST 2 PAGES — distribute content across warm-up, practice, extension, and reflection sections. Respond with VALID JSON ONLY — a single JSON array of 12–20 worksheet element objects with a 0-based "page" field on every element. No markdown, no preamble.
@@ -5516,7 +5517,7 @@ function EmailAssistant() {
       const readingLabel = showComplexity ? `${gObj?.label} · ${cObj?.label}` : (gObj?.label || "");
       const readingDesc  = showComplexity ? `${gObj?.desc} — complexity: ${cObj?.desc}` : (gObj?.desc || "");
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional communication.
@@ -5903,7 +5904,7 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
       try {
         const res = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          headers: await aiHeaders({ Accept: "application/json" }),
           body: payload,
           signal: ctrl.signal,
         });
@@ -6580,7 +6581,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
         try {
           const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: await aiHeaders(),
             body: JSON.stringify({ prompt: fullPrompt, style: "clipart" }),
           });
           if (res.ok) {
@@ -7790,7 +7791,7 @@ function DanielsonReview() {
   const callClaude = async (system, userContent, maxTokens = 3000) => {
     const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await aiHeaders(),
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: maxTokens,
