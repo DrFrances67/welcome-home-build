@@ -44,6 +44,18 @@ export const Route = createFileRoute('/api/public/notify-admin-signup')({
 
         const supabase = createClient(supabaseUrl, serviceKey)
 
+        // Verify the referenced user actually exists — otherwise this endpoint
+        // could be abused to flood the admin inbox with fake signup
+        // notifications using arbitrary UUIDs.
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', parsed.user_id)
+          .maybeSingle()
+        if (!profileRow) {
+          return Response.json({ error: 'Unknown user' }, { status: 403 })
+        }
+
         // Idempotency: one notification per new user.
         const idempotencyKey = `admin-new-signup-${parsed.user_id}`
         const { data: existing } = await supabase
