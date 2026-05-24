@@ -112,11 +112,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserMenu } from "@/components/UserMenu";
 
+import { ContactWidget } from "@/components/ContactWidget";
+
 function RootComponent() {
   return (
     <AuthProvider>
       <UserMenu />
       <Outlet />
+      <ContactWidget />
     </AuthProvider>
   );
 }
