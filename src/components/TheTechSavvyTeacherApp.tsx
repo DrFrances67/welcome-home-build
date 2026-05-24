@@ -5517,7 +5517,7 @@ function EmailAssistant() {
       const readingLabel = showComplexity ? `${gObj?.label} · ${cObj?.label}` : (gObj?.label || "");
       const readingDesc  = showComplexity ? `${gObj?.desc} — complexity: ${cObj?.desc}` : (gObj?.desc || "");
       const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers: await aiHeaders(),
         body: JSON.stringify({
           model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional communication.
