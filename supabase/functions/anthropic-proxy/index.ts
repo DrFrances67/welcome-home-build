@@ -26,6 +26,29 @@ serve(async (req) => {
   }
 
   try {
+    // Require an authenticated Supabase user — these functions consume paid AI
+    // credits and must not be callable anonymously.
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: { message: "Unauthorized" } }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { Authorization: authHeader, apikey: SUPABASE_ANON_KEY },
+      });
+      if (!userRes.ok) {
+        return new Response(
+          JSON.stringify({ error: { message: "Unauthorized" } }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(
