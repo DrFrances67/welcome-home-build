@@ -63,13 +63,13 @@ export function ContactWidget() {
 
       <div
         ref={panelRef}
-        className={`fixed bottom-20 left-6 z-[1000] w-[360px] max-w-[calc(100vw-3rem)] origin-bottom-left overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl transition-all duration-300 ${
+        className={`fixed bottom-16 left-4 z-[1000] w-[360px] max-w-[calc(100vw-2rem)] origin-bottom-left overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl transition-all duration-300 sm:bottom-20 sm:left-6 sm:max-w-[calc(100vw-3rem)] ${
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-3 scale-95 opacity-0"
         }`}
       >
-        <div className="flex items-start justify-between bg-primary px-5 py-4 text-primary-foreground">
+        <div className="flex items-start justify-between px-5 py-4 text-white" style={{ backgroundColor: "#CF27F5" }}>
           <div>
             <h2 className="font-serif text-xl font-normal leading-tight">Get in touch</h2>
             <p className="mt-1 text-xs font-light opacity-70">
