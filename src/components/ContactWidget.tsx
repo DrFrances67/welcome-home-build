@@ -88,7 +88,7 @@ export function ContactWidget() {
         {!submitted ? (
           <form
             onSubmit={submit}
-            className="flex max-h-[480px] flex-col gap-3.5 overflow-y-auto px-5 py-5"
+            className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-5"
           >
             <div className="flex gap-2.5">
               <Field label="First name">
