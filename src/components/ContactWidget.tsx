@@ -69,7 +69,7 @@ export function ContactWidget() {
             : "pointer-events-none translate-y-3 scale-95 opacity-0"
         }`}
       >
-        <div className="flex items-start justify-between px-5 py-4 text-white" style={{ backgroundColor: "#CF27F5" }}>
+        <div className="flex flex-shrink-0 items-start justify-between px-5 py-4 text-white" style={{ backgroundColor: "#CF27F5" }}>
           <div>
             <h2 className="font-serif text-xl font-normal leading-tight">Get in touch</h2>
             <p className="mt-1 text-xs font-light opacity-70">
