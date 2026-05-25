@@ -63,13 +63,13 @@ export function ContactWidget() {
 
       <div
         ref={panelRef}
-        className={`fixed bottom-16 left-4 z-[1000] w-[360px] max-w-[calc(100vw-2rem)] origin-bottom-left overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl transition-all duration-300 sm:bottom-20 sm:left-6 sm:max-w-[calc(100vw-3rem)] ${
+        className={`fixed bottom-16 left-4 right-4 z-[1000] flex max-h-[calc(100svh-5rem)] w-auto origin-bottom-left flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl transition-all duration-300 sm:right-auto sm:bottom-20 sm:left-6 sm:w-[360px] sm:max-w-[calc(100vw-3rem)] sm:max-h-[calc(100svh-6rem)] ${
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-3 scale-95 opacity-0"
         }`}
       >
-        <div className="flex items-start justify-between px-5 py-4 text-white" style={{ backgroundColor: "#CF27F5" }}>
+        <div className="flex flex-shrink-0 items-start justify-between px-5 py-4 text-white" style={{ backgroundColor: "#CF27F5" }}>
           <div>
             <h2 className="font-serif text-xl font-normal leading-tight">Get in touch</h2>
             <p className="mt-1 text-xs font-light opacity-70">
@@ -88,7 +88,7 @@ export function ContactWidget() {
         {!submitted ? (
           <form
             onSubmit={submit}
-            className="flex max-h-[480px] flex-col gap-3.5 overflow-y-auto px-5 py-5"
+            className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-5"
           >
             <div className="flex gap-2.5">
               <Field label="First name">
