@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export function ContactWidget() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
