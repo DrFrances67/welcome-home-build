@@ -16,7 +16,8 @@ const PayloadSchema = z.object({
   email: z.string().trim().email().max(320),
   subject: z.string().trim().min(1).max(200),
   message: z.string().trim().min(1).max(5000),
-  hasScreenshot: z.boolean().optional().default(false),
+  screenshotUrl: z.string().url().max(2000).nullable().optional(),
+  screenshotName: z.string().max(255).nullable().optional(),
 })
 
 export const Route = createFileRoute('/api/public/contact-message')({
@@ -56,7 +57,8 @@ export const Route = createFileRoute('/api/public/contact-message')({
           email: parsed.email,
           subject: parsed.subject,
           message: parsed.message,
-          hasScreenshot: parsed.hasScreenshot,
+          screenshotUrl: parsed.screenshotUrl ?? null,
+          screenshotName: parsed.screenshotName ?? null,
           timestamp,
         }
         const element = React.createElement(entry.component, templateData)
