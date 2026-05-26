@@ -198,11 +198,18 @@ export function ContactWidget() {
               )}
             </div>
 
+            {errorMsg && (
+              <p className="text-xs text-destructive" role="alert">
+                {errorMsg}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="mt-0.5 w-full rounded-[10px] bg-primary px-4 py-3 text-sm font-medium tracking-wide text-primary-foreground transition-all hover:-translate-y-px hover:bg-primary/90 active:translate-y-0"
+              disabled={submitting}
+              className="mt-0.5 w-full rounded-[10px] bg-primary px-4 py-3 text-sm font-medium tracking-wide text-primary-foreground transition-all hover:-translate-y-px hover:bg-primary/90 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              Send Message →
+              {submitting ? "Sending…" : "Send Message →"}
             </button>
           </form>
         ) : (
