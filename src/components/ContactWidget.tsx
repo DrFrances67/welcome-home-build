@@ -46,16 +46,30 @@ export function ContactWidget() {
     if (submitting) return;
     setErrorMsg(null);
     const fd = new FormData(e.currentTarget);
-    const payload = {
-      firstName: String(fd.get("firstName") ?? "").trim(),
-      lastName: String(fd.get("lastName") ?? "").trim(),
-      email: String(fd.get("email") ?? "").trim(),
-      subject: String(fd.get("subject") ?? "").trim(),
-      message: String(fd.get("message") ?? "").trim(),
-      hasScreenshot: !!filePreview,
-    };
     setSubmitting(true);
     try {
+      let screenshotUrl: string | null = null;
+      let screenshotName: string | null = null;
+      if (selectedFile) {
+        const ext = selectedFile.name.split(".").pop() || "png";
+        const path = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("contact-screenshots")
+          .upload(path, selectedFile, { contentType: selectedFile.type, upsert: false });
+        if (upErr) throw new Error("Failed to upload screenshot");
+        const { data: pub } = supabase.storage.from("contact-screenshots").getPublicUrl(path);
+        screenshotUrl = pub.publicUrl;
+        screenshotName = selectedFile.name;
+      }
+      const payload = {
+        firstName: String(fd.get("firstName") ?? "").trim(),
+        lastName: String(fd.get("lastName") ?? "").trim(),
+        email: String(fd.get("email") ?? "").trim(),
+        subject: String(fd.get("subject") ?? "").trim(),
+        message: String(fd.get("message") ?? "").trim(),
+        screenshotUrl,
+        screenshotName,
+      };
       const res = await fetch("/api/public/contact-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
