@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export function ContactWidget() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -48,18 +47,27 @@ export function ContactWidget() {
     const fd = new FormData(e.currentTarget);
     setSubmitting(true);
     try {
-      let screenshotUrl: string | null = null;
+      let screenshotBase64: string | null = null;
       let screenshotName: string | null = null;
+      let screenshotType: string | null = null;
       if (selectedFile) {
-        const ext = selectedFile.name.split(".").pop() || "png";
-        const path = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("contact-screenshots")
-          .upload(path, selectedFile, { contentType: selectedFile.type, upsert: false });
-        if (upErr) throw new Error("Failed to upload screenshot");
-        const { data: pub } = supabase.storage.from("contact-screenshots").getPublicUrl(path);
-        screenshotUrl = pub.publicUrl;
+        if (selectedFile.size > 5 * 1024 * 1024) {
+          throw new Error("Screenshot must be 5 MB or smaller");
+        }
+        if (!selectedFile.type.startsWith("image/")) {
+          throw new Error("Only image files are allowed");
+        }
+        screenshotBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = String(reader.result ?? "");
+            resolve(result.includes(",") ? result.split(",")[1] : result);
+          };
+          reader.onerror = () => reject(new Error("Failed to read screenshot"));
+          reader.readAsDataURL(selectedFile);
+        });
         screenshotName = selectedFile.name;
+        screenshotType = selectedFile.type;
       }
       const payload = {
         firstName: String(fd.get("firstName") ?? "").trim(),
@@ -67,8 +75,9 @@ export function ContactWidget() {
         email: String(fd.get("email") ?? "").trim(),
         subject: String(fd.get("subject") ?? "").trim(),
         message: String(fd.get("message") ?? "").trim(),
-        screenshotUrl,
+        screenshotBase64,
         screenshotName,
+        screenshotType,
       };
       const res = await fetch("/api/public/contact-message", {
         method: "POST",
