@@ -5,6 +5,8 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
+  Link,
   Preview,
   Section,
   Text,
@@ -19,7 +21,8 @@ interface ContactMessageProps {
   email?: string
   subject?: string
   message?: string
-  hasScreenshot?: boolean
+  screenshotUrl?: string | null
+  screenshotName?: string | null
   timestamp?: string
 }
 
@@ -29,7 +32,8 @@ const ContactMessageEmail = ({
   email,
   subject,
   message,
-  hasScreenshot,
+  screenshotUrl,
+  screenshotName,
   timestamp,
 }: ContactMessageProps) => {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Anonymous'
@@ -56,16 +60,26 @@ const ContactMessageEmail = ({
             <Text style={infoRow}>
               <span style={label}>Submitted:</span> {timestamp || '—'}
             </Text>
-            {hasScreenshot ? (
-              <Text style={infoRow}>
-                <span style={label}>Screenshot:</span> User attached a screenshot
-                (not included — attachments are not supported)
-              </Text>
-            ) : null}
           </Section>
           <Hr style={hr} />
           <Text style={messageLabel}>Message</Text>
           <Text style={messageText}>{message || '(no message)'}</Text>
+          {screenshotUrl ? (
+            <>
+              <Hr style={hr} />
+              <Text style={messageLabel}>Screenshot</Text>
+              <Img
+                src={screenshotUrl}
+                alt={screenshotName || 'Screenshot'}
+                style={screenshotImg}
+              />
+              <Text style={text}>
+                <Link href={screenshotUrl} style={linkStyle}>
+                  Download {screenshotName || 'screenshot'}
+                </Link>
+              </Text>
+            </>
+          ) : null}
           <Hr style={hr} />
           <Text style={footer}>{SITE_NAME} contact form</Text>
         </Container>
@@ -86,12 +100,14 @@ export const template = {
     email: 'jane@example.com',
     subject: 'Feature Request',
     message: 'It would be great if you could add a dark mode toggle.',
-    hasScreenshot: false,
+    screenshotUrl: null,
+    screenshotName: null,
     timestamp: new Date().toISOString(),
   },
 } satisfies TemplateEntry
 
 export default ContactMessageEmail
+
 
 const main: React.CSSProperties = {
   backgroundColor: '#ffffff',
