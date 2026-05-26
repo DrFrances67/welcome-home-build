@@ -118,24 +118,25 @@ export function ContactWidget() {
 
         {!submitted ? (
           <form
+            ref={formRef}
             onSubmit={submit}
             className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-5"
           >
             <div className="flex gap-2.5">
               <Field label="First name">
-                <input type="text" placeholder="Jane" className={inputCls} />
+                <input name="firstName" type="text" placeholder="Jane" className={inputCls} />
               </Field>
               <Field label="Last name">
-                <input type="text" placeholder="Smith" className={inputCls} />
+                <input name="lastName" type="text" placeholder="Smith" className={inputCls} />
               </Field>
             </div>
 
             <Field label="Email">
-              <input type="email" required placeholder="jane@example.com" className={inputCls} />
+              <input name="email" type="email" required placeholder="jane@example.com" className={inputCls} />
             </Field>
 
             <Field label="Subject">
-              <select required defaultValue="" className={`${inputCls} appearance-none pr-9`}>
+              <select name="subject" required defaultValue="" className={`${inputCls} appearance-none pr-9`}>
                 <option value="" disabled>Select a topic…</option>
                 <option>Bug / Error Report</option>
                 <option>Feature Request</option>
@@ -147,6 +148,7 @@ export function ContactWidget() {
 
             <Field label="Message">
               <textarea
+                name="message"
                 required
                 placeholder="Describe your issue or question…"
                 className={`${inputCls} h-[88px] resize-none leading-relaxed`}
