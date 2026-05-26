@@ -27,6 +27,7 @@ export function ContactWidget() {
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setFilePreview({ url: String(ev.target?.result ?? ""), name: file.name });
@@ -37,6 +38,7 @@ export function ContactWidget() {
   function removeFile() {
     if (fileInputRef.current) fileInputRef.current.value = "";
     setFilePreview(null);
+    setSelectedFile(null);
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
