@@ -3,10 +3,13 @@ import { useEffect, useRef, useState } from "react";
 export function ContactWidget() {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<{ url: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -34,16 +37,44 @@ export function ContactWidget() {
     setFilePreview(null);
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setOpen(false);
+    if (submitting) return;
+    setErrorMsg(null);
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      firstName: String(fd.get("firstName") ?? "").trim(),
+      lastName: String(fd.get("lastName") ?? "").trim(),
+      email: String(fd.get("email") ?? "").trim(),
+      subject: String(fd.get("subject") ?? "").trim(),
+      message: String(fd.get("message") ?? "").trim(),
+      hasScreenshot: !!filePreview,
+    };
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/public/contact-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to send message");
+      }
+      setSubmitted(true);
+      formRef.current?.reset();
       setTimeout(() => {
-        setSubmitted(false);
-        removeFile();
-      }, 400);
-    }, 3000);
+        setOpen(false);
+        setTimeout(() => {
+          setSubmitted(false);
+          removeFile();
+        }, 400);
+      }, 3000);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
