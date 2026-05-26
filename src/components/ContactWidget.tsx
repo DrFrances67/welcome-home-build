@@ -3,10 +3,13 @@ import { useEffect, useRef, useState } from "react";
 export function ContactWidget() {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<{ url: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -34,16 +37,44 @@ export function ContactWidget() {
     setFilePreview(null);
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setOpen(false);
+    if (submitting) return;
+    setErrorMsg(null);
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      firstName: String(fd.get("firstName") ?? "").trim(),
+      lastName: String(fd.get("lastName") ?? "").trim(),
+      email: String(fd.get("email") ?? "").trim(),
+      subject: String(fd.get("subject") ?? "").trim(),
+      message: String(fd.get("message") ?? "").trim(),
+      hasScreenshot: !!filePreview,
+    };
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/public/contact-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to send message");
+      }
+      setSubmitted(true);
+      formRef.current?.reset();
       setTimeout(() => {
-        setSubmitted(false);
-        removeFile();
-      }, 400);
-    }, 3000);
+        setOpen(false);
+        setTimeout(() => {
+          setSubmitted(false);
+          removeFile();
+        }, 400);
+      }, 3000);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -87,24 +118,25 @@ export function ContactWidget() {
 
         {!submitted ? (
           <form
+            ref={formRef}
             onSubmit={submit}
             className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-5"
           >
             <div className="flex gap-2.5">
               <Field label="First name">
-                <input type="text" placeholder="Jane" className={inputCls} />
+                <input name="firstName" type="text" placeholder="Jane" className={inputCls} />
               </Field>
               <Field label="Last name">
-                <input type="text" placeholder="Smith" className={inputCls} />
+                <input name="lastName" type="text" placeholder="Smith" className={inputCls} />
               </Field>
             </div>
 
             <Field label="Email">
-              <input type="email" required placeholder="jane@example.com" className={inputCls} />
+              <input name="email" type="email" required placeholder="jane@example.com" className={inputCls} />
             </Field>
 
             <Field label="Subject">
-              <select required defaultValue="" className={`${inputCls} appearance-none pr-9`}>
+              <select name="subject" required defaultValue="" className={`${inputCls} appearance-none pr-9`}>
                 <option value="" disabled>Select a topic…</option>
                 <option>Bug / Error Report</option>
                 <option>Feature Request</option>
@@ -116,6 +148,7 @@ export function ContactWidget() {
 
             <Field label="Message">
               <textarea
+                name="message"
                 required
                 placeholder="Describe your issue or question…"
                 className={`${inputCls} h-[88px] resize-none leading-relaxed`}
@@ -165,11 +198,18 @@ export function ContactWidget() {
               )}
             </div>
 
+            {errorMsg && (
+              <p className="text-xs text-destructive" role="alert">
+                {errorMsg}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="mt-0.5 w-full rounded-[10px] bg-primary px-4 py-3 text-sm font-medium tracking-wide text-primary-foreground transition-all hover:-translate-y-px hover:bg-primary/90 active:translate-y-0"
+              disabled={submitting}
+              className="mt-0.5 w-full rounded-[10px] bg-primary px-4 py-3 text-sm font-medium tracking-wide text-primary-foreground transition-all hover:-translate-y-px hover:bg-primary/90 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              Send Message →
+              {submitting ? "Sending…" : "Send Message →"}
             </button>
           </form>
         ) : (
