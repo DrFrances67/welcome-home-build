@@ -10,14 +10,27 @@ const SENDER_DOMAIN = 'notify.techsavvyteacher.app'
 const FROM_DOMAIN = 'notify.techsavvyteacher.app'
 const TEMPLATE_NAME = 'contact-message'
 
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
+const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024
+// base64 expands ~33%; cap encoded length accordingly with a small overhead allowance.
+const MAX_BASE64_LEN = Math.ceil((MAX_SCREENSHOT_BYTES * 4) / 3) + 16
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 365 // 1 year
+const SCREENSHOT_BUCKET = 'contact-screenshots'
+
 const PayloadSchema = z.object({
   firstName: z.string().trim().max(100).optional().default(''),
   lastName: z.string().trim().max(100).optional().default(''),
   email: z.string().trim().email().max(320),
   subject: z.string().trim().min(1).max(200),
   message: z.string().trim().min(1).max(5000),
-  screenshotUrl: z.string().url().max(2000).nullable().optional(),
+  screenshotBase64: z
+    .string()
+    .max(MAX_BASE64_LEN)
+    .regex(/^[A-Za-z0-9+/=]+$/)
+    .nullable()
+    .optional(),
   screenshotName: z.string().max(255).nullable().optional(),
+  screenshotType: z.enum(ALLOWED_IMAGE_TYPES).nullable().optional(),
 })
 
 export const Route = createFileRoute('/api/public/contact-message')({
@@ -51,14 +64,52 @@ export const Route = createFileRoute('/api/public/contact-message')({
         const timestamp = new Date().toISOString()
         const idempotencyKey = `contact-message-${crypto.randomUUID()}`
 
+        // Server-side screenshot upload (private bucket + signed URL)
+        let screenshotUrl: string | null = null
+        let screenshotName: string | null = null
+        if (parsed.screenshotBase64 && parsed.screenshotType) {
+          try {
+            const bytes = Uint8Array.from(atob(parsed.screenshotBase64), (c) => c.charCodeAt(0))
+            if (bytes.byteLength > MAX_SCREENSHOT_BYTES) {
+              return Response.json({ error: 'Screenshot too large' }, { status: 400 })
+            }
+            const extMap: Record<string, string> = {
+              'image/png': 'png',
+              'image/jpeg': 'jpg',
+              'image/gif': 'gif',
+              'image/webp': 'webp',
+            }
+            const ext = extMap[parsed.screenshotType]
+            const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`
+            const { error: upErr } = await supabase.storage
+              .from(SCREENSHOT_BUCKET)
+              .upload(path, bytes, { contentType: parsed.screenshotType, upsert: false })
+            if (upErr) {
+              console.error('Screenshot upload failed', { error: upErr })
+            } else {
+              const { data: signed, error: signErr } = await supabase.storage
+                .from(SCREENSHOT_BUCKET)
+                .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+              if (signErr) {
+                console.error('Signed URL generation failed', { error: signErr })
+              } else {
+                screenshotUrl = signed.signedUrl
+                screenshotName = parsed.screenshotName?.slice(0, 255) ?? `screenshot.${ext}`
+              }
+            }
+          } catch (err) {
+            console.error('Screenshot decode failed', { error: err })
+          }
+        }
+
         const templateData = {
           firstName: parsed.firstName,
           lastName: parsed.lastName,
           email: parsed.email,
           subject: parsed.subject,
           message: parsed.message,
-          screenshotUrl: parsed.screenshotUrl ?? null,
-          screenshotName: parsed.screenshotName ?? null,
+          screenshotUrl,
+          screenshotName,
           timestamp,
         }
         const element = React.createElement(entry.component, templateData)
