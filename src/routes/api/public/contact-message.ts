@@ -57,7 +57,8 @@ export const Route = createFileRoute('/api/public/contact-message')({
           email: parsed.email,
           subject: parsed.subject,
           message: parsed.message,
-          hasScreenshot: parsed.hasScreenshot,
+          screenshotUrl: parsed.screenshotUrl ?? null,
+          screenshotName: parsed.screenshotName ?? null,
           timestamp,
         }
         const element = React.createElement(entry.component, templateData)
