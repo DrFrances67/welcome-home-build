@@ -108,6 +108,18 @@ export const template = {
 
 export default ContactMessageEmail
 
+const screenshotImg: React.CSSProperties = {
+  maxWidth: '100%',
+  height: 'auto',
+  borderRadius: '8px',
+  border: '1px solid #e5e7eb',
+  margin: '8px 0 12px',
+}
+const linkStyle: React.CSSProperties = {
+  color: '#CF27F5',
+  textDecoration: 'underline',
+}
+
 
 const main: React.CSSProperties = {
   backgroundColor: '#ffffff',
