@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
 export function ContactWidget() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
