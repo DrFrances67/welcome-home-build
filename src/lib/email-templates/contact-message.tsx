@@ -5,8 +5,6 @@ import {
   Heading,
   Hr,
   Html,
-  Img,
-  Link,
   Preview,
   Section,
   Text,
@@ -14,6 +12,7 @@ import {
 import type { TemplateEntry } from './registry'
 
 const SITE_NAME = 'Tech Savvy Teacher'
+
 
 interface ContactMessageProps {
   firstName?: string
