@@ -20,8 +20,6 @@ interface ContactMessageProps {
   email?: string
   subject?: string
   message?: string
-  screenshotUrl?: string | null
-  screenshotName?: string | null
   timestamp?: string
 }
 
@@ -31,8 +29,6 @@ const ContactMessageEmail = ({
   email,
   subject,
   message,
-  screenshotUrl,
-  screenshotName,
   timestamp,
 }: ContactMessageProps) => {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Anonymous'
@@ -63,22 +59,6 @@ const ContactMessageEmail = ({
           <Hr style={hr} />
           <Text style={messageLabel}>Message</Text>
           <Text style={messageText}>{message || '(no message)'}</Text>
-          {screenshotUrl ? (
-            <>
-              <Hr style={hr} />
-              <Text style={messageLabel}>Screenshot</Text>
-              <Img
-                src={screenshotUrl}
-                alt={screenshotName || 'Screenshot'}
-                style={screenshotImg}
-              />
-              <Text style={text}>
-                <Link href={screenshotUrl} style={linkStyle}>
-                  Download {screenshotName || 'screenshot'}
-                </Link>
-              </Text>
-            </>
-          ) : null}
           <Hr style={hr} />
           <Text style={footer}>{SITE_NAME} contact form</Text>
         </Container>
@@ -86,6 +66,7 @@ const ContactMessageEmail = ({
     </Html>
   )
 }
+
 
 export const template = {
   component: ContactMessageEmail,
