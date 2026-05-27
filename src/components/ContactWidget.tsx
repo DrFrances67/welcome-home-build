@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
 export function ContactWidget() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [filePreview, setFilePreview] = useState<{ url: string; name: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -23,23 +20,6 @@ export function ContactWidget() {
     return () => document.removeEventListener("click", onClick);
   }, [open]);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setFilePreview({ url: String(ev.target?.result ?? ""), name: file.name });
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function removeFile() {
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setFilePreview(null);
-    setSelectedFile(null);
-  }
-
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) return;
@@ -47,37 +27,12 @@ export function ContactWidget() {
     const fd = new FormData(e.currentTarget);
     setSubmitting(true);
     try {
-      let screenshotBase64: string | null = null;
-      let screenshotName: string | null = null;
-      let screenshotType: string | null = null;
-      if (selectedFile) {
-        if (selectedFile.size > 5 * 1024 * 1024) {
-          throw new Error("Screenshot must be 5 MB or smaller");
-        }
-        if (!selectedFile.type.startsWith("image/")) {
-          throw new Error("Only image files are allowed");
-        }
-        screenshotBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = String(reader.result ?? "");
-            resolve(result.includes(",") ? result.split(",")[1] : result);
-          };
-          reader.onerror = () => reject(new Error("Failed to read screenshot"));
-          reader.readAsDataURL(selectedFile);
-        });
-        screenshotName = selectedFile.name;
-        screenshotType = selectedFile.type;
-      }
       const payload = {
         firstName: String(fd.get("firstName") ?? "").trim(),
         lastName: String(fd.get("lastName") ?? "").trim(),
         email: String(fd.get("email") ?? "").trim(),
         subject: String(fd.get("subject") ?? "").trim(),
         message: String(fd.get("message") ?? "").trim(),
-        screenshotBase64,
-        screenshotName,
-        screenshotType,
       };
       const res = await fetch("/api/public/contact-message", {
         method: "POST",
@@ -94,7 +49,6 @@ export function ContactWidget() {
         setOpen(false);
         setTimeout(() => {
           setSubmitted(false);
-          removeFile();
         }, 400);
       }, 3000);
     } catch (err) {
@@ -103,6 +57,7 @@ export function ContactWidget() {
       setSubmitting(false);
     }
   }
+
 
   return (
     <>
@@ -182,48 +137,6 @@ export function ContactWidget() {
               />
             </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Attach a screenshot{" "}
-                <span className="font-light normal-case tracking-normal">(optional)</span>
-              </label>
-              <div className="relative cursor-pointer rounded-[10px] border-[1.5px] border-dashed border-border bg-muted/30 px-3 py-3.5 text-center transition-colors hover:border-foreground hover:bg-muted/50">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFile}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-                <div className="text-xl">📎</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Drop an image or click to browse
-                </p>
-                <span className="mt-0.5 block text-[11px] text-muted-foreground/70">
-                  PNG, JPG, GIF up to 10MB
-                </span>
-              </div>
-              {filePreview && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-muted px-2.5 py-2">
-                  <img
-                    src={filePreview.url}
-                    alt="preview"
-                    className="h-9 w-9 rounded-md object-cover"
-                  />
-                  <span className="flex-1 truncate text-xs text-muted-foreground">
-                    {filePreview.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={removeFile}
-                    className="text-sm text-muted-foreground transition-colors hover:text-destructive"
-                    aria-label="Remove file"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
 
             {errorMsg && (
               <p className="text-xs text-destructive" role="alert">

@@ -5,8 +5,6 @@ import {
   Heading,
   Hr,
   Html,
-  Img,
-  Link,
   Preview,
   Section,
   Text,
@@ -15,14 +13,13 @@ import type { TemplateEntry } from './registry'
 
 const SITE_NAME = 'Tech Savvy Teacher'
 
+
 interface ContactMessageProps {
   firstName?: string
   lastName?: string
   email?: string
   subject?: string
   message?: string
-  screenshotUrl?: string | null
-  screenshotName?: string | null
   timestamp?: string
 }
 
@@ -32,8 +29,6 @@ const ContactMessageEmail = ({
   email,
   subject,
   message,
-  screenshotUrl,
-  screenshotName,
   timestamp,
 }: ContactMessageProps) => {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Anonymous'
@@ -64,22 +59,6 @@ const ContactMessageEmail = ({
           <Hr style={hr} />
           <Text style={messageLabel}>Message</Text>
           <Text style={messageText}>{message || '(no message)'}</Text>
-          {screenshotUrl ? (
-            <>
-              <Hr style={hr} />
-              <Text style={messageLabel}>Screenshot</Text>
-              <Img
-                src={screenshotUrl}
-                alt={screenshotName || 'Screenshot'}
-                style={screenshotImg}
-              />
-              <Text style={text}>
-                <Link href={screenshotUrl} style={linkStyle}>
-                  Download {screenshotName || 'screenshot'}
-                </Link>
-              </Text>
-            </>
-          ) : null}
           <Hr style={hr} />
           <Text style={footer}>{SITE_NAME} contact form</Text>
         </Container>
@@ -87,6 +66,7 @@ const ContactMessageEmail = ({
     </Html>
   )
 }
+
 
 export const template = {
   component: ContactMessageEmail,
@@ -100,25 +80,12 @@ export const template = {
     email: 'jane@example.com',
     subject: 'Feature Request',
     message: 'It would be great if you could add a dark mode toggle.',
-    screenshotUrl: null,
-    screenshotName: null,
     timestamp: new Date().toISOString(),
   },
 } satisfies TemplateEntry
 
 export default ContactMessageEmail
 
-const screenshotImg: React.CSSProperties = {
-  maxWidth: '100%',
-  height: 'auto',
-  borderRadius: '8px',
-  border: '1px solid #e5e7eb',
-  margin: '8px 0 12px',
-}
-const linkStyle: React.CSSProperties = {
-  color: '#CF27F5',
-  textDecoration: 'underline',
-}
 
 
 const main: React.CSSProperties = {
