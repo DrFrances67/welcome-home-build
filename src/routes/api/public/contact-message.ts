@@ -18,6 +18,12 @@ const PayloadSchema = z.object({
   message: z.string().trim().min(1).max(5000),
 })
 
+function generateToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 export const Route = createFileRoute('/api/public/contact-message')({
   server: {
     handlers: {
@@ -47,7 +53,48 @@ export const Route = createFileRoute('/api/public/contact-message')({
         }
 
         const timestamp = new Date().toISOString()
-        const idempotencyKey = `contact-message-${crypto.randomUUID()}`
+        const messageId = crypto.randomUUID()
+        const idempotencyKey = `contact-message-${messageId}`
+        const normalizedEmail = recipient.toLowerCase()
+
+        // Check suppression
+        const { data: suppressed } = await supabase
+          .from('suppressed_emails')
+          .select('id')
+          .eq('email', normalizedEmail)
+          .maybeSingle()
+        if (suppressed) {
+          return Response.json({ success: false, reason: 'email_suppressed' })
+        }
+
+        // Get or create unsubscribe token
+        let unsubscribeToken: string
+        const { data: existingToken } = await supabase
+          .from('email_unsubscribe_tokens')
+          .select('token, used_at')
+          .eq('email', normalizedEmail)
+          .maybeSingle()
+
+        if (existingToken && !existingToken.used_at) {
+          unsubscribeToken = existingToken.token
+        } else {
+          const newToken = generateToken()
+          await supabase
+            .from('email_unsubscribe_tokens')
+            .upsert(
+              { token: newToken, email: normalizedEmail },
+              { onConflict: 'email', ignoreDuplicates: true }
+            )
+          const { data: storedToken } = await supabase
+            .from('email_unsubscribe_tokens')
+            .select('token')
+            .eq('email', normalizedEmail)
+            .maybeSingle()
+          if (!storedToken) {
+            return Response.json({ error: 'Failed to prepare email' }, { status: 500 })
+          }
+          unsubscribeToken = storedToken.token
+        }
 
         const templateData = {
           firstName: parsed.firstName,
@@ -66,7 +113,7 @@ export const Route = createFileRoute('/api/public/contact-message')({
             : entry.subject
 
         await supabase.from('email_send_log').insert({
-          message_id: idempotencyKey,
+          message_id: messageId,
           template_name: TEMPLATE_NAME,
           recipient_email: recipient,
           status: 'pending',
@@ -75,7 +122,7 @@ export const Route = createFileRoute('/api/public/contact-message')({
         const { error: enqueueError } = await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
-            message_id: idempotencyKey,
+            message_id: messageId,
             idempotency_key: idempotencyKey,
             to: recipient,
             from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
@@ -86,6 +133,7 @@ export const Route = createFileRoute('/api/public/contact-message')({
             text,
             purpose: 'transactional',
             label: TEMPLATE_NAME,
+            unsubscribe_token: unsubscribeToken,
             queued_at: timestamp,
           },
         })
@@ -93,7 +141,7 @@ export const Route = createFileRoute('/api/public/contact-message')({
         if (enqueueError) {
           console.error('Failed to enqueue contact message', { error: enqueueError })
           await supabase.from('email_send_log').insert({
-            message_id: idempotencyKey,
+            message_id: messageId,
             template_name: TEMPLATE_NAME,
             recipient_email: recipient,
             status: 'failed',
@@ -102,7 +150,7 @@ export const Route = createFileRoute('/api/public/contact-message')({
           return Response.json({ error: 'Failed to send message' }, { status: 500 })
         }
 
-        return Response.json({ success: true, messageId: idempotencyKey })
+        return Response.json({ success: true, messageId })
       },
     },
   },
