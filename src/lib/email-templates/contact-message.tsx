@@ -80,25 +80,12 @@ export const template = {
     email: 'jane@example.com',
     subject: 'Feature Request',
     message: 'It would be great if you could add a dark mode toggle.',
-    screenshotUrl: null,
-    screenshotName: null,
     timestamp: new Date().toISOString(),
   },
 } satisfies TemplateEntry
 
 export default ContactMessageEmail
 
-const screenshotImg: React.CSSProperties = {
-  maxWidth: '100%',
-  height: 'auto',
-  borderRadius: '8px',
-  border: '1px solid #e5e7eb',
-  margin: '8px 0 12px',
-}
-const linkStyle: React.CSSProperties = {
-  color: '#CF27F5',
-  textDecoration: 'underline',
-}
 
 
 const main: React.CSSProperties = {
