@@ -137,48 +137,6 @@ export function ContactWidget() {
               />
             </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Attach a screenshot{" "}
-                <span className="font-light normal-case tracking-normal">(optional)</span>
-              </label>
-              <div className="relative cursor-pointer rounded-[10px] border-[1.5px] border-dashed border-border bg-muted/30 px-3 py-3.5 text-center transition-colors hover:border-foreground hover:bg-muted/50">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFile}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-                <div className="text-xl">📎</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Drop an image or click to browse
-                </p>
-                <span className="mt-0.5 block text-[11px] text-muted-foreground/70">
-                  PNG, JPG, GIF up to 10MB
-                </span>
-              </div>
-              {filePreview && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-muted px-2.5 py-2">
-                  <img
-                    src={filePreview.url}
-                    alt="preview"
-                    className="h-9 w-9 rounded-md object-cover"
-                  />
-                  <span className="flex-1 truncate text-xs text-muted-foreground">
-                    {filePreview.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={removeFile}
-                    className="text-sm text-muted-foreground transition-colors hover:text-destructive"
-                    aria-label="Remove file"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
 
             {errorMsg && (
               <p className="text-xs text-destructive" role="alert">
