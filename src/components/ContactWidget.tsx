@@ -5,8 +5,6 @@ export function ContactWidget() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [filePreview, setFilePreview] = useState<{ url: string; name: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -22,23 +20,6 @@ export function ContactWidget() {
     return () => document.removeEventListener("click", onClick);
   }, [open]);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setFilePreview({ url: String(ev.target?.result ?? ""), name: file.name });
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function removeFile() {
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setFilePreview(null);
-    setSelectedFile(null);
-  }
-
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) return;
@@ -46,37 +27,12 @@ export function ContactWidget() {
     const fd = new FormData(e.currentTarget);
     setSubmitting(true);
     try {
-      let screenshotBase64: string | null = null;
-      let screenshotName: string | null = null;
-      let screenshotType: string | null = null;
-      if (selectedFile) {
-        if (selectedFile.size > 5 * 1024 * 1024) {
-          throw new Error("Screenshot must be 5 MB or smaller");
-        }
-        if (!selectedFile.type.startsWith("image/")) {
-          throw new Error("Only image files are allowed");
-        }
-        screenshotBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = String(reader.result ?? "");
-            resolve(result.includes(",") ? result.split(",")[1] : result);
-          };
-          reader.onerror = () => reject(new Error("Failed to read screenshot"));
-          reader.readAsDataURL(selectedFile);
-        });
-        screenshotName = selectedFile.name;
-        screenshotType = selectedFile.type;
-      }
       const payload = {
         firstName: String(fd.get("firstName") ?? "").trim(),
         lastName: String(fd.get("lastName") ?? "").trim(),
         email: String(fd.get("email") ?? "").trim(),
         subject: String(fd.get("subject") ?? "").trim(),
         message: String(fd.get("message") ?? "").trim(),
-        screenshotBase64,
-        screenshotName,
-        screenshotType,
       };
       const res = await fetch("/api/public/contact-message", {
         method: "POST",
@@ -93,7 +49,6 @@ export function ContactWidget() {
         setOpen(false);
         setTimeout(() => {
           setSubmitted(false);
-          removeFile();
         }, 400);
       }, 3000);
     } catch (err) {
@@ -102,6 +57,7 @@ export function ContactWidget() {
       setSubmitting(false);
     }
   }
+
 
   return (
     <>
