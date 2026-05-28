@@ -2,11 +2,12 @@
 // Accepts { prompt, style?, model? } and returns { url } where url is a
 // data:image/* base64 URL ready to drop into <img src=...> or store as-is.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { computeImageCost, getUserIdFromAuth, logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-tool-name, x-session-id",
 };
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -52,19 +53,15 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { Authorization: authHeader, apikey: SUPABASE_ANON_KEY },
-      });
-      if (!userRes.ok) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+    const userId = await getUserIdFromAuth(authHeader);
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+    const toolName = req.headers.get("x-tool-name");
+    const sessionId = req.headers.get("x-session-id");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -152,6 +149,17 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    const cost = computeImageCost(chosenModel, 1);
+    void logAiUsage({
+      userId,
+      sessionId,
+      toolName,
+      model: chosenModel,
+      costUsd: cost,
+      endpoint: "generate-image",
+      metadata: { style: style ?? null },
+    });
 
     return new Response(
       JSON.stringify({ url }),

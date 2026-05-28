@@ -3,11 +3,12 @@
 // returns { content: [{ type: "text", text }] } so the existing client code
 // keeps working unchanged.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { computeTextCost, getUserIdFromAuth, logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-tool-name, x-session-id",
 };
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -35,19 +36,15 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { Authorization: authHeader, apikey: SUPABASE_ANON_KEY },
-      });
-      if (!userRes.ok) {
-        return new Response(
-          JSON.stringify({ error: { message: "Unauthorized" } }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+    const userId = await getUserIdFromAuth(authHeader);
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: { message: "Unauthorized" } }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+    const toolName = req.headers.get("x-tool-name");
+    const sessionId = req.headers.get("x-session-id");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -132,6 +129,23 @@ serve(async (req) => {
 
     const data = await upstream.json();
     const text: string = data?.choices?.[0]?.message?.content ?? "";
+
+    // Log token usage + cost (fire and forget — never blocks the response)
+    const mapped = mapModel(model);
+    const inTok = Number(data?.usage?.prompt_tokens ?? data?.usage?.input_tokens ?? 0);
+    const outTok = Number(data?.usage?.completion_tokens ?? data?.usage?.output_tokens ?? 0);
+    const cost = computeTextCost(mapped, inTok, outTok);
+    void logAiUsage({
+      userId,
+      sessionId,
+      toolName,
+      model: mapped,
+      inputTokens: inTok,
+      outputTokens: outTok,
+      costUsd: cost,
+      endpoint: "anthropic-proxy",
+    });
+
 
     // Re-shape to Anthropic response format expected by the client
     return new Response(

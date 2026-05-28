@@ -35,6 +35,18 @@ interface ToolUsageRow {
   tool_name: string;
   used_at: string;
 }
+interface AiUsageRow {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  tool_name: string | null;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  endpoint: string | null;
+  created_at: string;
+}
 
 export function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -42,6 +54,7 @@ export function AdminDashboard() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [toolUsage, setToolUsage] = useState<ToolUsageRow[]>([]);
+  const [aiUsage, setAiUsage] = useState<AiUsageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [endingSessions, setEndingSessions] = useState(false);
   const [endMessage, setEndMessage] = useState<string | null>(null);
@@ -66,16 +79,18 @@ export function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      const [u, s, f, t] = await Promise.all([
+      const [u, s, f, t, ai] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("user_sessions").select("*").order("started_at", { ascending: false }).limit(500),
         supabase.from("feature_usage").select("*").order("created_at", { ascending: false }).limit(500),
         supabase.from("tool_usage").select("*").order("used_at", { ascending: false }).limit(2000),
+        supabase.from("ai_usage_log").select("*").order("created_at", { ascending: false }).limit(2000),
       ]);
       setUsers((u.data as ProfileRow[]) ?? []);
       setSessions((s.data as SessionRow[]) ?? []);
       setUsage((f.data as UsageRow[]) ?? []);
       setToolUsage((t.data as ToolUsageRow[]) ?? []);
+      setAiUsage((ai.data as AiUsageRow[]) ?? []);
       setLoading(false);
     })();
   }, [isAdmin]);
@@ -128,6 +143,21 @@ export function AdminDashboard() {
     userAgg.set(r.user_id, a);
   }
 
+  // AI cost aggregates
+  const aiPerUser = new Map<string, { calls: number; inTok: number; outTok: number; cost: number; lastAt: string | null }>();
+  for (const r of aiUsage) {
+    const a = aiPerUser.get(r.user_id) ?? { calls: 0, inTok: 0, outTok: 0, cost: 0, lastAt: null };
+    a.calls += 1;
+    a.inTok += r.input_tokens ?? 0;
+    a.outTok += r.output_tokens ?? 0;
+    a.cost += Number(r.cost_usd ?? 0);
+    if (!a.lastAt || +new Date(r.created_at) > +new Date(a.lastAt)) a.lastAt = r.created_at;
+    aiPerUser.set(r.user_id, a);
+  }
+  const totalAiCost = aiUsage.reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
+  const fmt = (n: number) => `$${n.toFixed(n < 0.01 ? 6 : n < 1 ? 4 : 2)}`;
+
+
   return (
     <div style={pageStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -146,6 +176,59 @@ export function AdminDashboard() {
             <Stat label="Tracked actions" value={totalActions} />
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
+            <Stat label="AI calls" value={aiUsage.length} />
+            <Stat label="AI cost (USD)" value={totalAiCost} format={fmt} />
+          </div>
+
+
+          <Section title="AI cost per user">
+            {aiUsage.length === 0 ? (
+              <p style={muted}>No AI usage tracked yet.</p>
+            ) : (
+              <Table headers={["User", "Calls", "Input tokens", "Output tokens", "Total cost", "Last call"]}>
+                {users
+                  .map((u) => ({ u, a: aiPerUser.get(u.id) }))
+                  .filter((x) => x.a)
+                  .sort((a, b) => (b.a!.cost - a.a!.cost))
+                  .map(({ u, a }) => (
+                    <tr key={u.id}>
+                      <td style={td}>{u.username}</td>
+                      <td style={td}>{a!.calls}</td>
+                      <td style={td}>{a!.inTok.toLocaleString()}</td>
+                      <td style={td}>{a!.outTok.toLocaleString()}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>{fmt(a!.cost)}</td>
+                      <td style={td}>{a!.lastAt ? new Date(a!.lastAt).toLocaleString() : "—"}</td>
+                    </tr>
+                  ))}
+              </Table>
+            )}
+          </Section>
+
+          <Section title="Recent AI calls">
+            {aiUsage.length === 0 ? (
+              <p style={muted}>No AI calls logged.</p>
+            ) : (
+              <Table headers={["When", "User", "Tool", "Model", "Session", "In", "Out", "Cost"]}>
+                {aiUsage.slice(0, 200).map((r) => {
+                  const u = userMap.get(r.user_id);
+                  return (
+                    <tr key={r.id}>
+                      <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
+                      <td style={td}>{u?.username ?? r.user_id.slice(0, 8)}</td>
+                      <td style={td}>{r.tool_name ?? r.endpoint ?? "—"}</td>
+                      <td style={{ ...td, fontFamily: "monospace", fontSize: 12 }}>{r.model}</td>
+                      <td style={{ ...td, fontFamily: "monospace", fontSize: 11 }}>{r.session_id ? r.session_id.slice(0, 8) : "—"}</td>
+                      <td style={td}>{r.input_tokens.toLocaleString()}</td>
+                      <td style={td}>{r.output_tokens.toLocaleString()}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>{fmt(Number(r.cost_usd))}</td>
+                    </tr>
+                  );
+                })}
+              </Table>
+            )}
+          </Section>
+
           <Section title="Feature usage breakdown">
             {Object.keys(featureCounts).length === 0 ? (
               <p style={muted}>No usage yet.</p>
@@ -162,6 +245,7 @@ export function AdminDashboard() {
               </ul>
             )}
           </Section>
+
 
           <Section title={`Users (${totalUsers})`}>
             <Table headers={["Username", "Email", "Joined", "Last Active", "Sessions", "Tools Used", "Total Uses"]}>
@@ -355,11 +439,11 @@ const muted: React.CSSProperties = { color: "#64748b" };
 const td: React.CSSProperties = { padding: "8px 10px", borderBottom: "1px solid #f1f5f9", fontSize: 13 };
 const row: React.CSSProperties = { display: "flex", justifyContent: "space-between", padding: "8px 12px", background: "#f8fafc", borderRadius: 6 };
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, format }: { label: string; value: number; format?: (n: number) => string }) {
   return (
     <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16 }}>
       <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{value}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{format ? format(value) : value}</div>
     </div>
   );
 }
