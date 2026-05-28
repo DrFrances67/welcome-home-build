@@ -443,7 +443,7 @@ function Stat({ label, value, format }: { label: string; value: number; format?:
   return (
     <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16 }}>
       <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{value}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{format ? format(value) : value}</div>
     </div>
   );
 }
