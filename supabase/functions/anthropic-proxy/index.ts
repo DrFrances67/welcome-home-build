@@ -130,6 +130,23 @@ serve(async (req) => {
     const data = await upstream.json();
     const text: string = data?.choices?.[0]?.message?.content ?? "";
 
+    // Log token usage + cost (fire and forget — never blocks the response)
+    const mapped = mapModel(model);
+    const inTok = Number(data?.usage?.prompt_tokens ?? data?.usage?.input_tokens ?? 0);
+    const outTok = Number(data?.usage?.completion_tokens ?? data?.usage?.output_tokens ?? 0);
+    const cost = computeTextCost(mapped, inTok, outTok);
+    void logAiUsage({
+      userId,
+      sessionId,
+      toolName,
+      model: mapped,
+      inputTokens: inTok,
+      outputTokens: outTok,
+      costUsd: cost,
+      endpoint: "anthropic-proxy",
+    });
+
+
     // Re-shape to Anthropic response format expected by the client
     return new Response(
       JSON.stringify({
