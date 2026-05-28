@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_log: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          endpoint: string | null
+          id: string
+          input_tokens: number
+          metadata: Json | null
+          model: string
+          output_tokens: number
+          session_id: string | null
+          tool_name: string | null
+          user_id: string
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          endpoint?: string | null
+          id?: string
+          input_tokens?: number
+          metadata?: Json | null
+          model: string
+          output_tokens?: number
+          session_id?: string | null
+          tool_name?: string | null
+          user_id: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          endpoint?: string | null
+          id?: string
+          input_tokens?: number
+          metadata?: Json | null
+          model?: string
+          output_tokens?: number
+          session_id?: string | null
+          tool_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
