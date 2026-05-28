@@ -143,6 +143,21 @@ export function AdminDashboard() {
     userAgg.set(r.user_id, a);
   }
 
+  // AI cost aggregates
+  const aiPerUser = new Map<string, { calls: number; inTok: number; outTok: number; cost: number; lastAt: string | null }>();
+  for (const r of aiUsage) {
+    const a = aiPerUser.get(r.user_id) ?? { calls: 0, inTok: 0, outTok: 0, cost: 0, lastAt: null };
+    a.calls += 1;
+    a.inTok += r.input_tokens ?? 0;
+    a.outTok += r.output_tokens ?? 0;
+    a.cost += Number(r.cost_usd ?? 0);
+    if (!a.lastAt || +new Date(r.created_at) > +new Date(a.lastAt)) a.lastAt = r.created_at;
+    aiPerUser.set(r.user_id, a);
+  }
+  const totalAiCost = aiUsage.reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
+  const fmt = (n: number) => `$${n.toFixed(n < 0.01 ? 6 : n < 1 ? 4 : 2)}`;
+
+
   return (
     <div style={pageStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
