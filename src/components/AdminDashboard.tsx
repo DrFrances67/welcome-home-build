@@ -176,19 +176,11 @@ export function AdminDashboard() {
             <Stat label="Tracked actions" value={totalActions} />
           </div>
 
-          <Section title="Feature usage breakdown">
-            {Object.keys(featureCounts).length === 0 ? (
-              <p style={muted}>No usage yet.</p>
-            ) : (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
-            <Stat label="Total users" value={totalUsers} />
-            <Stat label="Active sessions" value={activeSessions} />
-            <Stat label="Total sessions" value={sessions.length} />
-            <Stat label="Tracked actions" value={totalActions} />
             <Stat label="AI calls" value={aiUsage.length} />
             <Stat label="AI cost (USD)" value={totalAiCost} format={fmt} />
           </div>
+
 
           <Section title="AI cost per user">
             {aiUsage.length === 0 ? (
