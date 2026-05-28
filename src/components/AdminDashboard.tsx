@@ -181,6 +181,67 @@ export function AdminDashboard() {
               <p style={muted}>No usage yet.</p>
             ) : (
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
+            <Stat label="Total users" value={totalUsers} />
+            <Stat label="Active sessions" value={activeSessions} />
+            <Stat label="Total sessions" value={sessions.length} />
+            <Stat label="Tracked actions" value={totalActions} />
+            <Stat label="AI calls" value={aiUsage.length} />
+            <Stat label="AI cost (USD)" value={totalAiCost} format={fmt} />
+          </div>
+
+          <Section title="AI cost per user">
+            {aiUsage.length === 0 ? (
+              <p style={muted}>No AI usage tracked yet.</p>
+            ) : (
+              <Table headers={["User", "Calls", "Input tokens", "Output tokens", "Total cost", "Last call"]}>
+                {users
+                  .map((u) => ({ u, a: aiPerUser.get(u.id) }))
+                  .filter((x) => x.a)
+                  .sort((a, b) => (b.a!.cost - a.a!.cost))
+                  .map(({ u, a }) => (
+                    <tr key={u.id}>
+                      <td style={td}>{u.username}</td>
+                      <td style={td}>{a!.calls}</td>
+                      <td style={td}>{a!.inTok.toLocaleString()}</td>
+                      <td style={td}>{a!.outTok.toLocaleString()}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>{fmt(a!.cost)}</td>
+                      <td style={td}>{a!.lastAt ? new Date(a!.lastAt).toLocaleString() : "—"}</td>
+                    </tr>
+                  ))}
+              </Table>
+            )}
+          </Section>
+
+          <Section title="Recent AI calls">
+            {aiUsage.length === 0 ? (
+              <p style={muted}>No AI calls logged.</p>
+            ) : (
+              <Table headers={["When", "User", "Tool", "Model", "Session", "In", "Out", "Cost"]}>
+                {aiUsage.slice(0, 200).map((r) => {
+                  const u = userMap.get(r.user_id);
+                  return (
+                    <tr key={r.id}>
+                      <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
+                      <td style={td}>{u?.username ?? r.user_id.slice(0, 8)}</td>
+                      <td style={td}>{r.tool_name ?? r.endpoint ?? "—"}</td>
+                      <td style={{ ...td, fontFamily: "monospace", fontSize: 12 }}>{r.model}</td>
+                      <td style={{ ...td, fontFamily: "monospace", fontSize: 11 }}>{r.session_id ? r.session_id.slice(0, 8) : "—"}</td>
+                      <td style={td}>{r.input_tokens.toLocaleString()}</td>
+                      <td style={td}>{r.output_tokens.toLocaleString()}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>{fmt(Number(r.cost_usd))}</td>
+                    </tr>
+                  );
+                })}
+              </Table>
+            )}
+          </Section>
+
+          <Section title="Feature usage breakdown">
+            {Object.keys(featureCounts).length === 0 ? (
+              <p style={muted}>No usage yet.</p>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                 {Object.entries(featureCounts)
                   .sort((a, b) => b[1] - a[1])
                   .map(([f, c]) => (
@@ -192,6 +253,7 @@ export function AdminDashboard() {
               </ul>
             )}
           </Section>
+
 
           <Section title={`Users (${totalUsers})`}>
             <Table headers={["Username", "Email", "Joined", "Last Active", "Sessions", "Tools Used", "Total Uses"]}>
