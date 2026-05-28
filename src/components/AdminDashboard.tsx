@@ -35,6 +35,18 @@ interface ToolUsageRow {
   tool_name: string;
   used_at: string;
 }
+interface AiUsageRow {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  tool_name: string | null;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  endpoint: string | null;
+  created_at: string;
+}
 
 export function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
