@@ -2,11 +2,12 @@
 // Accepts { prompt, style?, model? } and returns { url } where url is a
 // data:image/* base64 URL ready to drop into <img src=...> or store as-is.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { computeImageCost, getUserIdFromAuth, logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-tool-name, x-session-id",
 };
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
