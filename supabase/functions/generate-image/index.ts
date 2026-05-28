@@ -150,6 +150,17 @@ serve(async (req) => {
       );
     }
 
+    const cost = computeImageCost(chosenModel, 1);
+    void logAiUsage({
+      userId,
+      sessionId,
+      toolName,
+      model: chosenModel,
+      costUsd: cost,
+      endpoint: "generate-image",
+      metadata: { style: style ?? null },
+    });
+
     return new Response(
       JSON.stringify({ url }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
