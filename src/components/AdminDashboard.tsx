@@ -439,7 +439,7 @@ const muted: React.CSSProperties = { color: "#64748b" };
 const td: React.CSSProperties = { padding: "8px 10px", borderBottom: "1px solid #f1f5f9", fontSize: 13 };
 const row: React.CSSProperties = { display: "flex", justifyContent: "space-between", padding: "8px 12px", background: "#f8fafc", borderRadius: 6 };
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, format }: { label: string; value: number; format?: (n: number) => string }) {
   return (
     <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16 }}>
       <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
