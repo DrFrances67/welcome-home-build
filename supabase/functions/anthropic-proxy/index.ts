@@ -3,11 +3,12 @@
 // returns { content: [{ type: "text", text }] } so the existing client code
 // keeps working unchanged.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { computeTextCost, getUserIdFromAuth, logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-tool-name, x-session-id",
 };
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
