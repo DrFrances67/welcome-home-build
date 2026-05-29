@@ -104,7 +104,23 @@ export type ToolName =
   | "Worksheet Builder"
   | "Professional Communication";
 
+// Currently active tool, used to attribute AI calls in the admin dashboard.
+let activeToolName: ToolName | null = null;
+
+export function setActiveTool(toolName: ToolName | null) {
+  activeToolName = toolName;
+}
+
+export function getActiveTool(): ToolName | null {
+  return activeToolName;
+}
+
+export function getCurrentSessionId(): string | null {
+  return currentSessionId;
+}
+
 export async function trackToolUse(toolName: ToolName) {
+  setActiveTool(toolName);
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
