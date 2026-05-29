@@ -412,22 +412,6 @@ export function AdminDashboard() {
             </div>
           )}
 
-          <Section title="Recent activity">
-            <Table headers={["User", "Feature", "Action", "Duration", "When"]}>
-              {usage.slice(0, 200).map((r) => {
-                const u = userMap.get(r.user_id);
-                return (
-                  <tr key={r.id}>
-                    <td style={td}>{u?.username ?? r.user_id.slice(0, 8)}</td>
-                    <td style={td}>{r.feature}</td>
-                    <td style={td}>{r.action ?? "—"}</td>
-                    <td style={td}>{r.duration_ms != null ? `${Math.round(r.duration_ms / 1000)}s` : "—"}</td>
-                    <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
-                  </tr>
-                );
-              })}
-            </Table>
-          </Section>
         </>
       )}
     </div>
