@@ -248,13 +248,14 @@ export function AdminDashboard() {
 
 
           <Section title={`Users (${totalUsers})`}>
-            <Table headers={["Username", "Email", "Joined", "Last Active", "Sessions", "Tools Used", "Total Uses"]}>
+            <Table headers={["Username", "Name", "Email", "Joined", "Last Active", "Sessions", "Tools Used", "Total Uses"]}>
               {users.map((u) => {
                 const a = userAgg.get(u.id);
                 const tools = a ? Array.from(a.tools) : [];
                 return (
                   <tr key={u.id}>
                     <td style={td}>{u.username}</td>
+                    <td style={td}>{u.full_name || "—"}</td>
                     <td style={td}>{u.email}</td>
                     <td style={td}>{new Date(u.created_at).toLocaleString()}</td>
                     <td style={td}>{a?.lastActive ? new Date(a.lastActive).toLocaleString() : "—"}</td>
