@@ -8158,6 +8158,18 @@ function TheTechSavvyTeacherAppRoot() {
   const [isOffline, setIsOffline] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
+  // Keep the tracking layer's active tool in sync with the visible tool so AI
+  // calls are attributed to the real tool in the admin dashboard.
+  useEffect(() => {
+    const map = {
+      lesson: "Lesson Plan Generator",
+      danielson: "Danielson Rubric Builder",
+      worksheet: "Worksheet Builder",
+      email: "Professional Communication",
+    } as const;
+    setActiveToolName(map[activeTool] ?? null);
+  }, [activeTool]);
+
   // Track scroll within the worksheet canvas (and the page itself when stacked
   // on mobile) to show a floating "back to top" button after meaningful scroll.
   useEffect(() => {
