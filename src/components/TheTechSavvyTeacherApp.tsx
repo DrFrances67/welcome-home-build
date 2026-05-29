@@ -6,7 +6,7 @@ import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
-import { trackToolUse } from "@/lib/tracking";
+import { trackToolUse, setActiveTool as setActiveToolName } from "@/lib/tracking";
 import { aiHeaders } from "@/lib/aiFetch";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
