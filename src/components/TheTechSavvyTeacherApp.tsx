@@ -5501,11 +5501,18 @@ function EmailAssistant() {
   const [loading, setLoading]     = useState(false);
   const [copied, setCopied]       = useState(false);
   const [error, setError]         = useState(null);
+  const [concise, setConcise]     = useState(null);
+  const [concising, setConcising] = useState(false);
+  const [conciseCopied, setConciseCopied] = useState(false);
+  const [conciseError, setConciseError]   = useState(null);
+
 
   const polish = async () => {
     if (!draft.trim()) return;
     void trackToolUse("Professional Communication");
     setLoading(true); setResult(null); setError(null);
+    setConcise(null); setConciseError(null);
+
     const rLabel = EMAIL_RECIPIENTS.find(r => r.id === recipient)?.label;
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
     try {
@@ -5579,10 +5586,60 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     setLoading(false);
   };
 
+  const makeConcise = async () => {
+    if (!result?.email) return;
+    void trackToolUse("Professional Communication");
+    setConcising(true); setConcise(null); setConciseError(null);
+    try {
+      const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method:"POST", headers: await aiHeaders(),
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens: 1200,
+          system:`You are an expert editor. Rewrite the professional message below to be MORE CONCISE.
+Rules:
+- Remove redundancy, filler, and repetition; tighten wording.
+- KEEP every important point, all factual details (names, dates, times, deadlines, action items, numbers, links), the core intent, the tone, and professionalism.
+- Do NOT add new information. Keep one subject line, one greeting, one closing.
+Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
+          messages:[{role:"user", content:`Make this more concise:\n\nSubject: ${result.subject}\n\n${result.email}`}],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.error) {
+        const msg = data?.error?.message || data?.error || `Request failed (${res.status})`;
+        throw new Error(typeof msg === "string" ? msg : "Request failed");
+      }
+      const text = data.content?.map(b => b.text||"").join("") || "";
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      let parsed = null;
+      try { parsed = JSON.parse(cleaned); }
+      catch {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch { /* ignore */ } }
+      }
+      if (!parsed || typeof parsed !== "object" || !parsed.email) {
+        const subjMatch = cleaned.match(/subject[:\-]\s*(.+)/i);
+        parsed = {
+          subject: subjMatch ? subjMatch[1].split("\n")[0].trim().replace(/^["']|["']$/g,"") : result.subject,
+          email: cleaned.replace(/^subject[:\-].+\n/i, "").trim() || "(No content returned — please try again.)",
+        };
+      }
+      setConcise(parsed);
+    } catch (e) { setConciseError(e instanceof Error ? e.message : "Something went wrong. Please try again."); }
+    setConcising(false);
+  };
+
   const copyEmail = () => {
     navigator.clipboard.writeText(`Subject: ${result.subject}\n\n${result.email}`);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
+
+  const copyConcise = () => {
+    if (!concise) return;
+    navigator.clipboard.writeText(`Subject: ${concise.subject}\n\n${concise.email}`);
+    setConciseCopied(true); setTimeout(() => setConciseCopied(false), 2000);
+  };
+
 
   // shared style tokens
   const BRAND = "#6D28D9";
@@ -5817,12 +5874,42 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
                 <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", whiteSpace:"nowrap" }}>Subject</span>
                 <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"#111827" }}>{result.subject}</span>
               </div>
-              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap", flex:1 }}>{result.email}</div>
+              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap" }}>{result.email}</div>
               <button onClick={copyEmail}
                 style={{ marginTop:18, padding:"10px", borderRadius:8, border:`1.5px solid ${copied ? "#059669" : BRAND}`, background: copied ? "#D1FAE5" : "white", color: copied ? "#059669" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
                 {copied ? "✓  Copied to Clipboard!" : "Copy Full Email"}
               </button>
+
+              {/* Make it more concise */}
+              <button onClick={makeConcise} disabled={concising}
+                style={{ marginTop:10, padding:"10px", borderRadius:8, border:`1.5px solid ${BRAND}`, background: LIGHT, color: BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor: concising ? "not-allowed" : "pointer", opacity: concising ? 0.7 : 1, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                {concising ? (
+                  <><span aria-hidden="true" style={{ width:14, height:14, border:"2px solid rgba(109,40,217,0.3)", borderTopColor:BRAND, borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /><span>Making it concise…</span></>
+                ) : <span><span aria-hidden="true">✂️ </span>Make it more concise</span>}
+              </button>
+
+              {conciseError && (
+                <div style={{ marginTop:12, padding:"10px 14px", borderRadius:8, background:"#FEF2F2", border:"1px solid #FECACA", color:"#B91C1C", fontFamily:"'Inter',sans-serif", fontSize:12.5 }}>
+                  <span aria-hidden="true">⚠️ </span>{conciseError}
+                </div>
+              )}
+
+              {concise && (
+                <div style={{ marginTop:18, paddingTop:18, borderTop:"1px dashed #D1D5DB" }}>
+                  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:BRAND, marginBottom:10 }}>✂️ Concise Version</div>
+                  <div style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:7, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"baseline" }}>
+                    <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", whiteSpace:"nowrap" }}>Subject</span>
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"#111827" }}>{concise.subject}</span>
+                  </div>
+                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap" }}>{concise.email}</div>
+                  <button onClick={copyConcise}
+                    style={{ marginTop:18, padding:"10px", width:"100%", borderRadius:8, border:`1.5px solid ${conciseCopied ? "#059669" : BRAND}`, background: conciseCopied ? "#D1FAE5" : "white", color: conciseCopied ? "#059669" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
+                    {conciseCopied ? "✓  Copied to Clipboard!" : "Copy Concise Version"}
+                  </button>
+                </div>
+              )}
             </>
+
           ) : (
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center", color:"#9CA3AF" }}>
               <div style={{ fontSize:44, opacity:0.35 }}>📝</div>
