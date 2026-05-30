@@ -5885,7 +5885,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
                 style={{ marginTop:10, padding:"10px", borderRadius:8, border:`1.5px solid ${BRAND}`, background: LIGHT, color: BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor: concising ? "not-allowed" : "pointer", opacity: concising ? 0.7 : 1, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                 {concising ? (
                   <><span aria-hidden="true" style={{ width:14, height:14, border:"2px solid rgba(109,40,217,0.3)", borderTopColor:BRAND, borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /><span>Making it concise…</span></>
-                ) : <span><span aria-hidden="true">✂️ </span>Make it more concise</span>}
+                ) : <span><span aria-hidden="true">✂️ </span>Make It Concise</span>}
               </button>
 
               {conciseError && (
