@@ -5586,10 +5586,60 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     setLoading(false);
   };
 
+  const makeConcise = async () => {
+    if (!result?.email) return;
+    void trackToolUse("Professional Communication");
+    setConcising(true); setConcise(null); setConciseError(null);
+    try {
+      const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
+        method:"POST", headers: await aiHeaders(),
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens: 1200,
+          system:`You are an expert editor. Rewrite the professional message below to be MORE CONCISE.
+Rules:
+- Remove redundancy, filler, and repetition; tighten wording.
+- KEEP every important point, all factual details (names, dates, times, deadlines, action items, numbers, links), the core intent, the tone, and professionalism.
+- Do NOT add new information. Keep one subject line, one greeting, one closing.
+Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
+          messages:[{role:"user", content:`Make this more concise:\n\nSubject: ${result.subject}\n\n${result.email}`}],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.error) {
+        const msg = data?.error?.message || data?.error || `Request failed (${res.status})`;
+        throw new Error(typeof msg === "string" ? msg : "Request failed");
+      }
+      const text = data.content?.map(b => b.text||"").join("") || "";
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      let parsed = null;
+      try { parsed = JSON.parse(cleaned); }
+      catch {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch { /* ignore */ } }
+      }
+      if (!parsed || typeof parsed !== "object" || !parsed.email) {
+        const subjMatch = cleaned.match(/subject[:\-]\s*(.+)/i);
+        parsed = {
+          subject: subjMatch ? subjMatch[1].split("\n")[0].trim().replace(/^["']|["']$/g,"") : result.subject,
+          email: cleaned.replace(/^subject[:\-].+\n/i, "").trim() || "(No content returned — please try again.)",
+        };
+      }
+      setConcise(parsed);
+    } catch (e) { setConciseError(e instanceof Error ? e.message : "Something went wrong. Please try again."); }
+    setConcising(false);
+  };
+
   const copyEmail = () => {
     navigator.clipboard.writeText(`Subject: ${result.subject}\n\n${result.email}`);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
+
+  const copyConcise = () => {
+    if (!concise) return;
+    navigator.clipboard.writeText(`Subject: ${concise.subject}\n\n${concise.email}`);
+    setConciseCopied(true); setTimeout(() => setConciseCopied(false), 2000);
+  };
+
 
   // shared style tokens
   const BRAND = "#6D28D9";
