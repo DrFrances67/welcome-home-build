@@ -5874,12 +5874,42 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
                 <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", whiteSpace:"nowrap" }}>Subject</span>
                 <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"#111827" }}>{result.subject}</span>
               </div>
-              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap", flex:1 }}>{result.email}</div>
+              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap" }}>{result.email}</div>
               <button onClick={copyEmail}
                 style={{ marginTop:18, padding:"10px", borderRadius:8, border:`1.5px solid ${copied ? "#059669" : BRAND}`, background: copied ? "#D1FAE5" : "white", color: copied ? "#059669" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
                 {copied ? "✓  Copied to Clipboard!" : "Copy Full Email"}
               </button>
+
+              {/* Make it more concise */}
+              <button onClick={makeConcise} disabled={concising}
+                style={{ marginTop:10, padding:"10px", borderRadius:8, border:`1.5px solid ${BRAND}`, background: LIGHT, color: BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor: concising ? "not-allowed" : "pointer", opacity: concising ? 0.7 : 1, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                {concising ? (
+                  <><span aria-hidden="true" style={{ width:14, height:14, border:"2px solid rgba(109,40,217,0.3)", borderTopColor:BRAND, borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }} /><span>Making it concise…</span></>
+                ) : <span><span aria-hidden="true">✂️ </span>Make it more concise</span>}
+              </button>
+
+              {conciseError && (
+                <div style={{ marginTop:12, padding:"10px 14px", borderRadius:8, background:"#FEF2F2", border:"1px solid #FECACA", color:"#B91C1C", fontFamily:"'Inter',sans-serif", fontSize:12.5 }}>
+                  <span aria-hidden="true">⚠️ </span>{conciseError}
+                </div>
+              )}
+
+              {concise && (
+                <div style={{ marginTop:18, paddingTop:18, borderTop:"1px dashed #D1D5DB" }}>
+                  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:BRAND, marginBottom:10 }}>✂️ Concise Version</div>
+                  <div style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:7, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"baseline" }}>
+                    <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", whiteSpace:"nowrap" }}>Subject</span>
+                    <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"#111827" }}>{concise.subject}</span>
+                  </div>
+                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, lineHeight:1.8, color:"#1F2937", whiteSpace:"pre-wrap" }}>{concise.email}</div>
+                  <button onClick={copyConcise}
+                    style={{ marginTop:18, padding:"10px", width:"100%", borderRadius:8, border:`1.5px solid ${conciseCopied ? "#059669" : BRAND}`, background: conciseCopied ? "#D1FAE5" : "white", color: conciseCopied ? "#059669" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
+                    {conciseCopied ? "✓  Copied to Clipboard!" : "Copy Concise Version"}
+                  </button>
+                </div>
+              )}
             </>
+
           ) : (
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center", color:"#9CA3AF" }}>
               <div style={{ fontSize:44, opacity:0.35 }}>📝</div>
