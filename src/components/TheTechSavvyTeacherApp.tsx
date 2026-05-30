@@ -5501,6 +5501,11 @@ function EmailAssistant() {
   const [loading, setLoading]     = useState(false);
   const [copied, setCopied]       = useState(false);
   const [error, setError]         = useState(null);
+  const [concise, setConcise]     = useState(null);
+  const [concising, setConcising] = useState(false);
+  const [conciseCopied, setConciseCopied] = useState(false);
+  const [conciseError, setConciseError]   = useState(null);
+
 
   const polish = async () => {
     if (!draft.trim()) return;
