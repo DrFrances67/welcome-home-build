@@ -5511,6 +5511,8 @@ function EmailAssistant() {
     if (!draft.trim()) return;
     void trackToolUse("Professional Communication");
     setLoading(true); setResult(null); setError(null);
+    setConcise(null); setConciseError(null);
+
     const rLabel = EMAIL_RECIPIENTS.find(r => r.id === recipient)?.label;
     const tObj   = EMAIL_TONES.find(t => t.id === tone);
     try {
