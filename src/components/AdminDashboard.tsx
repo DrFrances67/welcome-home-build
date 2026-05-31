@@ -61,6 +61,7 @@ export function AdminDashboard() {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detailRows, setDetailRows] = useState<UsageRow[] | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [sessionSort, setSessionSort] = useState<{ key: "tool" | "credits"; dir: "asc" | "desc" } | null>(null);
   const endAll = useServerFn(endAllActiveSessions);
 
   async function openSessionDetails(sessionId: string) {
