@@ -136,7 +136,7 @@ export function AdminDashboard() {
     const prev = sessionAiCredits.get(r.session_id) ?? 0;
     sessionAiCredits.set(r.session_id, prev + Number(r.cost_usd ?? 0) / CREDIT_USD);
   }
-  const fmtCredits = (n: number) => (n <= 0 ? "0 credits" : `${n.toFixed(1)} credits`);
+  const fmtCredits = (n: number) => (n <= 0 ? "0 credits" : `${parseFloat(n.toFixed(3))} credits`);
 
   // Per-user aggregates for the Users table.
   const userAgg = new Map<string, { lastActive: string | null; sessions: number; tools: Set<string>; total: number }>();
