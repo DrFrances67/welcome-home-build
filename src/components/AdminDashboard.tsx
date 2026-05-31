@@ -128,6 +128,16 @@ export function AdminDashboard() {
     sessionUsage.set(r.session_id, entry);
   }
 
+  // AI credits consumed per session, derived from logged AI cost (1 credit = $0.01).
+  const CREDIT_USD = 0.01;
+  const sessionAiCredits = new Map<string, number>();
+  for (const r of aiUsage) {
+    if (!r.session_id) continue;
+    const prev = sessionAiCredits.get(r.session_id) ?? 0;
+    sessionAiCredits.set(r.session_id, prev + Number(r.cost_usd ?? 0) / CREDIT_USD);
+  }
+  const fmtCredits = (n: number) => (n <= 0 ? "0 credits" : `${n.toFixed(1)} credits`);
+
   // Per-user aggregates for the Users table.
   const userAgg = new Map<string, { lastActive: string | null; sessions: number; tools: Set<string>; total: number }>();
   for (const s of sessions) {
