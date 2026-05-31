@@ -5896,7 +5896,13 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 
               {concise && (
                 <div style={{ marginTop:18, paddingTop:18, borderTop:"1px dashed #D1D5DB" }}>
-                  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:BRAND, marginBottom:10 }}>✂️ Concise Version</div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginBottom:10 }}>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:BRAND }}>✂️ Concise Version</div>
+                    <button onClick={copyConcise} aria-label="Copy concise version"
+                      style={{ flexShrink:0, padding:"6px 12px", borderRadius:7, border:`1.5px solid ${conciseCopied ? "#059669" : BRAND}`, background: conciseCopied ? "#D1FAE5" : "white", color: conciseCopied ? "#059669" : BRAND, fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:11, cursor:"pointer", transition:"all 0.2s", whiteSpace:"nowrap" }}>
+                      {conciseCopied ? "✓ Copied!" : "Copy Concise Version"}
+                    </button>
+                  </div>
                   <div style={{ background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:7, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"baseline" }}>
                     <span style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#6B7280", whiteSpace:"nowrap" }}>Subject</span>
                     <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:13, color:"#111827" }}>{concise.subject}</span>
