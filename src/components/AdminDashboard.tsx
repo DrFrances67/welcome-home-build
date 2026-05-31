@@ -319,42 +319,90 @@ export function AdminDashboard() {
               </button>
               {endMessage && <span style={{ fontSize: 13, color: "#475569" }}>{endMessage}</span>}
             </div>
-            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used", "Details"]}>
-              {sessions.slice(0, 100).map((s) => {
+            {(() => {
+              const toggleSort = (key: "tool" | "credits") =>
+                setSessionSort((cur) =>
+                  cur?.key === key ? { key, dir: cur.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }
+                );
+              const arrow = (key: "tool" | "credits") =>
+                sessionSort?.key === key ? (sessionSort.dir === "asc" ? " ▲" : " ▼") : "";
+
+              const rows = sessions.slice(0, 100).map((s) => {
                 const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;
                 const u = userMap.get(s.user_id);
-                const usageEntry = sessionUsage.get(s.id);
-                const apps = usageEntry?.apps ?? [];
-                const appsLabel = apps.length === 0 ? "—" : apps.length === 1 ? apps[0] : apps.join(", ");
-                const credits = usageEntry?.credits ?? 0;
-                return (
-                  <tr key={s.id}>
-                    <td style={td}>{u?.username ?? s.user_id.slice(0, 8)}</td>
-                    <td style={td}>{new Date(s.started_at).toLocaleString()}</td>
-                    <td style={td}>{s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}</td>
-                    <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
-                    <td style={td}>{appsLabel}</td>
-                    <td style={td}>{credits}</td>
-                    <td style={td}>
-                      <button
-                        onClick={() => openSessionDetails(s.id)}
-                        style={{
-                          background: "transparent",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 6,
-                          padding: "4px 10px",
-                          fontSize: 12,
-                          color: "#4f46e5",
-                          cursor: "pointer",
-                        }}
-                      >
-                        View details
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </Table>
+                const apps = sessionUsage.get(s.id)?.apps ?? [];
+                const toolLabel = apps.length === 0 ? "—" : apps.join(", ");
+                const credits = sessionAiCredits.get(s.id) ?? 0;
+                return { s, dur, u, toolLabel, credits };
+              });
+              if (sessionSort) {
+                rows.sort((a, b) => {
+                  const cmp =
+                    sessionSort.key === "tool"
+                      ? a.toolLabel.localeCompare(b.toolLabel)
+                      : a.credits - b.credits;
+                  return sessionSort.dir === "asc" ? cmp : -cmp;
+                });
+              }
+
+              const sortableTh: React.CSSProperties = {
+                textAlign: "left",
+                padding: "10px",
+                fontSize: 12,
+                color: "#475569",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                cursor: "pointer",
+                userSelect: "none",
+              };
+              const plainTh: React.CSSProperties = { ...sortableTh, cursor: "default" };
+
+              return (
+                <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead style={{ background: "#f8fafc" }}>
+                      <tr>
+                        <th style={plainTh}>User</th>
+                        <th style={plainTh}>Started</th>
+                        <th style={plainTh}>Ended</th>
+                        <th style={plainTh}>Duration</th>
+                        <th style={sortableTh} onClick={() => toggleSort("tool")}>Tool Used{arrow("tool")}</th>
+                        <th style={sortableTh} onClick={() => toggleSort("credits")}>Credits{arrow("credits")}</th>
+                        <th style={plainTh}>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(({ s, dur, u, toolLabel, credits }) => (
+                        <tr key={s.id}>
+                          <td style={td}>{u?.username ?? s.user_id.slice(0, 8)}</td>
+                          <td style={td}>{new Date(s.started_at).toLocaleString()}</td>
+                          <td style={td}>{s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}</td>
+                          <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
+                          <td style={td}>{toolLabel}</td>
+                          <td style={td}>{fmtCredits(credits)}</td>
+                          <td style={td}>
+                            <button
+                              onClick={() => openSessionDetails(s.id)}
+                              style={{
+                                background: "transparent",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: 6,
+                                padding: "4px 10px",
+                                fontSize: 12,
+                                color: "#4f46e5",
+                                cursor: "pointer",
+                              }}
+                            >
+                              View details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </Section>
 
           {detailSessionId && (
