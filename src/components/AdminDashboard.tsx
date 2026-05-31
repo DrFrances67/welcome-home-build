@@ -61,6 +61,7 @@ export function AdminDashboard() {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detailRows, setDetailRows] = useState<UsageRow[] | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [sessionSort, setSessionSort] = useState<{ key: "tool" | "credits"; dir: "asc" | "desc" } | null>(null);
   const endAll = useServerFn(endAllActiveSessions);
 
   async function openSessionDetails(sessionId: string) {
@@ -126,6 +127,16 @@ export function AdminDashboard() {
     if (isBillableAction(r.action)) entry.credits += 1;
     sessionUsage.set(r.session_id, entry);
   }
+
+  // AI credits consumed per session, derived from logged AI cost (1 credit = $0.01).
+  const CREDIT_USD = 0.01;
+  const sessionAiCredits = new Map<string, number>();
+  for (const r of aiUsage) {
+    if (!r.session_id) continue;
+    const prev = sessionAiCredits.get(r.session_id) ?? 0;
+    sessionAiCredits.set(r.session_id, prev + Number(r.cost_usd ?? 0) / CREDIT_USD);
+  }
+  const fmtCredits = (n: number) => (n <= 0 ? "0 credits" : `${n.toFixed(1)} credits`);
 
   // Per-user aggregates for the Users table.
   const userAgg = new Map<string, { lastActive: string | null; sessions: number; tools: Set<string>; total: number }>();
@@ -308,42 +319,90 @@ export function AdminDashboard() {
               </button>
               {endMessage && <span style={{ fontSize: 13, color: "#475569" }}>{endMessage}</span>}
             </div>
-            <Table headers={["User", "Started", "Ended", "Duration", "Applications Used", "Credits Used", "Details"]}>
-              {sessions.slice(0, 100).map((s) => {
+            {(() => {
+              const toggleSort = (key: "tool" | "credits") =>
+                setSessionSort((cur) =>
+                  cur?.key === key ? { key, dir: cur.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }
+                );
+              const arrow = (key: "tool" | "credits") =>
+                sessionSort?.key === key ? (sessionSort.dir === "asc" ? " ▲" : " ▼") : "";
+
+              const rows = sessions.slice(0, 100).map((s) => {
                 const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;
                 const u = userMap.get(s.user_id);
-                const usageEntry = sessionUsage.get(s.id);
-                const apps = usageEntry?.apps ?? [];
-                const appsLabel = apps.length === 0 ? "—" : apps.length === 1 ? apps[0] : apps.join(", ");
-                const credits = usageEntry?.credits ?? 0;
-                return (
-                  <tr key={s.id}>
-                    <td style={td}>{u?.username ?? s.user_id.slice(0, 8)}</td>
-                    <td style={td}>{new Date(s.started_at).toLocaleString()}</td>
-                    <td style={td}>{s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}</td>
-                    <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
-                    <td style={td}>{appsLabel}</td>
-                    <td style={td}>{credits}</td>
-                    <td style={td}>
-                      <button
-                        onClick={() => openSessionDetails(s.id)}
-                        style={{
-                          background: "transparent",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 6,
-                          padding: "4px 10px",
-                          fontSize: 12,
-                          color: "#4f46e5",
-                          cursor: "pointer",
-                        }}
-                      >
-                        View details
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </Table>
+                const apps = sessionUsage.get(s.id)?.apps ?? [];
+                const toolLabel = apps.length === 0 ? "—" : apps.join(", ");
+                const credits = sessionAiCredits.get(s.id) ?? 0;
+                return { s, dur, u, toolLabel, credits };
+              });
+              if (sessionSort) {
+                rows.sort((a, b) => {
+                  const cmp =
+                    sessionSort.key === "tool"
+                      ? a.toolLabel.localeCompare(b.toolLabel)
+                      : a.credits - b.credits;
+                  return sessionSort.dir === "asc" ? cmp : -cmp;
+                });
+              }
+
+              const sortableTh: React.CSSProperties = {
+                textAlign: "left",
+                padding: "10px",
+                fontSize: 12,
+                color: "#475569",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                cursor: "pointer",
+                userSelect: "none",
+              };
+              const plainTh: React.CSSProperties = { ...sortableTh, cursor: "default" };
+
+              return (
+                <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead style={{ background: "#f8fafc" }}>
+                      <tr>
+                        <th style={plainTh}>User</th>
+                        <th style={plainTh}>Started</th>
+                        <th style={plainTh}>Ended</th>
+                        <th style={plainTh}>Duration</th>
+                        <th style={sortableTh} onClick={() => toggleSort("tool")}>Tool Used{arrow("tool")}</th>
+                        <th style={sortableTh} onClick={() => toggleSort("credits")}>Credits{arrow("credits")}</th>
+                        <th style={plainTh}>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(({ s, dur, u, toolLabel, credits }) => (
+                        <tr key={s.id}>
+                          <td style={td}>{u?.username ?? s.user_id.slice(0, 8)}</td>
+                          <td style={td}>{new Date(s.started_at).toLocaleString()}</td>
+                          <td style={td}>{s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}</td>
+                          <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
+                          <td style={td}>{toolLabel}</td>
+                          <td style={td}>{fmtCredits(credits)}</td>
+                          <td style={td}>
+                            <button
+                              onClick={() => openSessionDetails(s.id)}
+                              style={{
+                                background: "transparent",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: 6,
+                                padding: "4px 10px",
+                                fontSize: 12,
+                                color: "#4f46e5",
+                                cursor: "pointer",
+                              }}
+                            >
+                              View details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </Section>
 
           {detailSessionId && (
