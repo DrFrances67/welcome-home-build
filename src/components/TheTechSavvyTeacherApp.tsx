@@ -7451,7 +7451,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
               <span style={{ fontFamily:"'Inter',sans-serif", fontSize:12, fontWeight:700, color:"#166534" }}>Select all text below and copy (Ctrl+A then Ctrl+C):</span>
               <button onClick={()=>setShowCopyBox(false)} style={{ border:"none", background:"none", cursor:"pointer", color:"#6B7280", fontSize:16 }}>✕</button>
             </div>
-            <SpellTextarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
+            <textarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
               style={{ width:"100%", height:160, fontFamily:"monospace", fontSize:11, padding:8, border:"1px solid #86EFAC", borderRadius:6, resize:"vertical", background:"white" }} />
           </div>
         )}
@@ -7467,7 +7467,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
               <strong>Step 1:</strong> Select all text below (Ctrl+A / Cmd+A) and copy it.<br/>
               <strong>Step 2:</strong> Go to <a href="https://docs.new" target="_blank" rel="noopener noreferrer" style={{ color:"#1D4ED8", fontWeight:700 }}>docs.new</a> → paste (Ctrl+V / Cmd+V) into the blank document.
             </p>
-            <SpellTextarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
+            <textarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
               style={{ width:"100%", height:160, fontFamily:"monospace", fontSize:11, padding:8, border:"1px solid #BAE6FD", borderRadius:6, resize:"vertical", background:"white" }} />
           </div>
         )}
