@@ -8,6 +8,7 @@ import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardS
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
 import { trackToolUse, setActiveTool as setActiveToolName } from "@/lib/tracking";
 import { aiHeaders } from "@/lib/aiFetch";
+import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DATA
@@ -2127,7 +2128,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {(el.type === "instruction" || el.type === "text") && (<>
         <label style={LBL}>Content</label>
-        <textarea value={el.text} spellCheck onChange={e => onChange({ text: e.target.value })} style={{ ...inp, minHeight: 90, marginTop: 4 }} aria-label="Text content" />
+        <SpellTextarea value={el.text} spellCheck onChange={e => onChange({ text: e.target.value })} style={{ ...inp, minHeight: 90, marginTop: 4 }} aria-label="Text content" />
         <TypographySection />
       </>)}
 
@@ -2137,7 +2138,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
         <label style={LBL}>Upload from Device</label>
         <input type="file" accept="image/*" aria-label="Upload image file" onChange={e => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = ev => onChange({ url: ev.target.result }); r.readAsDataURL(f); } }} style={{ ...inp, padding: 6, cursor: "pointer", marginTop: 4 }} />
         <label style={LBL}>Caption</label>
-        <input type="text" value={el.caption || ""} spellCheck onChange={e => onChange({ caption: e.target.value })} placeholder="Optional caption…" style={{ ...inp, marginTop: 4 }} aria-label="Image caption" />
+        <SpellInput type="text" value={el.caption || ""} spellCheck onChange={e => onChange({ caption: e.target.value })} placeholder="Optional caption…" style={{ ...inp, marginTop: 4 }} aria-label="Image caption" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
           <div>
             <label style={LBL}>Size</label>
@@ -2157,7 +2158,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "blank" && (<>
         <label style={LBL}>Label / Question</label>
-        <input type="text" value={el.label || ""} spellCheck onChange={e => onChange({ label: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Write lines label" />
+        <SpellInput type="text" value={el.label || ""} spellCheck onChange={e => onChange({ label: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Write lines label" />
         <label style={LBL}>Number of Lines</label>
         <input type="number" min={1} max={20} value={el.lines || 3} onChange={e => onChange({ lines: Math.max(1, parseInt(e.target.value) || 1) })} style={{ ...inp, marginTop: 4 }} aria-label="Number of lines" />
         <TypographySection />
@@ -2165,11 +2166,11 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "wordBank" && (<>
         <label style={LBL}>Title</label>
-        <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Word bank title" />
+        <SpellInput type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Word bank title" />
         <label style={LBL}>Words (one per line — press Enter for a new word)</label>
         {/* Preserve raw text (including trailing empty lines) so Enter creates a new line.
             Only trim/filter when rendering the worksheet preview. */}
-        <textarea
+        <SpellTextarea
           value={el._wordsRaw !== undefined ? el._wordsRaw : (el.words || []).join("\n")}
           spellCheck
           onChange={e => {
@@ -2186,9 +2187,9 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "matching" && (<>
         <label style={LBL}>Title</label>
-        <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Matching title" />
+        <SpellInput type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Matching title" />
         <label style={LBL}>Left Column (one per line — press Enter for a new item)</label>
-        <textarea
+        <SpellTextarea
           value={el._leftRaw !== undefined ? el._leftRaw : (el.left || []).join("\n")}
           spellCheck
           onChange={e => { const raw = e.target.value; onChange({ _leftRaw: raw, left: raw.split("\n").map(x => x.trim()).filter(Boolean) }); }}
@@ -2196,7 +2197,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
           aria-label="Left column items"
         />
         <label style={LBL}>Right Column (one per line — press Enter for a new item)</label>
-        <textarea
+        <SpellTextarea
           value={el._rightRaw !== undefined ? el._rightRaw : (el.right || []).join("\n")}
           spellCheck
           onChange={e => { const raw = e.target.value; onChange({ _rightRaw: raw, right: raw.split("\n").map(x => x.trim()).filter(Boolean) }); }}
@@ -2208,11 +2209,11 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "multipleChoice" && (<>
         <label style={LBL}>Question</label>
-        <input type="text" value={el.question || ""} spellCheck onChange={e => onChange({ question: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Question text" />
+        <SpellInput type="text" value={el.question || ""} spellCheck onChange={e => onChange({ question: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Question text" />
         <label style={LBL}>Instruction</label>
-        <input type="text" value={el.note || ""} spellCheck onChange={e => onChange({ note: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Instruction note" />
+        <SpellInput type="text" value={el.note || ""} spellCheck onChange={e => onChange({ note: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Instruction note" />
         <label style={LBL}>Answer Choices (one per line — press Enter for a new choice)</label>
-        <textarea
+        <SpellTextarea
           value={el._choicesRaw !== undefined ? el._choicesRaw : (el.choices || []).join("\n")}
           spellCheck
           onChange={e => { const raw = e.target.value; onChange({ _choicesRaw: raw, choices: raw.split("\n").map(c => c.trim()).filter(Boolean) }); }}
@@ -2224,7 +2225,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "truefalse" && (<>
         <label style={LBL}>Statements (one per line — press Enter for a new statement)</label>
-        <textarea
+        <SpellTextarea
           value={el._statementsRaw !== undefined ? el._statementsRaw : (el.statements || []).join("\n")}
           spellCheck
           onChange={e => { const raw = e.target.value; onChange({ _statementsRaw: raw, statements: raw.split("\n").map(s => s.trim()).filter(Boolean) }); }}
@@ -2236,7 +2237,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "shortAnswer" && (<>
         <label style={LBL}>Question</label>
-        <textarea value={el.question || ""} spellCheck onChange={e => onChange({ question: e.target.value })} style={{ ...inp, minHeight: 70, marginTop: 4 }} aria-label="Short answer question" />
+        <SpellTextarea value={el.question || ""} spellCheck onChange={e => onChange({ question: e.target.value })} style={{ ...inp, minHeight: 70, marginTop: 4 }} aria-label="Short answer question" />
         <label style={LBL}>Number of Lines</label>
         <input type="number" min={1} max={20} value={el.lines || 4} onChange={e => onChange({ lines: Math.max(1, parseInt(e.target.value) || 1) })} style={{ ...inp, marginTop: 4 }} aria-label="Number of answer lines" />
         <TypographySection />
@@ -2244,15 +2245,15 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "fillBlank" && (<>
         <label style={LBL}>Text (use <code style={{ background: "#F3F4F6", padding: "1px 4px", borderRadius: 3 }}>______</code> for blanks)</label>
-        <textarea value={el.text || ""} spellCheck onChange={e => onChange({ text: e.target.value })} style={{ ...inp, minHeight: 80, marginTop: 4 }} placeholder="The ___ is blue." aria-label="Fill in the blank text" />
+        <SpellTextarea value={el.text || ""} spellCheck onChange={e => onChange({ text: e.target.value })} style={{ ...inp, minHeight: 80, marginTop: 4 }} placeholder="The ___ is blue." aria-label="Fill in the blank text" />
         <label style={LBL}>Hint / Note</label>
-        <input type="text" value={el.note || ""} spellCheck onChange={e => onChange({ note: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Hint note" />
+        <SpellInput type="text" value={el.note || ""} spellCheck onChange={e => onChange({ note: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Hint note" />
         <TypographySection />
       </>)}
 
       {el.type === "essay" && (<>
         <label style={LBL}>Essay Prompt</label>
-        <textarea value={el.prompt || ""} spellCheck onChange={e => onChange({ prompt: e.target.value })} style={{ ...inp, minHeight: 90, marginTop: 4 }} aria-label="Essay prompt" />
+        <SpellTextarea value={el.prompt || ""} spellCheck onChange={e => onChange({ prompt: e.target.value })} style={{ ...inp, minHeight: 90, marginTop: 4 }} aria-label="Essay prompt" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
           <div>
             <label style={LBL}>Point Value</label>
@@ -2268,9 +2269,9 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 
       {el.type === "table" && (<>
         <label style={LBL}>Title</label>
-        <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Table title" />
+        <SpellInput type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Table title" />
         <label style={LBL}>Column Headers (one per line — press Enter for a new column)</label>
-        <textarea
+        <SpellTextarea
           value={el._headersRaw !== undefined ? el._headersRaw : (el.headers || []).join("\n")}
           spellCheck
           onChange={e => { const raw = e.target.value; onChange({ _headersRaw: raw, headers: raw.split("\n").map(h => h.trim()).filter(Boolean) }); }}
@@ -2426,10 +2427,10 @@ No markdown, no preamble, no commentary.`;
   return (
     <div style={{ marginTop: 4 }}>
       <label style={LBL}>Title</label>
-      <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
+      <SpellInput type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
 
       <label style={LBL}>Intro / Directions</label>
-      <input type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
+      <SpellInput type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
 
       <label style={LBL}>How to fill this in</label>
       <select
@@ -2445,7 +2446,7 @@ No markdown, no preamble, no commentary.`;
       {mode === "ai" && (
         <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FAFAFA", border: "1px solid #E5E7EB" }}>
           <label style={{ ...LBL, marginTop: 0 }}>Topic, standard, or text excerpt</label>
-          <textarea
+          <SpellTextarea
             value={topic}
             spellCheck
             onChange={e => setTopic(e.target.value)}
@@ -2472,7 +2473,7 @@ No markdown, no preamble, no commentary.`;
               <label style={{ ...LBL, marginTop: 0, color: "#92400E" }}>
                 Follow-up: tell the AI more about DOK {missingLevels.join(", ")}
               </label>
-              <textarea
+              <SpellTextarea
                 value={clarification}
                 spellCheck
                 onChange={e => setClarification(e.target.value)}
@@ -2508,7 +2509,7 @@ No markdown, no preamble, no commentary.`;
             <p style={{ fontSize: 10, color: "#6B7280", margin: "2px 0 6px", fontFamily: F, fontStyle: "italic" }}>
               {def.desc}
             </p>
-            <textarea
+            <SpellTextarea
               value={(lv.items || []).join("\n")}
               spellCheck
               onChange={e => updateLevelItems(li, e.target.value)}
@@ -2571,10 +2572,10 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
   return (
     <div style={{ marginTop: 4 }}>
       <label style={LBL}>Title</label>
-      <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
+      <SpellInput type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Title" />
 
       <label style={LBL}>Intro / Directions</label>
-      <input type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
+      <SpellInput type="text" value={el.intro || ""} spellCheck onChange={e => onChange({ intro: e.target.value })} style={{ ...inp, marginTop: 4 }} aria-label="Intro line" />
 
       <label style={LBL}>How to fill this in</label>
       <select
@@ -2590,7 +2591,7 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
       {mode === "ai" && (
         <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FAFAFA", border: "1px solid #E5E7EB" }}>
           <label style={{ ...LBL, marginTop: 0 }}>{isSuccess ? "Learning objective / standard" : "Lesson topic or focus"}</label>
-          <textarea
+          <SpellTextarea
             value={topic}
             spellCheck
             onChange={e => setTopic(e.target.value)}
@@ -2611,7 +2612,7 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
       )}
 
       <label style={LBL}>Items {mode === "ai" ? "(generated — edit freely; one per line)" : "(one per line)"}</label>
-      <textarea
+      <SpellTextarea
         value={(el.items || []).join("\n")}
         spellCheck
         onChange={e => onChange({ items: e.target.value.split("\n").map(s => s.trimStart()).filter(s => s.trim().length) })}
@@ -2795,7 +2796,7 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
       {editorTab === "custom" && (<>
       {/* Layout & title */}
       <label style={LBL}>Prompt / Title</label>
-      <input type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop:4 }} aria-label="Shape group title" placeholder="Label each shape:" />
+      <SpellInput type="text" value={el.title || ""} spellCheck onChange={e => onChange({ title: e.target.value })} style={{ ...inp, marginTop:4 }} aria-label="Shape group title" placeholder="Label each shape:" />
 
       <label style={LBL}>Layout</label>
       <div style={{ display:"flex", gap:6, marginTop:4, flexWrap:"wrap" }}>
@@ -2866,10 +2867,10 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
             </div>
 
             <label style={LBL}>Label inside shape</label>
-            <input type="text" value={active.label||""} spellCheck onChange={e => updShape(activeIdx, { label:e.target.value })} style={{ ...inp, marginTop:4 }} aria-label="Shape label" placeholder="e.g. Part A" />
+            <SpellInput type="text" value={active.label||""} spellCheck onChange={e => updShape(activeIdx, { label:e.target.value })} style={{ ...inp, marginTop:4 }} aria-label="Shape label" placeholder="e.g. Part A" />
 
             <label style={LBL}>Caption below shape</label>
-            <input type="text" value={active.caption||""} spellCheck onChange={e => updShape(activeIdx, { caption:e.target.value })} style={{ ...inp, marginTop:4 }} aria-label="Caption below shape" placeholder="Optional description" />
+            <SpellInput type="text" value={active.caption||""} spellCheck onChange={e => updShape(activeIdx, { caption:e.target.value })} style={{ ...inp, marginTop:4 }} aria-label="Caption below shape" placeholder="Optional description" />
 
             <label style={LBL}>Write lines inside</label>
             <input type="number" min={0} max={10} value={active.lines||0} onChange={e => updShape(activeIdx, { lines:parseInt(e.target.value)||0 })} style={{ ...inp, marginTop:4 }} aria-label="Lines inside shape" />
@@ -3073,7 +3074,7 @@ function AIImageGen({ gv, onAddImage }) {
       {/* Prompt + suggestions */}
       <div>
         <label style={LBL}>Describe Your Image</label>
-        <textarea
+        <SpellTextarea
           value={prompt}
           onChange={e => { setPrompt(e.target.value); setSelected(null); }}
           spellCheck
@@ -3350,7 +3351,7 @@ Grade-level calibration:
           </div>
         )}
         <div style={{ display: "flex", gap: 8 }}>
-          <input
+          <SpellInput
             value={input}
             onChange={e => { setInput(e.target.value); if (piiHits.length) setPiiHits([]); }}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
@@ -4900,7 +4901,7 @@ Output ONLY the JSON array.`,
 
         <div style={{ width: 1, height: 28, background: "#E5E7EB", margin: "0 2px", flexShrink: 0 }} aria-hidden="true" />
 
-        <input
+        <SpellInput
           value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
           aria-label="Worksheet title"
           style={{ flex: 1, fontSize: 15, fontWeight: 600, fontFamily: F, border: "none", outline: "none", background: "transparent", color: "#111827", minWidth: 0 }}
@@ -4997,7 +4998,7 @@ Output ONLY the JSON array.`,
                 <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.4, margin: "10px 0 4px", fontFamily: F }}>
                   Additional Info <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, color: "#9CA3AF" }}>(optional)</span>
                 </label>
-                <textarea
+                <SpellTextarea
                   value={lpNotes}
                   onChange={e => setLpNotes(e.target.value)}
                   disabled={lpBusy}
@@ -5220,7 +5221,7 @@ Output ONLY the JSON array.`,
                   {!hideHeader && (
                     <div style={{ marginBottom: 24 }}>
                       {pIdx === 0 ? (
-                        <input value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
+                        <SpellInput value={ws.title} onChange={e => setF("title", e.target.value)} spellCheck
                           aria-label="Worksheet title on page"
                           style={{ width: "100%", fontSize: gv.fontSize + 5, fontWeight: 700, fontFamily: FF, color: gv.color, border: "none", outline: "none", background: "transparent", borderBottom: `2px solid ${gv.color}20`, paddingBottom: 8, marginBottom: 16, paddingRight: 120 }} placeholder="Worksheet Title" />
                       ) : (
@@ -5834,7 +5835,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
           })()}
 
           <label htmlFor="email-draft" style={lbl}>Your rough draft or key points</label>
-          <textarea id="email-draft" value={draft} onChange={e => setDraft(e.target.value)} spellCheck
+          <SpellTextarea id="email-draft" value={draft} onChange={e => setDraft(e.target.value)} spellCheck
             placeholder="Write your rough draft, key points, or anything you want to say. Don't worry about being polished — that's our job!"
             aria-label="Rough draft or key points for your email"
             style={{ ...inp, minHeight:160, resize:"vertical", lineHeight:1.6, background:"#FAFAFA" }} />
@@ -7176,12 +7177,12 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
 
           <div style={{ marginBottom:14 }}>
             <label style={lbl}>Subject</label>
-            <input type="text" value={form.subject} onChange={e => setF("subject",e.target.value)} spellCheck placeholder="e.g. ELA, Mathematics, Science…" style={inp} />
+            <SpellInput type="text" value={form.subject} onChange={e => setF("subject",e.target.value)} spellCheck placeholder="e.g. ELA, Mathematics, Science…" style={inp} />
           </div>
 
           <div style={{ marginBottom:14 }}>
             <label style={lbl}>Lesson Topic / Title</label>
-            <input type="text" value={form.topic} onChange={e => setF("topic",e.target.value)} spellCheck placeholder="e.g. Introduction to Fractions" style={inp} />
+            <SpellInput type="text" value={form.topic} onChange={e => setF("topic",e.target.value)} spellCheck placeholder="e.g. Introduction to Fractions" style={inp} />
           </div>
 
           <div style={{ marginBottom:14 }}>
@@ -7193,12 +7194,12 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
 
           <div style={{ marginBottom:14 }}>
             <label style={lbl}>Learning Objectives (optional — AI will suggest if blank)</label>
-            <textarea value={form.objectives} onChange={e => setF("objectives",e.target.value)} spellCheck placeholder="Students will be able to…" style={{ ...inp, minHeight:72, resize:"vertical", lineHeight:1.6 }} />
+            <SpellTextarea value={form.objectives} onChange={e => setF("objectives",e.target.value)} spellCheck placeholder="Students will be able to…" style={{ ...inp, minHeight:72, resize:"vertical", lineHeight:1.6 }} />
           </div>
 
           <div style={{ marginBottom:14 }}>
             <label style={lbl}>Materials (optional)</label>
-            <textarea value={form.materials} onChange={e => setF("materials",e.target.value)} spellCheck placeholder="Textbooks, manipulatives, handouts…" style={{ ...inp, minHeight:56, resize:"vertical", lineHeight:1.6 }} />
+            <SpellTextarea value={form.materials} onChange={e => setF("materials",e.target.value)} spellCheck placeholder="Textbooks, manipulatives, handouts…" style={{ ...inp, minHeight:56, resize:"vertical", lineHeight:1.6 }} />
           </div>
 
           {/* NY Standard Picker */}
@@ -7352,7 +7353,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
             {/* ── Tab: Paste Text ── */}
             {exMode === "text" && !exemplarDesc && !analyzingEx && (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <textarea value={exemplarText} onChange={e => { setExemplarText(e.target.value); setExError(""); }}
+                <SpellTextarea value={exemplarText} onChange={e => { setExemplarText(e.target.value); setExError(""); }}
                   placeholder="Paste your exemplar lesson plan text here — from Google Docs, Word, Notion, or anywhere else…"
                   style={{ width:"100%", minHeight:120, padding:"10px 12px", borderRadius:7, border:"1.5px solid #D1D5DB", fontFamily:"'Inter',sans-serif", fontSize:12.5, color:"#111827", outline:"none", resize:"vertical", lineHeight:1.6, boxSizing:"border-box" }} />
                 <button onClick={handleTextAnalyze} disabled={!exemplarText.trim()}
@@ -7422,7 +7423,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
           {/* Notes / Additional Context */}
           <div style={{ marginBottom:14 }}>
             <label style={lbl}>Additional Notes / Context <span style={{ textTransform:"none", fontWeight:500, letterSpacing:0, color:"#9CA3AF" }}>(optional)</span></label>
-            <textarea value={form.notes} onChange={e => setF("notes", e.target.value)} spellCheck
+            <SpellTextarea value={form.notes} onChange={e => setF("notes", e.target.value)} spellCheck
               placeholder="Any special context, IEP goals to address, class size, prior knowledge, or specific requirements…"
               style={{ ...inp, minHeight:70, resize:"vertical", lineHeight:1.6, background:"#FAFAFA" }} />
           </div>
@@ -7450,7 +7451,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
               <span style={{ fontFamily:"'Inter',sans-serif", fontSize:12, fontWeight:700, color:"#166534" }}>Select all text below and copy (Ctrl+A then Ctrl+C):</span>
               <button onClick={()=>setShowCopyBox(false)} style={{ border:"none", background:"none", cursor:"pointer", color:"#6B7280", fontSize:16 }}>✕</button>
             </div>
-            <textarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
+            <SpellTextarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
               style={{ width:"100%", height:160, fontFamily:"monospace", fontSize:11, padding:8, border:"1px solid #86EFAC", borderRadius:6, resize:"vertical", background:"white" }} />
           </div>
         )}
@@ -7466,7 +7467,7 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><p style="font-size:12px">${safeHtm
               <strong>Step 1:</strong> Select all text below (Ctrl+A / Cmd+A) and copy it.<br/>
               <strong>Step 2:</strong> Go to <a href="https://docs.new" target="_blank" rel="noopener noreferrer" style={{ color:"#1D4ED8", fontWeight:700 }}>docs.new</a> → paste (Ctrl+V / Cmd+V) into the blank document.
             </p>
-            <textarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
+            <SpellTextarea readOnly value={buildPlanText()} onClick={e=>e.target.select()}
               style={{ width:"100%", height:160, fontFamily:"monospace", fontSize:11, padding:8, border:"1px solid #BAE6FD", borderRadius:6, resize:"vertical", background:"white" }} />
           </div>
         )}
