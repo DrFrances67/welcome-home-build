@@ -353,11 +353,11 @@ function SpellField({
 export function SpellTextarea(
   props: CommonProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>,
 ) {
-  return <SpellField multiline {...(props as SpellFieldProps)} />;
+  return <SpellField {...(props as SpellFieldProps)} multiline />;
 }
 
 export function SpellInput(
   props: CommonProps & React.InputHTMLAttributes<HTMLInputElement>,
 ) {
-  return <SpellField multiline={false} {...(props as SpellFieldProps)} />;
+  return <SpellField {...(props as SpellFieldProps)} multiline={false} />;
 }
