@@ -129,6 +129,10 @@ function useSpellCheck(
   return { issues, setIssues };
 }
 
+type SpellFieldProps = CommonProps &
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> &
+  React.InputHTMLAttributes<HTMLInputElement> & { multiline: boolean };
+
 function SpellField({
   multiline,
   value,
@@ -136,9 +140,7 @@ function SpellField({
   className,
   style,
   ...rest
-}: CommonProps &
-  React.TextareaHTMLAttributes<HTMLTextAreaElement> &
-  React.InputHTMLAttributes<HTMLInputElement> & { multiline: boolean }) {
+}: SpellFieldProps) {
   const elRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [popup, setPopup] = useState<PopupState>(null);
