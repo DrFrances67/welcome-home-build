@@ -51,8 +51,8 @@ interface CommonProps {
 }
 
 function useSpellCheck(
-  elRef: React.RefObject<HTMLTextAreaElement | HTMLInputElement>,
-  overlayRef: React.RefObject<HTMLDivElement>,
+  elRef: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null>,
+  overlayRef: React.RefObject<HTMLDivElement | null>,
   value: string,
   multiline: boolean,
 ) {
