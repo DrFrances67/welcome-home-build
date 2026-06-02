@@ -145,7 +145,7 @@ function SpellField({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { issues, setIssues } = useSpellCheck(
-    elRef as React.RefObject<HTMLTextAreaElement | HTMLInputElement>,
+    elRef,
     overlayRef,
     value,
     multiline,
