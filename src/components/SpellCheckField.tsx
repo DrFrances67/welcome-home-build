@@ -2,131 +2,25 @@
 // spell + grammar checking with an overlay of wavy underlines and a
 // click-to-apply suggestion popup. Non-intrusive: checking is debounced and
 // never blocks typing, focus, or form submission.
+//
+// Alignment strategy: the underline overlay is rendered with the EXACT same
+// style object as the real field (same font, padding, border width, width,
+// line-height), so the mirrored text lines up perfectly without measuring.
 
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { checkText, ensureSpeller, type Issue } from "@/lib/spellcheck";
 
-// Computed styles copied from the real element onto the mirror overlay so the
-// underlines line up exactly with the rendered text.
-const STYLE_KEYS: (keyof CSSStyleDeclaration)[] = [
-  "boxSizing",
-  "width",
-  "fontFamily",
-  "fontSize",
-  "fontWeight",
-  "fontStyle",
-  "fontVariant",
-  "letterSpacing",
-  "lineHeight",
-  "textAlign",
-  "textTransform",
-  "textIndent",
-  "paddingTop",
-  "paddingRight",
-  "paddingBottom",
-  "paddingLeft",
-  "borderTopWidth",
-  "borderRightWidth",
-  "borderBottomWidth",
-  "borderLeftWidth",
-  "wordSpacing",
-];
-
-type PopupState = {
-  issue: Issue;
-  x: number;
-  y: number;
-} | null;
+type PopupState = { issue: Issue; x: number; y: number } | null;
 
 interface CommonProps {
   value: string;
   onChange: (e: { target: { value: string } }) => void;
-}
-
-function useSpellCheck(
-  elRef: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null>,
-  overlayRef: React.RefObject<HTMLDivElement | null>,
-  value: string,
-  multiline: boolean,
-) {
-  const [issues, setIssues] = useState<Issue[]>([]);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Warm up the dictionary once mounted (lazy, cached across all fields).
-  useEffect(() => {
-    void ensureSpeller();
-  }, []);
-
-  // Debounced re-check whenever the value changes.
-  useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    if (!value || !value.trim()) {
-      setIssues([]);
-      return;
-    }
-    timer.current = setTimeout(() => {
-      const snapshot = value;
-      void checkText(snapshot).then((res) => {
-        // Ignore stale results if the value changed meanwhile.
-        if (elRef.current && elRef.current.value === snapshot) setIssues(res);
-      });
-    }, 400);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [value, elRef]);
-
-  // Keep the overlay visually aligned with the input.
-  const syncStyles = useCallback(() => {
-    const el = elRef.current;
-    const ov = overlayRef.current;
-    if (!el || !ov) return;
-    const cs = window.getComputedStyle(el);
-    for (const k of STYLE_KEYS) {
-      // @ts-expect-error index assignment of style props
-      ov.style[k] = cs[k];
-    }
-    ov.style.borderStyle = "solid";
-    ov.style.borderColor = "transparent";
-    ov.style.width = `${el.offsetWidth}px`;
-    ov.style.height = `${el.offsetHeight}px`;
-    ov.style.whiteSpace = multiline ? "pre-wrap" : "pre";
-    ov.style.overflow = "hidden";
-    ov.style.color = "transparent";
-    ov.scrollTop = el.scrollTop;
-    ov.scrollLeft = el.scrollLeft;
-  }, [elRef, overlayRef, multiline]);
-
-  useLayoutEffect(() => {
-    syncStyles();
-  }, [syncStyles, value, issues]);
-
-  useEffect(() => {
-    const el = elRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const ov = overlayRef.current;
-      if (ov) {
-        ov.scrollTop = el.scrollTop;
-        ov.scrollLeft = el.scrollLeft;
-      }
-    };
-    el.addEventListener("scroll", onScroll);
-    window.addEventListener("resize", syncStyles);
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", syncStyles);
-    };
-  }, [elRef, overlayRef, syncStyles]);
-
-  return { issues, setIssues };
 }
 
 type SpellFieldProps = CommonProps &
@@ -143,15 +37,47 @@ function SpellField({
 }: SpellFieldProps) {
   const elRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [popup, setPopup] = useState<PopupState>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { issues, setIssues } = useSpellCheck(
-    elRef,
-    overlayRef,
-    value,
-    multiline,
-  );
+  // Warm up the dictionary once (cached across all fields).
+  useEffect(() => {
+    void ensureSpeller();
+  }, []);
+
+  // Debounced re-check whenever the value changes.
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    if (!value || !value.trim()) {
+      setIssues([]);
+      return;
+    }
+    timer.current = setTimeout(() => {
+      const snapshot = value;
+      void checkText(snapshot).then((res) => {
+        if (elRef.current && elRef.current.value === snapshot) setIssues(res);
+      });
+    }, 400);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [value]);
+
+  // Keep overlay scroll in sync with the field.
+  useEffect(() => {
+    const el = elRef.current;
+    const ov = overlayRef.current;
+    if (!el || !ov) return;
+    const onScroll = () => {
+      ov.scrollTop = el.scrollTop;
+      ov.scrollLeft = el.scrollLeft;
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  });
 
   const openPopup = useCallback((issue: Issue, target: HTMLElement) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -171,10 +97,7 @@ function SpellField({
 
   const applySuggestion = useCallback(
     (issue: Issue, suggestion: string) => {
-      const el = elRef.current;
-      if (!el) return;
       const replacement = suggestion === "(remove duplicate)" ? "" : suggestion;
-      // For "(remove duplicate)" also drop the separating whitespace before it.
       let start = issue.start;
       if (suggestion === "(remove duplicate)") {
         while (start > 0 && /\s/.test(value[start - 1])) start -= 1;
@@ -184,10 +107,10 @@ function SpellField({
       setPopup(null);
       setIssues((prev) => prev.filter((i) => i !== issue));
     },
-    [value, onChange, setIssues],
+    [value, onChange],
   );
 
-  // Build the mirrored content with error spans.
+  // Mirrored content with error spans.
   const segments = useMemo(() => {
     const nodes: React.ReactNode[] = [];
     let cursor = 0;
@@ -219,47 +142,63 @@ function SpellField({
       cursor = issue.end;
     });
     if (cursor < value.length) nodes.push(value.slice(cursor));
-    // Trailing newline needs an extra char so the mirror height matches.
-    if (multiline) nodes.push("\n");
+    nodes.push("\u200b"); // trailing zero-width char keeps height in sync
     return nodes;
-  }, [issues, value, multiline, openPopup, scheduleClose]);
+  }, [issues, value, openPopup, scheduleClose]);
 
-  const sharedOverlayStyle: React.CSSProperties = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    margin: 0,
-    pointerEvents: "none",
-    userSelect: "none",
-    zIndex: 2,
-  };
+  // The field and overlay share this base style for perfect alignment.
+  const baseStyle: React.CSSProperties = { ...(style as React.CSSProperties), margin: 0 };
 
-  const nativeStyle: React.CSSProperties = {
-    ...style,
+  const fieldStyle: React.CSSProperties = {
+    ...baseStyle,
     position: "relative",
     background: "transparent",
     zIndex: 1,
   };
 
-  const elementProps = {
+  const overlayStyle: React.CSSProperties = {
+    ...baseStyle,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    height: "100%",
+    pointerEvents: "none",
+    userSelect: "none",
+    overflow: "hidden",
+    color: "transparent",
+    borderColor: "transparent",
+    background: "transparent",
+    zIndex: 2,
+    whiteSpace: multiline ? "pre-wrap" : "pre",
+    wordWrap: "break-word",
+    overflowWrap: "break-word",
+  };
+
+  const commonEl = {
     ...rest,
-    ref: elRef as never,
     value,
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) =>
       onChange(e),
     spellCheck: false,
-    style: nativeStyle,
     className,
   };
 
   return (
     <span style={{ position: "relative", display: "block" }}>
       {multiline ? (
-        <textarea {...(elementProps as React.TextareaHTMLAttributes<HTMLTextAreaElement> & { ref: never })} />
+        <textarea
+          ref={elRef as React.Ref<HTMLTextAreaElement>}
+          style={fieldStyle}
+          {...(commonEl as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+        />
       ) : (
-        <input {...(elementProps as React.InputHTMLAttributes<HTMLInputElement> & { ref: never })} />
+        <input
+          ref={elRef as React.Ref<HTMLInputElement>}
+          style={fieldStyle}
+          {...(commonEl as React.InputHTMLAttributes<HTMLInputElement>)}
+        />
       )}
-      <div ref={overlayRef} aria-hidden style={sharedOverlayStyle}>
+      <div ref={overlayRef} aria-hidden style={overlayStyle}>
         {segments}
       </div>
 
@@ -267,7 +206,7 @@ function SpellField({
         <div
           style={{
             position: "fixed",
-            left: Math.min(popup.x, window.innerWidth - 220),
+            left: Math.min(popup.x, window.innerWidth - 240),
             top: popup.y,
             zIndex: 9999,
             background: "#fff",
