@@ -120,6 +120,8 @@ function SpellField({
       nodes.push(
         <span
           key={idx}
+          data-spell-error={issue.type}
+          title={issue.message}
           style={{
             pointerEvents: "auto",
             cursor: "pointer",
