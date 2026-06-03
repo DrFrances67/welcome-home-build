@@ -7,7 +7,7 @@ import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
 import { trackToolUse, setActiveTool as setActiveToolName } from "@/lib/tracking";
-import { aiHeaders } from "@/lib/aiFetch";
+import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2342,17 +2342,11 @@ No markdown, no preamble, no commentary.`;
     const userMsg = extraContext
       ? `Topic / standard / text: ${promptTopic}\n\nAdditional context from the teacher: ${extraContext}`
       : `Topic / standard / text: ${promptTopic}`;
-    const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-      method: "POST", headers: await aiHeaders(),
-      body: JSON.stringify({
+    const raw = await callAiRaw({
         model: "claude-sonnet-4-20250514", max_tokens: 2000,
         system: sys,
         messages: [{ role: "user", content: userMsg }],
-      }),
-    });
-    const d = await r.json();
-    if (d.error) throw new Error(d.error.message || "AI error");
-    const raw = d.content?.map((b: any) => b.text || "").join("") || "[]";
+    }) || "[]";
     return repairAndParse(raw, { container: "array" }) as any[];
   };
 
@@ -2543,17 +2537,11 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
     const sysSuccess = `You design student-friendly success criteria for K–12 lessons. Success criteria are specific, measurable, standards-aligned skills written as "I can …" statements. They tell students exactly what to demonstrate to meet a learning objective. Calibrate vocabulary and complexity to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short "I can …" strings — no markdown, no preamble. Example: ["I can look at the picture.","I can read the text.","I can identify the character in the story."]`;
     const sysExit = `You design quick formative exit tickets for K–12 lessons. Exit tickets are brief (1–5 minute) end-of-lesson self-checks. Items should be checkable statements students can mark off, e.g. participation, completion, or demonstration of one specific concept. Calibrate vocabulary to ${gv.name} (${BANDS[gv.band]?.label}). Return ONLY a JSON array of 3–6 short statements — no markdown, no preamble. Example: ["I participated in class.","I completed the reading assignment.","I participated in at least two center activities."]`;
     try {
-      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const raw = await callAiRaw({
           model: "claude-sonnet-4-20250514", max_tokens: 500,
           system: isSuccess ? sysSuccess : sysExit,
           messages: [{ role: "user", content: `Topic / lesson objective: ${topic}` }],
-        }),
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message || "AI error");
-      const raw = d.content?.map(b => b.text || "").join("") || "[]";
+      }) || "[]";
       const clean = raw.replace(/```json|```/g, "").trim();
       const s = clean.indexOf("["); const e = clean.lastIndexOf("]");
       const slice = s >= 0 && e > s ? clean.slice(s, e + 1) : clean;
@@ -2961,21 +2949,7 @@ function AIImageGen({ gv, onAddImage }) {
     const hint = variationHints[variationIdx] || variationHints[0];
     const fullPrompt = `${promptText}. ${hint}.`;
 
-    const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
-      method: "POST",
-      headers: await aiHeaders(),
-      body: JSON.stringify({ prompt: fullPrompt, style: styleKey }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error || `API error ${res.status}`);
-    }
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    if (!data.url) throw new Error("No image URL returned");
-    return data.url; // data:image/...;base64,...
+    return await generateImage({ prompt: fullPrompt, style: styleKey });
   };
 
   // ── Generate one slot (marks loading, calls API, updates slot) ───────
@@ -3028,18 +3002,12 @@ function AIImageGen({ gv, onAddImage }) {
     suggTimerRef.current = setTimeout(async () => {
       setLoadingSugg(true);
       try {
-        const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-          method: "POST",
-          headers: await aiHeaders(),
-          body: JSON.stringify({
+        const raw = await callAiRaw({
             model: "claude-sonnet-4-20250514",
             max_tokens: 200,
             system: "You suggest specific educational image descriptions for classroom worksheet illustrations. Respond with ONLY a JSON array of 5 short strings, each under 10 words. No markdown, no explanation, no preamble.",
             messages: [{ role: "user", content: `Teacher is typing: "${trimmed}"\nSuggest 5 specific educational image descriptions that complete or expand on this. JSON array only.` }]
-          })
-        });
-        const d = await res.json();
-        const raw = d.content?.map(b => b.text || "").join("") || "[]";
+        }) || "[]";
         const clean = raw.replace(/```[\w]*\n?/g, "").replace(/```/g, "").trim();
         const parsed = JSON.parse(clean);
         if (Array.isArray(parsed)) setSuggestions(parsed.slice(0, 5));
@@ -3211,9 +3179,7 @@ function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
 
   // Build a full worksheet (returns an array of element objects) ──────────
   const buildWorksheet = async (userPrompt) => {
-    const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-      method: "POST", headers: await aiHeaders(),
-      body: JSON.stringify({
+    const raw = await callAiRaw({
         model: "claude-sonnet-4-20250514", max_tokens: 4000,
         system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 12–20 worksheet element objects spanning AT LEAST 2 PAGES (use a 0-based "page" field on every element: 0, 1, and optionally 2).
 
@@ -3241,11 +3207,7 @@ GROUPING RULE (MANDATORY): Always keep related content together in the array. Wh
 
 Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
         messages: [{ role: "user", content: userPrompt }]
-      })
-    });
-    const d = await r.json();
-    if (d.error) throw new Error(d.error.message || "AI error");
-    const raw = d.content?.map(b => b.text || "").join("") || "[]";
+    }) || "[]";
     const clean = raw.replace(/```json|```/g, "").trim();
     const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
     const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
@@ -3276,11 +3238,8 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
             const prompt = (el.imagePrompt || el.caption || "").toString().trim();
             if (!prompt) continue;
             try {
-              const ir = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
-                method: "POST", headers: await aiHeaders(),
-                body: JSON.stringify({ prompt, style: "cartoon" }),
-              });
-              if (ir.ok) { const d = await ir.json(); if (d?.url) el.url = d.url; }
+              const url = await generateImage({ prompt, style: "cartoon" });
+              if (url) el.url = url;
             } catch (_) {}
             await new Promise(r => setTimeout(r, 350));
           }
@@ -3296,9 +3255,7 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
 
     // ─── Otherwise: normal conversational reply ───
     try {
-      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const reply = await callAiRaw({
           model: "claude-sonnet-4-20250514", max_tokens: 1000,
           system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
 
@@ -3318,10 +3275,8 @@ Grade-level calibration:
 - Grades 6-8: analytical thinking, text evidence, abstract concepts
 - Grades 9-12: sophisticated arguments, primary sources, complex analysis`,
           messages: next.map(m => ({ role: m.role, content: m.content }))
-        })
       });
-      const d = await r.json();
-      setMsgs(p => [...p, { role: "assistant", content: d.content?.map(b => b.text || "").join("") || "Sorry, couldn't connect. Try again!" }]);
+      setMsgs(p => [...p, { role: "assistant", content: reply || "Sorry, couldn't connect. Try again!" }]);
     } catch { setMsgs(p => [...p, { role: "assistant", content: "Connection issue — please try again! 🌐" }]); }
     setLoading(false);
   };
@@ -4398,9 +4353,7 @@ export function WorksheetBuilder() {
     const g = gInfo(ws.gradeId);
     const bandLabel = BANDS[g.band]?.label || g.name;
     try {
-      const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const raw = await callAiRaw({
           model: "claude-sonnet-4-20250514", max_tokens: 1000,
           system: `You are an expert curriculum designer creating complete, print-ready worksheets for NY State teachers. Always respond with valid JSON only — no markdown, no preamble, no explanation outside the JSON array.`,
           messages: [{
@@ -4428,10 +4381,7 @@ Calibrate complexity to ${g.name}:
 
 Include a variety of activity types. Make the content directly address the standard. Output ONLY the JSON array.`
           }]
-        })
-      });
-      const data = await res.json();
-      const raw = data.content?.map(b => b.text || "").join("") || "[]";
+      }) || "[]";
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const startIdx = showHeader ? 1 : 0;
@@ -4466,15 +4416,11 @@ Include a variety of activity types. Make the content directly address the stand
       const b64 = ev.target.result;
       setRefImg(b64); setAnalyzing(true);
       try {
-        const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-          method: "POST", headers: await aiHeaders(),
-          body: JSON.stringify({
+        const refText = await callAiRaw({
             model: "claude-sonnet-4-20250514", max_tokens: 350,
             messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: file.type, data: b64.split(",")[1] } }, { type: "text", text: "A teacher uploaded this reference worksheet. In 2–3 sentences, describe its structure, activity types, subject area, and approximate grade level so I can help recreate or build similar worksheets. Be concise and practical." }] }]
-          })
         });
-        const d = await res.json();
-        setRefDesc(d.content?.map(b => b.text || "").join("") || "Reference uploaded.");
+        setRefDesc(refText || "Reference uploaded.");
       } catch { setRefDesc("Reference uploaded (automatic analysis unavailable — describe it in AI Help)."); }
       setAnalyzing(false);
     };
@@ -4546,25 +4492,10 @@ Include a variety of activity types. Make the content directly address the stand
     for (const el of targets) {
       const prompt = (el.imagePrompt || el.caption || el.text || "").toString().trim();
       if (!prompt) continue;
-      let attempt = 0;
-      while (attempt < 3) {
-        try {
-          const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
-            method: "POST", headers: await aiHeaders(),
-            body: JSON.stringify({ prompt, style: styleHint }),
-          });
-          if (r.status === 429) {
-            // Rate limited — back off and retry
-            attempt++;
-            await new Promise(res => setTimeout(res, 2500 * attempt));
-            continue;
-          }
-          if (!r.ok) break;
-          const d = await r.json();
-          if (d?.url) el.url = d.url;
-          break;
-        } catch (_) { break; }
-      }
+      try {
+        const url = await generateImage({ prompt, style: styleHint, retries: 2 });
+        if (url) el.url = url;
+      } catch (_) { /* skip image on failure */ }
       done++;
       setWsFileMsg(`✓ Got blocks. Generating images… (${done}/${targets.length})`);
       // Pace requests to stay under the gateway's per-minute limit
@@ -4624,9 +4555,7 @@ Include a variety of activity types. Make the content directly address the stand
       });
       userContent.push({ type: "text", text: `${intent}\n\nIMPORTANT pagination rules:\n- The original has ${imgs.length || "an unknown number of"} page(s).\n- The OUTPUT MUST SPAN AT LEAST 2 PAGES. Never compress everything onto page 0. If the source is short, expand it with additional varied items (more questions, deeper practice, extension activities, reflection) until you fill at least 2 full pages.\n- Output enough blocks to faithfully cover ALL the content. Do not drop questions to fit one page.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so the worksheet is not crowded.\n- Vary activity types across pages (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay) — prioritize depth and variety over brevity.\n- For every illustration, photo, or drawing in the original, output an {"type":"image", ...} block with a clear "imagePrompt" so we can generate a matching picture (e.g. "a friendly cartoon brown dog sitting", "line drawing of an apple"). Never drop images.\n- GROUPING: Place each image block IMMEDIATELY next to the question/prompt it illustrates (right before or right after). Never separate an image from its related content with unrelated blocks.\n\nWORKSHEET TEXT:\n${wsFile.raw}` });
 
-      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const text = await callAiRaw({
           model: "claude-sonnet-4-20250514", max_tokens: 5000,
           system: `You convert a teacher's existing worksheet into structured worksheet blocks for a ${g.name} class. Respond with VALID JSON ONLY — a single JSON array of element objects. No markdown, no preamble.
 
@@ -4648,11 +4577,7 @@ GROUPING RULE (MANDATORY): Keep related blocks contiguous in the array. Place ea
 
 Output ONLY the JSON array.`,
           messages: [{ role: "user", content: userContent }],
-        })
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message || "AI error");
-      const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
+      }) || "[]";
       const clean = text.replace(/```json|```/g, "").trim();
       const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
       const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
@@ -4733,9 +4658,7 @@ Output ONLY the JSON array.`,
       const typeLabel = WORKSHEET_TYPES.find(t => t.id === lpType)?.label || lpType;
       const userPrompt = `LESSON PLAN:\n${lpFile.raw}\n\nWORKSHEET TYPE: ${typeLabel}\nGRADE LEVEL: ${g.name}\n${lpNotes.trim() ? `\nADDITIONAL TEACHER INSTRUCTIONS:\n${lpNotes.trim()}\n` : ""}\nIMPORTANT pagination rules:\n- The OUTPUT MUST SPAN AT LEAST 2 PAGES (use page 0 and page 1, optionally page 2). Never compress everything onto one page.\n- Distribute content across distinct lesson sections: page 0 = warm-up + core practice, page 1 = extension / deeper practice / varied question types, optional page 2 = reflection / exit ticket / challenge.\n- Tag each block with a 0-based "page" field (0,1,2,…). Keep ~6-9 blocks per page max so each page is full but not crowded.\n- Output 12–20 total blocks covering the lesson's objectives, vocabulary, and key concepts in depth. Prioritize depth and variety over brevity.\n- Vary activity types across pages (mix multipleChoice, shortAnswer, fillBlank, matching, truefalse, wordBank, essay, table) — do not repeat the same format.\n- Where a visual would help learning (vocabulary cards, diagrams, picture-prompts), include {"type":"image", ...} blocks with a clear "imagePrompt".\n- GROUPING: Place each image block IMMEDIATELY adjacent to the question, prompt, or task it illustrates (right before or right after). Never separate an image from its associated content with unrelated blocks. Keep instruction → activity and wordBank → fillBlank pairs together on the same page.`;
 
-      const r = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method: "POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const text = await callAiRaw({
           model: "claude-sonnet-4-20250514", max_tokens: 5000,
           system: `You are an expert curriculum designer. The teacher has uploaded a lesson plan and wants a "${typeLabel}" worksheet for ${g.name} students that is directly aligned to the lesson's objectives, vocabulary, and content. The worksheet MUST span AT LEAST 2 PAGES — distribute content across warm-up, practice, extension, and reflection sections. Respond with VALID JSON ONLY — a single JSON array of 12–20 worksheet element objects with a 0-based "page" field on every element. No markdown, no preamble.
 
@@ -4755,11 +4678,7 @@ Allowed element shapes (use exactly these keys; add "page": 0|1|2 to every eleme
 
 Output ONLY the JSON array.`,
           messages: [{ role: "user", content: userPrompt }],
-        })
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message || "AI error");
-      const text = d.content?.map((b: any) => b.text || "").join("") || "[]";
+      }) || "[]";
       const clean = text.replace(/```json|```/g, "").trim();
       const start = clean.indexOf("["); const end = clean.lastIndexOf("]");
       const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : (start >= 0 ? clean.slice(start) : clean);
@@ -5524,9 +5443,7 @@ function EmailAssistant() {
       const cObj = STUDENT_COMPLEXITY.find(c => c.id === complexity);
       const readingLabel = showComplexity ? `${gObj?.label} · ${cObj?.label}` : (gObj?.label || "");
       const readingDesc  = showComplexity ? `${gObj?.desc} — complexity: ${cObj?.desc}` : (gObj?.desc || "");
-      const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method:"POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const text = await callAiRaw({
           model:"claude-sonnet-4-20250514", max_tokens: isGrant ? 2400 : 1200,
           system:`You are an expert writing assistant helping a teacher compose professional communication.
 Recipient: ${rLabel}. Tone: ${tObj?.label} — ${tObj?.desc}. Situation(s): ${situations.join(", ")}.
@@ -5559,14 +5476,7 @@ You may rewrite the SURROUNDING wording, sentence structure, tone, and vocabular
 Rules: maintain respect and professionalism; keep the teacher's core intent; add a subject line; clear structure; not overly wordy.
 Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
           messages:[{role:"user", content:`Polish this into a professional email:\n\n${draft}`}],
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data?.error) {
-        const msg = data?.error?.message || data?.error || `Request failed (${res.status})`;
-        throw new Error(typeof msg === "string" ? msg : "Request failed");
-      }
-      const text = data.content?.map(b => b.text||"").join("") || "";
+      }) || "";
       const cleaned = text.replace(/```json|```/g, "").trim();
       let parsed = null;
       try { parsed = JSON.parse(cleaned); }
@@ -5592,9 +5502,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     void trackToolUse("Professional Communication");
     setConcising(true); setConcise(null); setConciseError(null);
     try {
-      const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-        method:"POST", headers: await aiHeaders(),
-        body: JSON.stringify({
+      const text = await callAiRaw({
           model:"claude-sonnet-4-20250514", max_tokens: 1200,
           system:`You are an expert editor. Rewrite the professional message below to be MORE CONCISE.
 Rules:
@@ -5603,14 +5511,7 @@ Rules:
 - Do NOT add new information. Keep one subject line, one greeting, one closing.
 Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}`,
           messages:[{role:"user", content:`Make this more concise:\n\nSubject: ${result.subject}\n\n${result.email}`}],
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data?.error) {
-        const msg = data?.error?.message || data?.error || `Request failed (${res.status})`;
-        throw new Error(typeof msg === "string" ? msg : "Request failed");
-      }
-      const text = data.content?.map(b => b.text||"").join("") || "";
+      }) || "";
       const cleaned = text.replace(/```json|```/g, "").trim();
       let parsed = null;
       try { parsed = JSON.parse(cleaned); }
@@ -5984,53 +5885,13 @@ function LessonPlanGenerator({ onBuildWorksheets }: { onBuildWorksheets?: (paylo
   // ── Shared Claude call ─────────────────────────────────────────────
   // Network-resilient: retries once on transient "Failed to fetch" / abort,
   // uses an AbortController with a generous timeout, and surfaces clear errors.
-  const callClaude = async (system, userContent, maxTokens = 600) => {
-    const url = "https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy";
-    const payload = JSON.stringify({
+  const callClaude = (system, userContent, maxTokens = 600) =>
+    callAiRaw({
       model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: userContent }],
     });
-    const doFetch = async () => {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 120000); // 2 min
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: await aiHeaders({ Accept: "application/json" }),
-          body: payload,
-          signal: ctrl.signal,
-        });
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error(e?.error?.message || `API error ${res.status}`);
-        }
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message || "AI error");
-        return data.content?.map(b => b.text || "").join("") || "";
-      } finally {
-        clearTimeout(timer);
-      }
-    };
-    try {
-      return await doFetch();
-    } catch (e) {
-      const msg = String(e?.message || e);
-      const transient = /Failed to fetch|NetworkError|aborted|timeout|ECONN|fetch failed/i.test(msg);
-      if (!transient) throw e;
-      // brief backoff then one retry
-      await new Promise(r => setTimeout(r, 800));
-      try {
-        return await doFetch();
-      } catch (e2) {
-        throw new Error(
-          "Network request to the AI service failed. Please check your internet connection and try again. " +
-          `(${String(e2?.message || e2)})`
-        );
-      }
-    }
-  };
 
   // ── AI Idea Helper ─────────────────────────────────────────────────
   const runAiHelper = async () => {
@@ -6673,15 +6534,8 @@ ${result.teacherNotes?`<h2>Teacher Notes</h2><div class="notes">${safeHtml(resul
         const promptBase = sl.imagePrompt || `${sl.title || ""} — ${(sl.bullets||[]).slice(0,2).join("; ")}`;
         const fullPrompt = `${promptBase}. Educational classroom illustration that visually represents this slide's topic. No text in image.`;
         try {
-          const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/generate-image", {
-            method: "POST",
-            headers: await aiHeaders(),
-            body: JSON.stringify({ prompt: fullPrompt, style: "clipart" }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.url) sl.imageUrl = data.url;
-          }
+          const url = await generateImage({ prompt: fullPrompt, style: "clipart" });
+          if (url) sl.imageUrl = url;
         } catch { /* skip image on failure */ }
       }
     };
@@ -7882,25 +7736,13 @@ function DanielsonReview() {
     setLoading(false);
   };
 
-  const callClaude = async (system, userContent, maxTokens = 3000) => {
-    const res = await fetch("https://iaklmdnlwjgguhkixvio.supabase.co/functions/v1/anthropic-proxy", {
-      method: "POST",
-      headers: await aiHeaders(),
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: maxTokens,
-        system,
-        messages: [{ role: "user", content: userContent }],
-      }),
+  const callClaude = (system, userContent, maxTokens = 3000) =>
+    callAiRaw({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userContent }],
     });
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      throw new Error(e?.error?.message || `API error ${res.status}`);
-    }
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data.content?.map(b => b.text || "").join("") || "";
-  };
 
   const analyze = async () => {
     if (!extractedText) { setError("Please upload a lesson plan first."); return; }
