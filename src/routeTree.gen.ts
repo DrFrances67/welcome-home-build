@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SpelltestRouteImport } from './routes/spelltest'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -29,11 +28,6 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
-const SpelltestRoute = SpelltestRouteImport.update({
-  id: '/spelltest',
-  path: '/spelltest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -138,7 +132,6 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/spelltest': typeof SpelltestRoute
   '/admin/resends': typeof AdminResendsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
@@ -159,7 +152,6 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/spelltest': typeof SpelltestRoute
   '/admin/resends': typeof AdminResendsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
@@ -181,7 +173,6 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/spelltest': typeof SpelltestRoute
   '/admin/resends': typeof AdminResendsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
@@ -204,7 +195,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/sitemap.xml'
-    | '/spelltest'
     | '/admin/resends'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
@@ -225,7 +215,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/sitemap.xml'
-    | '/spelltest'
     | '/admin/resends'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
@@ -246,7 +235,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/sitemap.xml'
-    | '/spelltest'
     | '/admin/resends'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
@@ -268,7 +256,6 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  SpelltestRoute: typeof SpelltestRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicContactMessageRoute: typeof ApiPublicContactMessageRoute
   ApiPublicNotifyAdminSignupRoute: typeof ApiPublicNotifyAdminSignupRoute
@@ -282,13 +269,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/spelltest': {
-      id: '/spelltest'
-      path: '/spelltest'
-      fullPath: '/spelltest'
-      preLoaderRoute: typeof SpelltestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -437,7 +417,6 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  SpelltestRoute: SpelltestRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicContactMessageRoute: ApiPublicContactMessageRoute,
   ApiPublicNotifyAdminSignupRoute: ApiPublicNotifyAdminSignupRoute,
@@ -451,3 +430,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
