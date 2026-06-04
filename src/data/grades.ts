@@ -2,14 +2,14 @@
 export interface Band { color: string; light: string; emoji: string; label: string; }
 export interface Grade { id: string; name: string; short: string; band: string; fontSize: number; lineH: number; }
 
-export const BANDS = {
+export const BANDS: Record<string, Band> = {
   early:      { color:"#6D28D9", light:"#F5F3FF", emoji:"🌱", label:"Early Childhood" },
   elementary: { color:"#B45309", light:"#FFFBEB", emoji:"⭐", label:"Elementary"       },
   middle:     { color:"#0369A1", light:"#F0F9FF", emoji:"🏫", label:"Middle School"    },
   high:       { color:"#1E3A5F", light:"#EFF6FF", emoji:"🎓", label:"High School"      },
 };
 
-export const GRADES = [
+export const GRADES: Grade[] = [
   { id:"pk", name:"Pre-K",    short:"PK", band:"early",      fontSize:14, lineH:32 },
   { id:"k",  name:"Kinder.",  short:"K",  band:"early",      fontSize:14, lineH:32 },
   { id:"1",  name:"Grade 1",  short:"1",  band:"early",      fontSize:14, lineH:32 },
