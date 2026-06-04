@@ -11,112 +11,14 @@ import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 import { WorksheetBuilder } from "./teacher/WorksheetBuilder";
 import { LessonPlanGenerator } from "./teacher/LessonPlanGenerator";
+import { EMAIL_RECIPIENTS, EMAIL_TONES, EMAIL_SITUATIONS, STUDENT_GRADE_LEVELS, STUDENT_COMPLEXITY, SITUATION_MAX } from "@/data/email";
+import { validateSituations } from "@/lib/email-utils";
+import { DANIELSON_COMPONENTS, DANIELSON_RUBRIC_REFERENCE } from "@/data/danielson";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // EMAIL ASSISTANT TOOL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const EMAIL_RECIPIENTS = [
-  { id:"administrator", label:"Administrator",    icon:"🏫", desc:"Principal, VP, district staff" },
-  { id:"colleague",     label:"Colleague",        icon:"👩‍🏫", desc:"Fellow teachers, support staff" },
-  { id:"parent",        label:"Parent / Guardian", icon:"👨‍👩‍👧", desc:"Families of students" },
-  { id:"student",       label:"Student",          icon:"🎒", desc:"Direct messages to students — always student-friendly language" },
-  { id:"grant",         label:"Grant",            icon:"💰", desc:"Foundations, donors, funders for classroom resources" },
-];
-const EMAIL_TONES = [
-  { id:"formal",           label:"Formal",             desc:"Structured & highly professional" },
-  { id:"warm-professional",label:"Warm & Professional", desc:"Friendly but polished" },
-  { id:"direct",           label:"Direct & Clear",      desc:"Concise and to the point" },
-  { id:"academic",         label:"Academic",            desc:"Scholarly, precise & evidence-informed" },
-];
-const EMAIL_SITUATIONS = [
-  "Reporting a concern","Sharing good news","Requesting a meeting",
-  "Following up","Responding to a complaint","Providing an update",
-  "Asking for help / resources","Scheduling / logistics",
-  "Request for grades","Request for tutoring","Classwork / homework support",
-  "Grant writing","Other",
-];
-const STUDENT_GRADE_LEVELS = [
-  { id:"k-2",  label:"K–2",        desc:"Ages 5–8 · very simple words, very short sentences", tier:"elementary" },
-  { id:"3-5",  label:"Grades 3–5", desc:"Upper elementary · clear & friendly",                tier:"elementary" },
-  { id:"6-8",  label:"Grades 6–8", desc:"Middle school · everyday vocabulary",                tier:"secondary" },
-  { id:"9-12", label:"Grades 9–12",desc:"High school · clear but more mature",                tier:"secondary" },
-];
-const STUDENT_COMPLEXITY = [
-  { id:"simple",   label:"Simple",   desc:"Plain language, shorter sentences" },
-  { id:"medium",   label:"Medium",   desc:"Balanced — clear with some richer vocabulary" },
-  { id:"advanced", label:"Advanced", desc:"Stronger vocabulary while still student-friendly" },
-];
-
-// Situation compatibility rules. Each rule flags a combination that tends to
-// produce a confused or contradictory email and offers a cleaner alternative.
-const SITUATION_MAX = 3;
-const SITUATION_CONFLICTS = [
-  {
-    when: ["Sharing good news", "Reporting a concern"],
-    reason: "Good news and a concern in one email muddles the message — recipients often miss the concern.",
-    suggest: ["Reporting a concern"],
-  },
-  {
-    when: ["Sharing good news", "Responding to a complaint"],
-    reason: "Celebratory tone clashes with addressing a complaint.",
-    suggest: ["Responding to a complaint"],
-  },
-  {
-    when: ["Responding to a complaint", "Grant writing"],
-    reason: "A grant request should never be paired with a complaint response — they need different audiences and tones.",
-    suggest: ["Grant writing"],
-  },
-  {
-    when: ["Grant writing", "Reporting a concern"],
-    reason: "Grant asks should stay focused on funding impact, not classroom concerns.",
-    suggest: ["Grant writing"],
-  },
-  {
-    when: ["Grant writing", "Scheduling / logistics"],
-    reason: "Logistics distract from a grant pitch — send scheduling separately.",
-    suggest: ["Grant writing"],
-  },
-  {
-    when: ["Request for grades", "Request for tutoring"],
-    // not a conflict — these pair well; example of an explicitly allowed combo
-    allowed: true,
-  },
-  {
-    when: ["Other", "Other"], // placeholder so "Other" with anything else is gently flagged
-    soft: true,
-  },
-];
-
-function validateSituations(selected) {
-  const issues = [];
-  if (selected.length > SITUATION_MAX) {
-    issues.push({
-      level: "error",
-      message: `You've selected ${selected.length} situations. Pick ${SITUATION_MAX} or fewer so the AI can address each one clearly.`,
-      suggestion: selected.slice(0, SITUATION_MAX),
-    });
-  }
-  if (selected.includes("Other") && selected.length > 1) {
-    issues.push({
-      level: "warning",
-      message: `"Other" is a catch-all — pairing it with specific situations confuses the AI's focus.`,
-      suggestion: selected.filter(s => s !== "Other"),
-    });
-  }
-  for (const rule of SITUATION_CONFLICTS) {
-    if (rule.allowed || rule.soft) continue;
-    const [a, b] = rule.when;
-    if (selected.includes(a) && selected.includes(b)) {
-      issues.push({
-        level: "error",
-        message: `"${a}" + "${b}" — ${rule.reason}`,
-        suggestion: rule.suggest,
-      });
-    }
-  }
-  return issues;
-}
 
 function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
@@ -566,69 +468,6 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
 // DANIELSON REVIEW — Score lesson plans against the Danielson rubric
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const DANIELSON_COMPONENTS = [
-  { id: "1a", domain: "1. Planning & Preparation",   title: "Demonstrating Knowledge of Content and Pedagogy" },
-  { id: "1e", domain: "1. Planning & Preparation",   title: "Designing Coherent Instruction" },
-  { id: "2a", domain: "2. Classroom Environment",    title: "Creating an Environment of Respect and Rapport" },
-  { id: "2d", domain: "2. Classroom Environment",    title: "Managing Student Behavior" },
-  { id: "3b", domain: "3. Instruction",              title: "Using Questioning and Discussion Techniques" },
-  { id: "3c", domain: "3. Instruction",              title: "Engaging Students in Learning" },
-  { id: "3d", domain: "3. Instruction",              title: "Using Assessment in Instruction" },
-  { id: "4e", domain: "4. Professional Responsibilities", title: "Growing and Developing Professionally" },
-];
-
-const DANIELSON_RUBRIC_REFERENCE = `
-DANIELSON 2014-15 RUBRIC — Use this exact rubric to score lesson plans. Score each component on a 1-4 scale:
-1 = Ineffective | 2 = Developing | 3 = Effective | 4 = Highly Effective
-
-COMPONENT 1a — Demonstrating Knowledge of Content and Pedagogy
-- Ineffective: Content errors; little understanding of prerequisite knowledge; limited pedagogical approaches.
-- Developing: Familiar with concepts but lacks awareness of how they relate; rudimentary understanding; limited strategies.
-- Effective: Solid knowledge; accurate prerequisite relationships; wide range of effective pedagogical approaches.
-- Highly Effective: Extensive knowledge with intra/inter-disciplinary connections; anticipates student misconceptions; reflects current pedagogy.
-
-COMPONENT 1e — Designing Coherent Instruction
-- Ineffective: Activities poorly aligned to outcomes; no organized progression; unrealistic time allocations; groups offer no variety.
-- Developing: Some alignment with moderate cognitive challenge; no differentiation; uneven structure; partial group support.
-- Effective: Most activities aligned; organized progression; reasonable time allocations; significant cognitive challenge with some differentiation; varied groups.
-- Highly Effective: Coherent sequence; high-level cognitive activity; differentiated for individual learners; varied groups with student choice.
-
-COMPONENT 2a — Creating an Environment of Respect and Rapport
-- Ineffective: Disrespectful interactions; teacher does not respond to disrespect; sarcasm/put-downs.
-- Developing: Generally appropriate but inconsistent interactions; superficial knowledge of students; attempts to respond to disrespect with mixed results.
-- Effective: Polite/respectful interactions reflecting warmth and caring; demonstrates knowledge/interest in students' lives; students respect each other.
-- Highly Effective: Highly respectful interactions; teacher demonstrates passion for subject and students; students respectfully ensure peers feel welcome; turn to each other for support.
-
-COMPONENT 2d — Managing Student Behavior
-- Ineffective: No standards of conduct; teacher unaware of behavior or response is repressive/disrespectful.
-- Developing: Attempts to maintain conduct but inconsistent; teacher tries to prevent misbehavior with uneven success.
-- Effective: Standards established and clear to students; teacher monitors and responds to misbehavior appropriately and respectfully.
-- Highly Effective: Standards established and student-monitored; teacher's monitoring is subtle/preventive; responses are sensitive to individual student needs.
-
-COMPONENT 3b — Using Questioning and Discussion Techniques
-- Ineffective: Low-level/single correct response questions; few students participate.
-- Developing: Mix of questions; some invite thoughtful response but with uneven results; teacher attempts true discussion with limited success.
-- Effective: Most questions are high-level and open-ended; adequate response time; teacher facilitates true discussion; most students participate.
-- Highly Effective: Questions reflect high expectations and cultural/developmental knowledge; students formulate questions and ensure all voices are heard.
-
-COMPONENT 3c — Engaging Students in Learning
-- Ineffective: Activities/materials inappropriate; passive/rote intellectual engagement; poor pacing/grouping.
-- Developing: Partial engagement; some activities suitable; uneven pacing; some students intellectually engaged.
-- Effective: Activities/materials require thinking and align to outcomes; suitable pacing; most students intellectually engaged.
-- Highly Effective: Virtually all students highly engaged; students take initiative to modify activities/materials; suitable pacing with reflection; students contribute to materials/discussion.
-
-COMPONENT 3d — Using Assessment in Instruction
-- Ineffective: Assessment not used; no feedback; no monitoring; no use of formative assessment.
-- Developing: Assessment used sporadically; feedback global/not specific; teacher attempts monitoring but with mixed results.
-- Effective: Assessment regularly used to monitor progress; feedback specific/timely; teacher elicits evidence of understanding; students aware of criteria.
-- Highly Effective: Assessment used in sophisticated ways; high-quality feedback from teacher AND students; students self-assess and monitor; instructional adjustments are precise.
-
-COMPONENT 4e — Growing and Developing Professionally
-- Ineffective: No evidence of professional development; resists feedback; no contribution to profession.
-- Developing: Engages minimally in PD when required; accepts feedback with reluctance; minimal contribution.
-- Effective: Seeks PD opportunities; welcomes feedback; participates in school events/projects.
-- Highly Effective: Seeks rich PD opportunities; initiates feedback; takes leadership role with colleagues; contributes to profession through publications/presentations.
-`.trim();
 
 function DanielsonReview() {
   const BRAND = "#CF27F5";
