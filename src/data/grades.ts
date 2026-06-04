@@ -26,7 +26,7 @@ export const GRADES = [
   { id:"12", name:"Grade 12", short:"12", band:"high",       fontSize:14, lineH:32 },
 ];
 
-export const gInfo = (id) => {
+export const gInfo = (id: string) => {
   const g = GRADES.find(x => x.id === id) || GRADES[1];
   return { ...g, ...BANDS[g.band] };
 };
