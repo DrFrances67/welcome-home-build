@@ -246,12 +246,12 @@ export function AdminDashboard() {
                   try {
                     const res = await endAll();
                     setEndMessage(`All sessions terminated.${res?.ended != null ? ` (${res.ended})` : ""}`);
-                    const { data } = await supabase
-                      .from("user_sessions")
-                      .select("*")
-                      .order("started_at", { ascending: false })
-                      .limit(500);
-                    setSessions((data as SessionRow[]) ?? []);
+                    const refreshed = await fetchSessions();
+                    queryClient.setQueryData(
+                      ["admin-dashboard"],
+                      (prev: typeof data | undefined) =>
+                        prev ? { ...prev, sessions: refreshed } : prev
+                    );
                   } catch (e) {
                     setEndMessage(`Failed: ${(e as Error).message}`);
                   } finally {
