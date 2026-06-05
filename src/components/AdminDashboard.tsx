@@ -1,100 +1,56 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { endAllActiveSessions } from "@/lib/admin-sessions.functions";
+import {
+  getAdminDashboardData,
+  getAdminSessions,
+  getAdminSessionDetails,
+  type ProfileRow,
+  type SessionRow,
+  type UsageRow,
+  type ToolUsageRow,
+  type AiUsageRow,
+} from "@/lib/admin-data.functions";
 import { isBillableAction } from "@/lib/billable-actions";
-
-interface ProfileRow {
-  id: string;
-  full_name: string;
-  username: string;
-  email: string;
-  created_at: string;
-}
-interface SessionRow {
-  id: string;
-  user_id: string;
-  started_at: string;
-  ended_at: string | null;
-}
-interface UsageRow {
-  id: string;
-  user_id: string;
-  session_id: string | null;
-  feature: string;
-  action: string | null;
-  duration_ms: number | null;
-  created_at: string;
-}
-interface ToolUsageRow {
-  id: string;
-  user_id: string;
-  session_id: string | null;
-  tool_name: string;
-  used_at: string;
-}
-interface AiUsageRow {
-  id: string;
-  user_id: string;
-  session_id: string | null;
-  tool_name: string | null;
-  model: string;
-  input_tokens: number;
-  output_tokens: number;
-  cost_usd: number;
-  endpoint: string | null;
-  created_at: string;
-}
 
 export function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
-  const [users, setUsers] = useState<ProfileRow[]>([]);
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [usage, setUsage] = useState<UsageRow[]>([]);
-  const [toolUsage, setToolUsage] = useState<ToolUsageRow[]>([]);
-  const [aiUsage, setAiUsage] = useState<AiUsageRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const fetchDashboard = useServerFn(getAdminDashboardData);
+  const fetchSessions = useServerFn(getAdminSessions);
+  const fetchSessionDetails = useServerFn(getAdminSessionDetails);
+  const endAll = useServerFn(endAllActiveSessions);
+
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["admin-dashboard"],
+    queryFn: () => fetchDashboard(),
+    enabled: isAdmin,
+  });
+
+  const users: ProfileRow[] = data?.users ?? [];
+  const sessions: SessionRow[] = data?.sessions ?? [];
+  const usage: UsageRow[] = data?.usage ?? [];
+  const toolUsage: ToolUsageRow[] = data?.toolUsage ?? [];
+  const aiUsage: AiUsageRow[] = data?.aiUsage ?? [];
+
   const [endingSessions, setEndingSessions] = useState(false);
   const [endMessage, setEndMessage] = useState<string | null>(null);
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detailRows, setDetailRows] = useState<UsageRow[] | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [sessionSort, setSessionSort] = useState<{ key: "tool" | "credits"; dir: "asc" | "desc" } | null>(null);
-  const endAll = useServerFn(endAllActiveSessions);
 
   async function openSessionDetails(sessionId: string) {
     setDetailSessionId(sessionId);
     setDetailRows(null);
     setDetailLoading(true);
-    const { data } = await supabase
-      .from("feature_usage")
-      .select("*")
-      .eq("session_id", sessionId)
-      .order("created_at", { ascending: true });
-    setDetailRows((data as UsageRow[]) ?? []);
+    const rows = await fetchSessionDetails({ data: { sessionId } });
+    setDetailRows(rows ?? []);
     setDetailLoading(false);
   }
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    (async () => {
-      const [u, s, f, t, ai] = await Promise.all([
-        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("user_sessions").select("*").order("started_at", { ascending: false }).limit(500),
-        supabase.from("feature_usage").select("*").order("created_at", { ascending: false }).limit(500),
-        supabase.from("tool_usage").select("*").order("used_at", { ascending: false }).limit(2000),
-        supabase.from("ai_usage_log").select("*").order("created_at", { ascending: false }).limit(2000),
-      ]);
-      setUsers((u.data as ProfileRow[]) ?? []);
-      setSessions((s.data as SessionRow[]) ?? []);
-      setUsage((f.data as UsageRow[]) ?? []);
-      setToolUsage((t.data as ToolUsageRow[]) ?? []);
-      setAiUsage((ai.data as AiUsageRow[]) ?? []);
-      setLoading(false);
-    })();
-  }, [isAdmin]);
 
   if (authLoading) return <div style={pageStyle}>Loading…</div>;
   if (!isAdmin) return <div style={pageStyle}>Access denied. Admins only.</div>;
@@ -290,12 +246,12 @@ export function AdminDashboard() {
                   try {
                     const res = await endAll();
                     setEndMessage(`All sessions terminated.${res?.ended != null ? ` (${res.ended})` : ""}`);
-                    const { data } = await supabase
-                      .from("user_sessions")
-                      .select("*")
-                      .order("started_at", { ascending: false })
-                      .limit(500);
-                    setSessions((data as SessionRow[]) ?? []);
+                    const refreshed = await fetchSessions();
+                    queryClient.setQueryData(
+                      ["admin-dashboard"],
+                      (prev: typeof data | undefined) =>
+                        prev ? { ...prev, sessions: refreshed } : prev
+                    );
                   } catch (e) {
                     setEndMessage(`Failed: ${(e as Error).message}`);
                   } finally {
