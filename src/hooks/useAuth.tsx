@@ -50,7 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (sessionOnly) {
         sessionStorage.setItem("tst-session-alive", "1");
       }
-    } catch { /* storage unavailable */ }
+    } catch {
+      /* storage unavailable */
+    }
 
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       setSession(s);
@@ -82,7 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, isAdmin, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider
+      value={{ user, session, profile, isAdmin, loading, signOut, refreshProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );

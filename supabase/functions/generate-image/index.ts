@@ -48,41 +48,40 @@ serve(async (req) => {
     // credits and must not be callable anonymously.
     const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const userId = await getUserIdFromAuth(authHeader);
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const toolName = req.headers.get("x-tool-name");
     const sessionId = req.headers.get("x-session-id");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY is not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const body = await req.json();
     const { prompt, style, model } = body ?? {};
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Missing 'prompt' string" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Missing 'prompt' string" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const chosenModel = typeof model === "string" && model.trim()
-      ? model
-      : "google/gemini-2.5-flash-image";
+    const chosenModel =
+      typeof model === "string" && model.trim() ? model : "google/gemini-2.5-flash-image";
 
     const upstream = await fetch(GATEWAY_URL, {
       method: "POST",
@@ -92,9 +91,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: chosenModel,
-        messages: [
-          { role: "user", content: buildPrompt(prompt, style) },
-        ],
+        messages: [{ role: "user", content: buildPrompt(prompt, style) }],
         modalities: ["image", "text"],
       }),
     });
@@ -110,19 +107,20 @@ serve(async (req) => {
       }
       if (upstream.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Add funds in Lovable Workspace settings." }),
+          JSON.stringify({
+            error: "AI credits exhausted. Add funds in Lovable Workspace settings.",
+          }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      return new Response(
-        JSON.stringify({ error: `Image gateway error (${upstream.status})` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: `Image gateway error (${upstream.status})` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await upstream.json();
-    const url: string | undefined =
-      data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const url: string | undefined = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!url) {
       // Check for embedded errors in the response (model can return 429/402 inside the SSE/JSON payload)
@@ -134,13 +132,17 @@ serve(async (req) => {
 
       if (embeddedCode === 429 || embeddedType === "rate_limit_exceeded") {
         return new Response(
-          JSON.stringify({ error: "Image generation rate limit reached. Please wait a few seconds and try again." }),
+          JSON.stringify({
+            error: "Image generation rate limit reached. Please wait a few seconds and try again.",
+          }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
       if (embeddedCode === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Add funds in Lovable Workspace settings." }),
+          JSON.stringify({
+            error: "AI credits exhausted. Add funds in Lovable Workspace settings.",
+          }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -161,10 +163,10 @@ serve(async (req) => {
       metadata: { style: style ?? null },
     });
 
-    return new Response(
-      JSON.stringify({ url }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ url }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("generate-image error:", e);
     return new Response(

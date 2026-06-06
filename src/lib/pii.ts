@@ -11,16 +11,54 @@ export interface PiiHit {
 
 // Capitalized two-word phrases that look like a name but are common content.
 const COMMON_NON_NAMES = new Set([
-  "United States", "New York", "Los Angeles", "San Francisco", "North America",
-  "South America", "Central America", "Word Bank", "Multiple Choice",
-  "Short Answer", "Fill In", "True False", "Lesson Plan", "Common Core",
-  "Pre Kindergarten", "Grade One", "Grade Two", "Grade Three", "Grade Four",
-  "Grade Five", "Grade Six", "Grade Seven", "Grade Eight", "Grade Nine",
-  "Grade Ten", "Great Britain", "United Kingdom", "Middle School", "High School",
-  "Elementary School", "Civil War", "World War", "Solar System", "Periodic Table",
-  "Industrial Revolution", "American Revolution", "Black History", "New Jersey",
-  "New Hampshire", "New Mexico", "New England", "South Korea", "North Korea",
-  "Saudi Arabia", "Costa Rica", "Hong Kong", "Cape Town", "Standard English",
+  "United States",
+  "New York",
+  "Los Angeles",
+  "San Francisco",
+  "North America",
+  "South America",
+  "Central America",
+  "Word Bank",
+  "Multiple Choice",
+  "Short Answer",
+  "Fill In",
+  "True False",
+  "Lesson Plan",
+  "Common Core",
+  "Pre Kindergarten",
+  "Grade One",
+  "Grade Two",
+  "Grade Three",
+  "Grade Four",
+  "Grade Five",
+  "Grade Six",
+  "Grade Seven",
+  "Grade Eight",
+  "Grade Nine",
+  "Grade Ten",
+  "Great Britain",
+  "United Kingdom",
+  "Middle School",
+  "High School",
+  "Elementary School",
+  "Civil War",
+  "World War",
+  "Solar System",
+  "Periodic Table",
+  "Industrial Revolution",
+  "American Revolution",
+  "Black History",
+  "New Jersey",
+  "New Hampshire",
+  "New Mexico",
+  "New England",
+  "South Korea",
+  "North Korea",
+  "Saudi Arabia",
+  "Costa Rica",
+  "Hong Kong",
+  "Cape Town",
+  "Standard English",
 ]);
 
 export function detectPII(text: string): PiiHit[] {
@@ -39,7 +77,8 @@ export function detectPII(text: string): PiiHit[] {
   }
 
   // ── Student IDs ──────────────────────────────────────────────────────
-  const idLabelRe = /\b(?:student\s*id|id\s*number|id\s*#|student\s*number)[:\s#]*([A-Z0-9-]{4,})\b/gi;
+  const idLabelRe =
+    /\b(?:student\s*id|id\s*number|id\s*#|student\s*number)[:\s#]*([A-Z0-9-]{4,})\b/gi;
   while ((m = idLabelRe.exec(text))) hits.push({ type: "id", match: m[0].trim() });
 
   // Bare 6+ digit numbers are likely IDs (years like 2024 stay safe at 4 digits).

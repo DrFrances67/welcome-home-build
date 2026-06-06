@@ -3,9 +3,9 @@
 // timer pings, etc.) is non-billable and excluded from the credit count.
 export const BILLABLE_ACTIONS = new Set<string>([
   "generate", // Lesson Plan Generator — AI lesson generation
-  "analyze",  // Danielson Review — AI rubric analysis
-  "create",   // Worksheet Builder — AI worksheet creation
-  "send",     // Professional Communication — AI message generation
+  "analyze", // Danielson Review — AI rubric analysis
+  "create", // Worksheet Builder — AI worksheet creation
+  "send", // Professional Communication — AI message generation
 ]);
 
 export function isBillableAction(action: string | null | undefined): boolean {

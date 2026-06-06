@@ -16,9 +16,7 @@ import { getActiveTool, getCurrentSessionId } from "@/lib/tracking";
 const AI_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 /** Build authenticated headers for an AI edge-function call. */
-export async function aiHeaders(
-  extra?: Record<string, string>,
-): Promise<Record<string, string>> {
+export async function aiHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const tool = getActiveTool();
@@ -68,7 +66,7 @@ export async function callAiRaw(
         signal: ctrl.signal,
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({} as any));
+        const e = await res.json().catch(() => ({}) as any);
         throw new Error(e?.error?.message || e?.error || `API error ${res.status}`);
       }
       const data = await res.json();
@@ -125,7 +123,7 @@ export async function generateImage(opts: GenerateImageOptions): Promise<string>
       continue;
     }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({} as any));
+      const err = await res.json().catch(() => ({}) as any);
       throw new Error(err?.error || `API error ${res.status}`);
     }
     const data = await res.json();

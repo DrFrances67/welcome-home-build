@@ -28,7 +28,7 @@ describe("shouldShowScrollTop", () => {
         isCoarsePointer: false,
         canvasScrollTop: 9999,
         windowScrollTop: 9999,
-      })
+      }),
     ).toBe(false);
   });
 
@@ -39,7 +39,7 @@ describe("shouldShowScrollTop", () => {
           ...baseInput,
           activeTool: tool,
           canvasScrollTop: 9999,
-        })
+        }),
       ).toBe(false);
     }
   });
@@ -49,33 +49,21 @@ describe("shouldShowScrollTop", () => {
   });
 
   it("stays hidden just at and below the threshold", () => {
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 280 })
-    ).toBe(false);
-    expect(
-      shouldShowScrollTop({ ...baseInput, windowScrollTop: 280 })
-    ).toBe(false);
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 100, windowScrollTop: 180 })
-    ).toBe(false);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 280 })).toBe(false);
+    expect(shouldShowScrollTop({ ...baseInput, windowScrollTop: 280 })).toBe(false);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 100, windowScrollTop: 180 })).toBe(
+      false,
+    );
   });
 
   it("becomes visible when the worksheet canvas scrolls past the threshold", () => {
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 281 })
-    ).toBe(true);
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 1000 })
-    ).toBe(true);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 281 })).toBe(true);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 1000 })).toBe(true);
   });
 
   it("becomes visible when the page body scrolls past the threshold (mobile stacked layout)", () => {
-    expect(
-      shouldShowScrollTop({ ...baseInput, windowScrollTop: 320 })
-    ).toBe(true);
-    expect(
-      shouldShowScrollTop({ ...baseInput, windowScrollTop: 5000 })
-    ).toBe(true);
+    expect(shouldShowScrollTop({ ...baseInput, windowScrollTop: 320 })).toBe(true);
+    expect(shouldShowScrollTop({ ...baseInput, windowScrollTop: 5000 })).toBe(true);
   });
 
   it("uses the larger of the two scroll positions", () => {
@@ -84,38 +72,28 @@ describe("shouldShowScrollTop", () => {
         ...baseInput,
         canvasScrollTop: 50,
         windowScrollTop: 500,
-      })
+      }),
     ).toBe(true);
     expect(
       shouldShowScrollTop({
         ...baseInput,
         canvasScrollTop: 500,
         windowScrollTop: 50,
-      })
+      }),
     ).toBe(true);
   });
 
   it("hides again after scrolling back near the top", () => {
     // Show first
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 600 })
-    ).toBe(true);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 600 })).toBe(true);
     // Then scroll back
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 0 })
-    ).toBe(false);
-    expect(
-      shouldShowScrollTop({ ...baseInput, windowScrollTop: 10 })
-    ).toBe(false);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 0 })).toBe(false);
+    expect(shouldShowScrollTop({ ...baseInput, windowScrollTop: 10 })).toBe(false);
   });
 
   it("respects a custom threshold override", () => {
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 100, threshold: 50 })
-    ).toBe(true);
-    expect(
-      shouldShowScrollTop({ ...baseInput, canvasScrollTop: 100, threshold: 500 })
-    ).toBe(false);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 100, threshold: 50 })).toBe(true);
+    expect(shouldShowScrollTop({ ...baseInput, canvasScrollTop: 100, threshold: 500 })).toBe(false);
   });
 
   it("treats negative or undefined-like scroll values as 0", () => {
@@ -124,7 +102,7 @@ describe("shouldShowScrollTop", () => {
         ...baseInput,
         canvasScrollTop: 0,
         windowScrollTop: 0,
-      })
+      }),
     ).toBe(false);
   });
 });
@@ -203,13 +181,20 @@ describe("scroll-to-top show/hide sequence (mobile)", () => {
       });
 
     expect(decide()).toBe(false); // start at top
-    canvasScrollTop = 100; expect(decide()).toBe(false);
-    canvasScrollTop = 280; expect(decide()).toBe(false); // exactly threshold
-    canvasScrollTop = 281; expect(decide()).toBe(true);  // crosses threshold
-    canvasScrollTop = 1500; expect(decide()).toBe(true); // deep scroll
-    canvasScrollTop = 300; expect(decide()).toBe(true);  // still scrolled
-    canvasScrollTop = 200; expect(decide()).toBe(false); // user scrolled back up
-    canvasScrollTop = 0;   expect(decide()).toBe(false); // back to top
+    canvasScrollTop = 100;
+    expect(decide()).toBe(false);
+    canvasScrollTop = 280;
+    expect(decide()).toBe(false); // exactly threshold
+    canvasScrollTop = 281;
+    expect(decide()).toBe(true); // crosses threshold
+    canvasScrollTop = 1500;
+    expect(decide()).toBe(true); // deep scroll
+    canvasScrollTop = 300;
+    expect(decide()).toBe(true); // still scrolled
+    canvasScrollTop = 200;
+    expect(decide()).toBe(false); // user scrolled back up
+    canvasScrollTop = 0;
+    expect(decide()).toBe(false); // back to top
   });
 
   it("transitions hidden → visible → hidden as the page body scrolls (stacked phone layout)", () => {
@@ -223,8 +208,10 @@ describe("scroll-to-top show/hide sequence (mobile)", () => {
       });
 
     expect(decide()).toBe(false);
-    windowScrollTop = 290; expect(decide()).toBe(true);
-    windowScrollTop = 50;  expect(decide()).toBe(false);
+    windowScrollTop = 290;
+    expect(decide()).toBe(true);
+    windowScrollTop = 50;
+    expect(decide()).toBe(false);
   });
 
   it("hides immediately when switching away from the worksheet tool", () => {
@@ -234,7 +221,7 @@ describe("scroll-to-top show/hide sequence (mobile)", () => {
         isCoarsePointer: true,
         canvasScrollTop: 1000,
         windowScrollTop: 0,
-      })
+      }),
     ).toBe(true);
 
     expect(
@@ -243,7 +230,7 @@ describe("scroll-to-top show/hide sequence (mobile)", () => {
         isCoarsePointer: true,
         canvasScrollTop: 1000,
         windowScrollTop: 0,
-      })
+      }),
     ).toBe(false);
   });
 });

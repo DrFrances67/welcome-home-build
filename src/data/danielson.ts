@@ -1,14 +1,26 @@
 // Danielson 2014-15 Framework reference data for the lesson-plan review tool.
 
 export const DANIELSON_COMPONENTS = [
-  { id: "1a", domain: "1. Planning & Preparation",   title: "Demonstrating Knowledge of Content and Pedagogy" },
-  { id: "1e", domain: "1. Planning & Preparation",   title: "Designing Coherent Instruction" },
-  { id: "2a", domain: "2. Classroom Environment",    title: "Creating an Environment of Respect and Rapport" },
-  { id: "2d", domain: "2. Classroom Environment",    title: "Managing Student Behavior" },
-  { id: "3b", domain: "3. Instruction",              title: "Using Questioning and Discussion Techniques" },
-  { id: "3c", domain: "3. Instruction",              title: "Engaging Students in Learning" },
-  { id: "3d", domain: "3. Instruction",              title: "Using Assessment in Instruction" },
-  { id: "4e", domain: "4. Professional Responsibilities", title: "Growing and Developing Professionally" },
+  {
+    id: "1a",
+    domain: "1. Planning & Preparation",
+    title: "Demonstrating Knowledge of Content and Pedagogy",
+  },
+  { id: "1e", domain: "1. Planning & Preparation", title: "Designing Coherent Instruction" },
+  {
+    id: "2a",
+    domain: "2. Classroom Environment",
+    title: "Creating an Environment of Respect and Rapport",
+  },
+  { id: "2d", domain: "2. Classroom Environment", title: "Managing Student Behavior" },
+  { id: "3b", domain: "3. Instruction", title: "Using Questioning and Discussion Techniques" },
+  { id: "3c", domain: "3. Instruction", title: "Engaging Students in Learning" },
+  { id: "3d", domain: "3. Instruction", title: "Using Assessment in Instruction" },
+  {
+    id: "4e",
+    domain: "4. Professional Responsibilities",
+    title: "Growing and Developing Professionally",
+  },
 ];
 
 export const DANIELSON_RUBRIC_REFERENCE = `

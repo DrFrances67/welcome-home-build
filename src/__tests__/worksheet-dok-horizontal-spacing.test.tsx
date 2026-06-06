@@ -19,9 +19,14 @@ function setViewport(width: number, height: number) {
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   Object.defineProperty(window, "innerHeight", { value: height, configurable: true });
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: false, media: query, onchange: null,
-    addEventListener: vi.fn(), removeEventListener: vi.fn(),
-    addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   }));
 }
 
@@ -46,7 +51,13 @@ function addElement(label: RegExp): HTMLElement {
 function getHandles(wrapper: HTMLElement) {
   const handles = wrapper.querySelectorAll<HTMLElement>("[data-resize-handle]");
   // Source order: bottom, top, right, left, corner
-  return { bottom: handles[0], top: handles[1], right: handles[2], left: handles[3], corner: handles[4] };
+  return {
+    bottom: handles[0],
+    top: handles[1],
+    right: handles[2],
+    left: handles[3],
+    corner: handles[4],
+  };
 }
 
 async function dragHandle(handle: HTMLElement, dx: number, dy: number) {
@@ -61,13 +72,19 @@ async function dragHandle(handle: HTMLElement, dx: number, dy: number) {
  * Returns the inline `gap` (px) of the flex column that lays out the per-level
  * boxes inside a DOK element, plus the `justify-content` of that column.
  */
-function getDokLevelLayout(wrapper: HTMLElement): { gap: number; justify: string; rowCount: number } {
+function getDokLevelLayout(wrapper: HTMLElement): {
+  gap: number;
+  justify: string;
+  rowCount: number;
+} {
   // Structure: ws-element > outer card div > [title?][intro?][levelsContainer]
   const card = wrapper.querySelector<HTMLElement>(":scope > div");
   expect(card, "DOK card container").toBeTruthy();
   // The level container is a flex column with multiple child level boxes.
   const candidates = Array.from(card!.querySelectorAll<HTMLElement>(":scope > div"));
-  const levelsContainer = candidates.find(d => d.style.flexDirection === "column" && d.children.length >= 2);
+  const levelsContainer = candidates.find(
+    (d) => d.style.flexDirection === "column" && d.children.length >= 2,
+  );
   expect(levelsContainer, "DOK levels flex container").toBeTruthy();
   const gapStr = levelsContainer!.style.gap || "0";
   const gap = parseFloat(gapStr);
@@ -85,15 +102,16 @@ function getDokCard(wrapper: HTMLElement): HTMLElement {
 }
 
 function getDokQuestionTextNodes(wrapper: HTMLElement): HTMLElement[] {
-  const nodes = Array.from(wrapper.querySelectorAll<HTMLElement>("li span"))
-    .filter(node => (node.textContent || "").trim().length > 0);
+  const nodes = Array.from(wrapper.querySelectorAll<HTMLElement>("li span")).filter(
+    (node) => (node.textContent || "").trim().length > 0,
+  );
   expect(nodes.length, "DOK question text nodes").toBeGreaterThan(0);
   return nodes;
 }
 
 function getDokItemGaps(wrapper: HTMLElement): number[] {
   return Array.from(wrapper.querySelectorAll<HTMLElement>("ul"))
-    .map(ul => parseFloat(ul.style.gap || "0"))
+    .map((ul) => parseFloat(ul.style.gap || "0"))
     .filter(Number.isFinite);
 }
 
@@ -106,10 +124,17 @@ function getListLayout(wrapper: HTMLElement): { gap: number; justify: string } {
 
 describe("worksheet builder: horizontal-only resize keeps inner box spacing tight", () => {
   beforeEach(() => {
-    (globalThis as any).ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+    (globalThis as any).ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
     setViewport(1440, 900);
   });
-  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
   it("DOK Questions: horizontal-only resize does NOT spread the per-level boxes apart", async () => {
     openBuilder();
@@ -149,8 +174,9 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
 
     const card = wrapper.querySelector<HTMLElement>(":scope > div");
     expect(card?.style.overflowY).toBe("auto");
-    const questionText = Array.from(wrapper.querySelectorAll<HTMLElement>("span"))
-      .find(node => node.textContent?.includes("?"));
+    const questionText = Array.from(wrapper.querySelectorAll<HTMLElement>("span")).find((node) =>
+      node.textContent?.includes("?"),
+    );
     expect(questionText?.style.whiteSpace).toBe("normal");
     expect(questionText?.style.wordBreak).toBe("break-word");
   });
@@ -213,7 +239,9 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
 
     await dragHandle(getHandles(wrapper).corner, -1200, -1200);
 
-    const rendered = getDokQuestionTextNodes(wrapper).map(node => node.textContent || "").join(" ");
+    const rendered = getDokQuestionTextNodes(wrapper)
+      .map((node) => node.textContent || "")
+      .join(" ");
     expect(rendered).toContain("What details from the text");
     expect(rendered).toContain("Which evidence would you underline");
     expect(getDokCard(wrapper).style.overflowY).toBe("auto");

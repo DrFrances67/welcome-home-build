@@ -6,10 +6,7 @@ import path from "node:path";
 
 describe("Branding: no 'AI Tools for Educators' anywhere", () => {
   it("route metadata title does not contain 'AI Tools for Educators'", () => {
-    const src = fs.readFileSync(
-      path.join(process.cwd(), "src/routes/index.tsx"),
-      "utf8",
-    );
+    const src = fs.readFileSync(path.join(process.cwd(), "src/routes/index.tsx"), "utf8");
     expect(src).toMatch(/Tools For Educators/i);
     expect(src).not.toMatch(/AI Tools for Educators/i);
   });

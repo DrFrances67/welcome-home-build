@@ -31,7 +31,7 @@ export type ShortcutHandler = {
 // Pure matcher — exported so unit tests don't need a DOM.
 export function matchesShortcut(
   e: { key: string; ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean },
-  s: { key: string; mods?: Array<"mod" | "shift" | "alt"> }
+  s: { key: string; mods?: Array<"mod" | "shift" | "alt"> },
 ): boolean {
   if (e.key.toLowerCase() !== s.key.toLowerCase()) return false;
   const wantMod = s.mods?.includes("mod") ?? false;
@@ -103,17 +103,25 @@ export function ShortcutsHelpOverlay({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     dialogRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
       if (e.key === "Tab") {
         // simple focus trap — keep focus inside the dialog
         const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
-          'button, [href], input, [tabindex]:not([tabindex="-1"])'
+          'button, [href], input, [tabindex]:not([tabindex="-1"])',
         );
         if (!focusables || focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -140,10 +148,15 @@ export function ShortcutsHelpOverlay({
       aria-labelledby="shortcuts-help-title"
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 9999,
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
         background: "rgba(0,0,0,0.55)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 20, fontFamily: FONT,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        fontFamily: FONT,
       }}
     >
       <div
@@ -151,13 +164,29 @@ export function ShortcutsHelpOverlay({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "white", borderRadius: 14, padding: "22px 26px",
-          maxWidth: 560, width: "100%", maxHeight: "85vh", overflow: "auto",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.35)", outline: "none",
+          background: "white",
+          borderRadius: 14,
+          padding: "22px 26px",
+          maxWidth: 560,
+          width: "100%",
+          maxHeight: "85vh",
+          overflow: "auto",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+          outline: "none",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h2 id="shortcuts-help-title" style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#111" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 14,
+          }}
+        >
+          <h2
+            id="shortcuts-help-title"
+            style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#111" }}
+          >
             Keyboard Shortcuts
           </h2>
           <button
@@ -165,9 +194,13 @@ export function ShortcutsHelpOverlay({
             onClick={onClose}
             aria-label="Close keyboard shortcuts"
             style={{
-              background: "transparent", border: "1px solid #d1d5db",
-              borderRadius: 6, padding: "4px 10px", cursor: "pointer",
-              fontSize: 14, color: "#374151",
+              background: "transparent",
+              border: "1px solid #d1d5db",
+              borderRadius: 6,
+              padding: "4px 10px",
+              cursor: "pointer",
+              fontSize: 14,
+              color: "#374151",
             }}
           >
             Close
@@ -175,31 +208,55 @@ export function ShortcutsHelpOverlay({
         </div>
         {[...groups.entries()].map(([group, items]) => (
           <div key={group} style={{ marginBottom: 16 }}>
-            <h3 style={{
-              fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2,
-              color: "#6b7280", margin: "10px 0 8px", fontWeight: 700,
-            }}>{group}</h3>
+            <h3
+              style={{
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: 1.2,
+                color: "#6b7280",
+                margin: "10px 0 8px",
+                fontWeight: 700,
+              }}
+            >
+              {group}
+            </h3>
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {items.map((s, i) => (
-                <li key={i} style={{
-                  display: "flex", justifyContent: "space-between",
-                  padding: "7px 0", borderBottom: "1px solid #f3f4f6",
-                  fontSize: 14, color: "#1f2937",
-                }}>
+                <li
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "7px 0",
+                    borderBottom: "1px solid #f3f4f6",
+                    fontSize: 14,
+                    color: "#1f2937",
+                  }}
+                >
                   <span>{s.description}</span>
-                  <kbd style={{
-                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                    background: "#f3f4f6", border: "1px solid #d1d5db",
-                    borderRadius: 4, padding: "2px 8px", fontSize: 12,
-                    color: "#111", marginLeft: 12, whiteSpace: "nowrap",
-                  }}>{formatKey(s)}</kbd>
+                  <kbd
+                    style={{
+                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                      background: "#f3f4f6",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 4,
+                      padding: "2px 8px",
+                      fontSize: 12,
+                      color: "#111",
+                      marginLeft: 12,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatKey(s)}
+                  </kbd>
                 </li>
               ))}
             </ul>
           </div>
         ))}
         <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-          Tip: shortcuts pause while you're typing in a field. Press <kbd>Esc</kbd> to close this dialog.
+          Tip: shortcuts pause while you're typing in a field. Press <kbd>Esc</kbd> to close this
+          dialog.
         </p>
       </div>
     </div>

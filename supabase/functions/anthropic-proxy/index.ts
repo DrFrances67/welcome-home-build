@@ -31,17 +31,17 @@ serve(async (req) => {
     // credits and must not be callable anonymously.
     const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: { message: "Unauthorized" } }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: { message: "Unauthorized" } }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const userId = await getUserIdFromAuth(authHeader);
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: { message: "Unauthorized" } }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: { message: "Unauthorized" } }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const toolName = req.headers.get("x-tool-name");
     const sessionId = req.headers.get("x-session-id");
@@ -70,9 +70,10 @@ serve(async (req) => {
           parts.push({ type: "text", text: b.text });
         } else if (b.type === "image" && b.source) {
           // Anthropic block: { type:"image", source:{ type:"base64", media_type, data } }
-          const url = b.source.type === "base64"
-            ? `data:${b.source.media_type || "image/png"};base64,${b.source.data}`
-            : b.source.url;
+          const url =
+            b.source.type === "base64"
+              ? `data:${b.source.media_type || "image/png"};base64,${b.source.data}`
+              : b.source.url;
           if (url) parts.push({ type: "image_url", image_url: { url } });
         } else if (b.type === "image_url" && b.image_url?.url) {
           parts.push({ type: "image_url", image_url: { url: b.image_url.url } });
@@ -117,7 +118,9 @@ serve(async (req) => {
       }
       if (upstream.status === 402) {
         return new Response(
-          JSON.stringify({ error: { message: "AI credits exhausted. Add funds in Lovable Workspace settings." } }),
+          JSON.stringify({
+            error: { message: "AI credits exhausted. Add funds in Lovable Workspace settings." },
+          }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -145,7 +148,6 @@ serve(async (req) => {
       costUsd: cost,
       endpoint: "anthropic-proxy",
     });
-
 
     // Re-shape to Anthropic response format expected by the client
     return new Response(

@@ -9,17 +9,13 @@
 // Pure JS, no DOM — easy to unit test with vitest.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [k: string]: JsonValue };
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
 /** Strip ```json fences, leading/trailing whitespace and prose. */
 export function stripFences(raw: string): string {
-  return String(raw ?? "").replace(/```json|```/gi, "").trim();
+  return String(raw ?? "")
+    .replace(/```json|```/gi, "")
+    .trim();
 }
 
 /** Remove control chars (except tab/newline/cr) that break JSON.parse. */
@@ -41,7 +37,8 @@ export function sliceContainer(s: string, kind: "array" | "object" | "auto" = "a
   if (kind === "array") return tryPair("[", "]") ?? s;
   if (kind === "object") return tryPair("{", "}") ?? s;
   // auto: prefer whichever opener appears first
-  const ai = s.indexOf("["); const oi = s.indexOf("{");
+  const ai = s.indexOf("[");
+  const oi = s.indexOf("{");
   if (ai === -1 && oi === -1) return s;
   if (ai === -1) return tryPair("{", "}") ?? s;
   if (oi === -1) return tryPair("[", "]") ?? s;
@@ -72,24 +69,36 @@ export function repairTruncatedArray(s: string): string {
  */
 export function repairAndParse<T = JsonValue>(
   raw: string,
-  opts: { container?: "array" | "object" | "auto" } = {}
+  opts: { container?: "array" | "object" | "auto" } = {},
 ): T {
   const container = opts.container ?? "auto";
   let cleaned = stripControlChars(stripFences(raw));
   cleaned = sliceContainer(cleaned, container);
 
   // Strategy 1: parse as-is
-  try { return JSON.parse(cleaned) as T; } catch { /* try next */ }
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    /* try next */
+  }
 
   // Strategy 2: strip trailing commas
   const noTrailing = removeTrailingCommas(cleaned);
-  try { return JSON.parse(noTrailing) as T; } catch { /* try next */ }
+  try {
+    return JSON.parse(noTrailing) as T;
+  } catch {
+    /* try next */
+  }
 
   // Strategy 3: brute close — terminate any open string and append the
   // missing brackets in correct order. Preserves the most data.
   const closed = bruteClose(noTrailing);
   if (closed !== noTrailing) {
-    try { return JSON.parse(closed) as T; } catch { /* try next */ }
+    try {
+      return JSON.parse(closed) as T;
+    } catch {
+      /* try next */
+    }
   }
 
   // Strategy 4: walk back to last complete object and close the array.
@@ -97,7 +106,11 @@ export function repairAndParse<T = JsonValue>(
   // close still produced invalid JSON (e.g. dangling key without value).
   const trimmed = repairTruncatedArray(noTrailing);
   if (trimmed !== noTrailing) {
-    try { return JSON.parse(trimmed) as T; } catch { /* try next */ }
+    try {
+      return JSON.parse(trimmed) as T;
+    } catch {
+      /* try next */
+    }
   }
 
   // Strategy 5: drop the dangling trailing object after the last "},"
@@ -105,7 +118,11 @@ export function repairAndParse<T = JsonValue>(
   const lastSep = noTrailing.lastIndexOf("},");
   if (lastSep > 0) {
     const candidate = noTrailing.slice(0, lastSep + 1) + "]";
-    try { return JSON.parse(candidate) as T; } catch { /* try next */ }
+    try {
+      return JSON.parse(candidate) as T;
+    } catch {
+      /* try next */
+    }
   }
 
   // Strategy 6: position-based recovery. Iteratively read JSON.parse error
@@ -115,12 +132,13 @@ export function repairAndParse<T = JsonValue>(
   let attempt = noTrailing;
   let lastErr = "";
   for (let i = 0; i < 20; i++) {
-    try { return JSON.parse(attempt) as T; }
-    catch (e) {
+    try {
+      return JSON.parse(attempt) as T;
+    } catch (e) {
       lastErr = (e as Error).message;
       const m = lastErr.match(/position\s+(\d+)/i);
       if (!m) break;
-      let pos = parseInt(m[1], 10);
+      const pos = parseInt(m[1], 10);
       if (!Number.isFinite(pos) || pos <= 0 || pos > attempt.length) break;
       // Walk back to the nearest safe boundary: end of last complete value
       let cut = pos;
@@ -154,13 +172,25 @@ export function bruteClose(s: string): string {
   let esc = false;
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
-    if (esc) { esc = false; continue; }
-    if (c === "\\") { esc = true; continue; }
-    if (c === '"') { inStr = !inStr; continue; }
+    if (esc) {
+      esc = false;
+      continue;
+    }
+    if (c === "\\") {
+      esc = true;
+      continue;
+    }
+    if (c === '"') {
+      inStr = !inStr;
+      continue;
+    }
     if (inStr) continue;
     if (c === "[" || c === "{") stack.push(c);
-    else if (c === "]") { if (stack[stack.length - 1] === "[") stack.pop(); }
-    else if (c === "}") { if (stack[stack.length - 1] === "{") stack.pop(); }
+    else if (c === "]") {
+      if (stack[stack.length - 1] === "[") stack.pop();
+    } else if (c === "}") {
+      if (stack[stack.length - 1] === "{") stack.pop();
+    }
   }
   let out = s;
   if (inStr) out += '"';

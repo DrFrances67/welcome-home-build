@@ -58,7 +58,6 @@ export function ContactWidget() {
     }
   }
 
-
   return (
     <>
       <button
@@ -82,7 +81,10 @@ export function ContactWidget() {
             : "pointer-events-none translate-y-3 scale-95 opacity-0"
         }`}
       >
-        <div className="flex flex-shrink-0 items-start justify-between px-5 py-4 text-white" style={{ backgroundColor: "#CF27F5" }}>
+        <div
+          className="flex flex-shrink-0 items-start justify-between px-5 py-4 text-white"
+          style={{ backgroundColor: "#CF27F5" }}
+        >
           <div>
             <h2 className="font-serif text-xl font-normal leading-tight">Get in touch</h2>
             <p className="mt-1 text-xs font-light opacity-70">
@@ -114,12 +116,25 @@ export function ContactWidget() {
             </div>
 
             <Field label="Email">
-              <input name="email" type="email" required placeholder="jane@example.com" className={inputCls} />
+              <input
+                name="email"
+                type="email"
+                required
+                placeholder="jane@example.com"
+                className={inputCls}
+              />
             </Field>
 
             <Field label="Subject">
-              <select name="subject" required defaultValue="" className={`${inputCls} appearance-none pr-9`}>
-                <option value="" disabled>Select a topic…</option>
+              <select
+                name="subject"
+                required
+                defaultValue=""
+                className={`${inputCls} appearance-none pr-9`}
+              >
+                <option value="" disabled>
+                  Select a topic…
+                </option>
                 <option>Bug / Error Report</option>
                 <option>Feature Request</option>
                 <option>Billing Question</option>
@@ -136,7 +151,6 @@ export function ContactWidget() {
                 className={`${inputCls} h-[88px] resize-none leading-relaxed`}
               />
             </Field>
-
 
             {errorMsg && (
               <p className="text-xs text-destructive" role="alert">

@@ -62,7 +62,10 @@ export async function endTrackingSession() {
   const id = currentSessionId;
   currentSessionId = null;
   try {
-    await supabase.from("user_sessions").update({ ended_at: new Date().toISOString() }).eq("id", id);
+    await supabase
+      .from("user_sessions")
+      .update({ ended_at: new Date().toISOString() })
+      .eq("id", id);
   } catch {
     /* ignore */
   }
@@ -122,7 +125,9 @@ export function getCurrentSessionId(): string | null {
 export async function trackToolUse(toolName: ToolName) {
   setActiveTool(toolName);
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("tool_usage").insert({
       user_id: user.id,

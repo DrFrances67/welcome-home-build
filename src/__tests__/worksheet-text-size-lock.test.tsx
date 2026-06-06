@@ -16,16 +16,28 @@ import { TheTechSavvyTeacherApp } from "../components/TheTechSavvyTeacherApp";
  */
 
 beforeEach(() => {
-  (globalThis as any).ResizeObserver = class { observe(){} unobserve(){} disconnect(){} };
-  Object.defineProperty(window, "innerWidth",  { value: 1440, configurable: true });
-  Object.defineProperty(window, "innerHeight", { value: 900,  configurable: true });
+  (globalThis as any).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  Object.defineProperty(window, "innerWidth", { value: 1440, configurable: true });
+  Object.defineProperty(window, "innerHeight", { value: 900, configurable: true });
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
-    matches: false, media: q, onchange: null,
-    addEventListener: vi.fn(), removeEventListener: vi.fn(),
-    addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+    matches: false,
+    media: q,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   }));
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
@@ -63,12 +75,16 @@ async function dragHandle(handle: HTMLElement, dx: number, dy: number) {
 // fontSize style.
 function primaryFs(wrapper: HTMLElement): number {
   const candidates = Array.from(wrapper.querySelectorAll<HTMLElement>("p, span, div"))
-    .filter(n => n.style && n.style.fontSize)
-    .filter(n => !n.matches("[data-resize-handle], [data-delete-btn], [data-reset-btn]"));
-  expect(candidates.length, "expected at least one element with inline fontSize").toBeGreaterThan(0);
+    .filter((n) => n.style && n.style.fontSize)
+    .filter((n) => !n.matches("[data-resize-handle], [data-delete-btn], [data-reset-btn]"));
+  expect(candidates.length, "expected at least one element with inline fontSize").toBeGreaterThan(
+    0,
+  );
   // Take the largest font-size on the element — this is the "primary" text
   // (titles/questions); secondary captions/notes use Math.max(fs - n, m).
-  const sizes = candidates.map(n => parseFloat(n.style.fontSize)).filter(n => Number.isFinite(n));
+  const sizes = candidates
+    .map((n) => parseFloat(n.style.fontSize))
+    .filter((n) => Number.isFinite(n));
   return Math.max(...sizes);
 }
 
@@ -78,11 +94,11 @@ function setTextSizePreset(label: string) {
 }
 
 const TYPES = [
-  { name: "Text Block",      label: /add text block element/i, presetPt: 22 },  // L → 18, XL → 22
-  { name: "Word Bank",       label: /add word bank element/i,  presetPt: 22 },
-  { name: "True/False",      label: /add true \/ false element/i, presetPt: 22 },
+  { name: "Text Block", label: /add text block element/i, presetPt: 22 }, // L → 18, XL → 22
+  { name: "Word Bank", label: /add word bank element/i, presetPt: 22 },
+  { name: "True/False", label: /add true \/ false element/i, presetPt: 22 },
   { name: "Multiple Choice", label: /add multiple choice element/i, presetPt: 22 },
-  { name: "Short Answer",    label: /add short answer element/i, presetPt: 22 },
+  { name: "Short Answer", label: /add short answer element/i, presetPt: 22 },
 ];
 
 describe("worksheet builder: per-element text-size lock", () => {
@@ -103,7 +119,10 @@ describe("worksheet builder: per-element text-size lock", () => {
 
       const fsAfter = primaryFs(wrapper);
       // Locked → font size stays at 22pt regardless of resize.
-      expect(fsAfter, `${t.name}: locked text size must not change after resize`).toBeCloseTo(22, 2);
+      expect(fsAfter, `${t.name}: locked text size must not change after resize`).toBeCloseTo(
+        22,
+        2,
+      );
       expect(fsAfter).toBe(fsBefore);
     });
   }

@@ -7,13 +7,7 @@
 // style object as the real field (same font, padding, border width, width,
 // line-height), so the mirrored text lines up perfectly without measuring.
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { checkText, ensureSpeller, type Issue } from "@/lib/spellcheck";
 
 type PopupState = { issue: Issue; x: number; y: number } | null;
@@ -27,14 +21,7 @@ type SpellFieldProps = CommonProps &
   React.TextareaHTMLAttributes<HTMLTextAreaElement> &
   React.InputHTMLAttributes<HTMLInputElement> & { multiline: boolean };
 
-function SpellField({
-  multiline,
-  value,
-  onChange,
-  className,
-  style,
-  ...rest
-}: SpellFieldProps) {
+function SpellField({ multiline, value, onChange, className, style, ...rest }: SpellFieldProps) {
   const elRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -179,8 +166,7 @@ function SpellField({
   const commonEl = {
     ...rest,
     value,
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) =>
-      onChange(e),
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => onChange(e),
     spellCheck: false,
     className,
   };
@@ -297,8 +283,6 @@ export function SpellTextarea(
   return <SpellField {...(props as SpellFieldProps)} multiline />;
 }
 
-export function SpellInput(
-  props: CommonProps & React.InputHTMLAttributes<HTMLInputElement>,
-) {
+export function SpellInput(props: CommonProps & React.InputHTMLAttributes<HTMLInputElement>) {
   return <SpellField {...(props as SpellFieldProps)} multiline={false} />;
 }

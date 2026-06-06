@@ -57,7 +57,8 @@ vi.mock("@tanstack/react-router", () => ({
 // Import AFTER mocks are registered.
 import { Route } from "../routes/account";
 
-const AccountPage = (Route as unknown as { options: { component: React.ComponentType } }).options.component;
+const AccountPage = (Route as unknown as { options: { component: React.ComponentType } }).options
+  .component;
 
 function setByLabel(labelText: RegExp, value: string) {
   const field = screen.getByLabelText(labelText) as HTMLInputElement | HTMLTextAreaElement;
@@ -135,7 +136,9 @@ describe("Account edit (E2E)", () => {
     expect((screen.getByLabelText(/^username$/i) as HTMLInputElement).value).toBe("newteacher");
     expect((screen.getByLabelText(/home address/i) as HTMLInputElement).value).toBe("123 Main St");
     expect((screen.getByLabelText(/school name/i) as HTMLInputElement).value).toBe("Lincoln High");
-    expect((screen.getByLabelText(/school address/i) as HTMLInputElement).value).toBe("456 Oak Ave");
+    expect((screen.getByLabelText(/school address/i) as HTMLInputElement).value).toBe(
+      "456 Oak Ave",
+    );
     expect((screen.getByLabelText(/additional school info/i) as HTMLTextAreaElement).value).toBe(
       "Room 12, Grade 9 Math",
     );

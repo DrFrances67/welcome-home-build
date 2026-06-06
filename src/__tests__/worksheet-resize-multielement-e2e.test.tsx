@@ -25,14 +25,20 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   Object.defineProperty(window, "innerHeight", { value: height, configurable: true });
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches:
-      query.includes("pointer: coarse") ? pointer === "coarse" :
-      query.includes("max-width: 768px") ? width <= 768 :
-      query.includes("max-width: 1024px") ? width <= 1024 :
-      false,
-    media: query, onchange: null,
-    addEventListener: vi.fn(), removeEventListener: vi.fn(),
-    addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+    matches: query.includes("pointer: coarse")
+      ? pointer === "coarse"
+      : query.includes("max-width: 768px")
+        ? width <= 768
+        : query.includes("max-width: 1024px")
+          ? width <= 1024
+          : false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   }));
 }
 
@@ -122,37 +128,37 @@ function contentTransformsOf(wrapper: HTMLElement): string[] {
 
 const VIEWPORTS = [
   { label: "desktop", width: 1440, height: 900, pointer: "fine" as const },
-  { label: "mobile",  width: 390,  height: 844, pointer: "coarse" as const },
+  { label: "mobile", width: 390, height: 844, pointer: "coarse" as const },
 ];
 
 const ELEMENT_TYPES = [
-  { name: "Word Bank",       label: /add word bank element/i },
-  { name: "True/False",      label: /add true \/ false element/i },
-  { name: "Matching",        label: /add matching element/i },
+  { name: "Word Bank", label: /add word bank element/i },
+  { name: "True/False", label: /add true \/ false element/i },
+  { name: "Matching", label: /add matching element/i },
   { name: "Multiple Choice", label: /add multiple choice element/i },
-  { name: "Text Block",      label: /add text block element/i },
-  { name: "Short Answer",    label: /add short answer element/i },
+  { name: "Text Block", label: /add text block element/i },
+  { name: "Short Answer", label: /add short answer element/i },
 ];
 
 // Every addable element type — used to verify vertical-only resize is
 // available on EVERY worksheet item, not just a subset.
 const ALL_ELEMENT_TYPES = [
-  { name: "Instructions",    label: /add instructions element/i },
-  { name: "Text Block",      label: /add text block element/i },
-  { name: "Image",           label: /add image element/i },
-  { name: "Write Lines",     label: /add write lines element/i },
-  { name: "Word Bank",       label: /add word bank element/i },
-  { name: "Matching",        label: /add matching element/i },
+  { name: "Instructions", label: /add instructions element/i },
+  { name: "Text Block", label: /add text block element/i },
+  { name: "Image", label: /add image element/i },
+  { name: "Write Lines", label: /add write lines element/i },
+  { name: "Word Bank", label: /add word bank element/i },
+  { name: "Matching", label: /add matching element/i },
   { name: "Multiple Choice", label: /add multiple choice element/i },
-  { name: "True/False",      label: /add true \/ false element/i },
-  { name: "Short Answer",    label: /add short answer element/i },
-  { name: "Fill in Blank",   label: /add fill in blank element/i },
-  { name: "Essay Prompt",    label: /add essay prompt element/i },
-  { name: "Table / Chart",   label: /add table \/ chart element/i },
-  { name: "Custom Shapes",   label: /add custom shapes element/i },
-  { name: "Success Criteria",label: /add success criteria element/i },
-  { name: "Exit Ticket",     label: /add exit ticket element/i },
-  { name: "DOK Questions",   label: /add dok questions element/i },
+  { name: "True/False", label: /add true \/ false element/i },
+  { name: "Short Answer", label: /add short answer element/i },
+  { name: "Fill in Blank", label: /add fill in blank element/i },
+  { name: "Essay Prompt", label: /add essay prompt element/i },
+  { name: "Table / Chart", label: /add table \/ chart element/i },
+  { name: "Custom Shapes", label: /add custom shapes element/i },
+  { name: "Success Criteria", label: /add success criteria element/i },
+  { name: "Exit Ticket", label: /add exit ticket element/i },
+  { name: "DOK Questions", label: /add dok questions element/i },
   // Note: "Section Break" (divider) intentionally has no resize handles — it
   // is a fixed-height visual separator, not a resizable content element.
 ];
@@ -160,10 +166,15 @@ const ALL_ELEMENT_TYPES = [
 describe("worksheet builder: multi-element back-to-back resize E2E", () => {
   beforeEach(() => {
     (globalThis as any).ResizeObserver = class {
-      observe() {} unobserve() {} disconnect() {}
+      observe() {}
+      unobserve() {}
+      disconnect() {}
     };
   });
-  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
   for (const vp of VIEWPORTS) {
     describe(`viewport: ${vp.label} (${vp.width}x${vp.height})`, () => {
@@ -186,7 +197,8 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
 
       it("resizing each element grows wrapper dims and yields a clean scale() — no leftover transforms across elements", async () => {
         openBuilder();
-        const resized: Array<{ name: string; wrapper: HTMLElement; startW: number; endW: number }> = [];
+        const resized: Array<{ name: string; wrapper: HTMLElement; startW: number; endW: number }> =
+          [];
 
         for (const t of ELEMENT_TYPES) {
           const wrapper = addElement(t.label);
@@ -213,7 +225,10 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           // ALL element types now use the reflow approach: inner content
           // scales via inline font-size/spacing, NOT a CSS scale transform.
           // No element should leave a leftover transform string anywhere.
-          expect(contentTransformsOf(wrapper), `${t.name} should reflow naturally without leaked transforms`).toEqual([]);
+          expect(
+            contentTransformsOf(wrapper),
+            `${t.name} should reflow naturally without leaked transforms`,
+          ).toEqual([]);
 
           resized.push({ name: t.name, wrapper, startW, endW: widthPctOf(wrapper) });
         }
@@ -222,7 +237,10 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         // elements' contents — every prior element remains transform-free and
         // keeps the new width it was resized to.
         for (const r of resized) {
-          expect(contentTransformsOf(r.wrapper), `${r.name} must remain naturally reflowed`).toEqual([]);
+          expect(
+            contentTransformsOf(r.wrapper),
+            `${r.name} must remain naturally reflowed`,
+          ).toEqual([]);
           expect(r.endW).toBeGreaterThan(r.startW);
         }
       });
@@ -234,7 +252,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           // Resize first.
           await dragHandle(getHandles(wrapper).corner, 60, 40);
           const startLeft = leftPctOf(wrapper);
-          const startTop  = topPxOf(wrapper);
+          const startTop = topPxOf(wrapper);
 
           // Then drag the body of the element to move it.
           await act(async () => {
@@ -244,7 +262,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
           });
 
           const endLeft = leftPctOf(wrapper);
-          const endTop  = topPxOf(wrapper);
+          const endTop = topPxOf(wrapper);
           const moved = endLeft !== startLeft || endTop !== startTop;
           expect(moved, `${t.name} must still be movable after resize`).toBe(true);
         }
@@ -273,14 +291,14 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
         // The True / False chips show full TRUE / FALSE labels for clarity.
-        const chips = Array.from(wrapper.querySelectorAll("span")).filter(
-          s => /^TRUE$|^FALSE$/.test((s.textContent || "").trim()),
+        const chips = Array.from(wrapper.querySelectorAll("span")).filter((s) =>
+          /^TRUE$|^FALSE$/.test((s.textContent || "").trim()),
         );
         expect(chips.length).toBeGreaterThanOrEqual(2);
         expect(contentTransformsOf(wrapper)).toEqual([]);
         expect(parseFloat((chips[0] as HTMLElement).style.fontSize)).toBeGreaterThan(8);
-        const statement = Array.from(wrapper.querySelectorAll<HTMLElement>("span")).find(
-          s => (s.textContent || "").includes("The Earth orbits the Sun"),
+        const statement = Array.from(wrapper.querySelectorAll<HTMLElement>("span")).find((s) =>
+          (s.textContent || "").includes("The Earth orbits the Sun"),
         );
         // Statement gets the lion's share of the row width (flex: 1 1 70%)
         // so longer sentences have room to read before wrapping.

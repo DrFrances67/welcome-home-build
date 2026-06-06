@@ -109,9 +109,8 @@ function grammarIssues(text: string): Issue[] {
     else if (lowerArt === "an" && startsCons) fixed = "a";
     if (fixed) {
       // preserve capitalization of the article
-      const cased = art[0] === art[0].toUpperCase()
-        ? fixed[0].toUpperCase() + fixed.slice(1)
-        : fixed;
+      const cased =
+        art[0] === art[0].toUpperCase() ? fixed[0].toUpperCase() + fixed.slice(1) : fixed;
       out.push({
         start: m.index,
         end: m.index + art.length,

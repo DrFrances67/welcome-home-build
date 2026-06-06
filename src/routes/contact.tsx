@@ -74,8 +74,8 @@ function ContactPage() {
           Get in touch
         </h1>
         <p className="mt-4 text-base text-muted-foreground">
-          Questions, feedback, or bug reports? Tap the Contact Us button to send us a note —
-          we usually reply within a few hours.
+          Questions, feedback, or bug reports? Tap the Contact Us button to send us a note — we
+          usually reply within a few hours.
         </p>
       </section>
 
@@ -138,8 +138,14 @@ function ContactPage() {
             </Field>
 
             <Field label="Subject">
-              <select required defaultValue="" className={`${inputCls} appearance-none pr-9 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2212%22%20height=%228%22%20fill=%22none%22%3E%3Cpath%20d=%22M1%201l5%205%205-5%22%20stroke=%22%23888%22%20stroke-width=%221.5%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22/%3E%3C/svg%3E')] bg-[right_0.85rem_center] bg-no-repeat`}>
-                <option value="" disabled>Select a topic…</option>
+              <select
+                required
+                defaultValue=""
+                className={`${inputCls} appearance-none pr-9 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2212%22%20height=%228%22%20fill=%22none%22%3E%3Cpath%20d=%22M1%201l5%205%205-5%22%20stroke=%22%23888%22%20stroke-width=%221.5%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22/%3E%3C/svg%3E')] bg-[right_0.85rem_center] bg-no-repeat`}
+              >
+                <option value="" disabled>
+                  Select a topic…
+                </option>
                 <option>Bug / Error Report</option>
                 <option>Feature Request</option>
                 <option>Billing Question</option>

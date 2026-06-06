@@ -46,8 +46,16 @@ export const Route = createRootRoute({
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "The Tech Savvy Teacher" },
       { name: "twitter:description", content: "The Tech Savvy Teacher Ecosystem" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c2d85d3-e7e3-46ae-b6e2-023324864dc9/id-preview-022dd992--e9f1059d-1690-4784-87b5-65e83fff33da.lovable.app-1776850513563.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c2d85d3-e7e3-46ae-b6e2-023324864dc9/id-preview-022dd992--e9f1059d-1690-4784-87b5-65e83fff33da.lovable.app-1776850513563.png" },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c2d85d3-e7e3-46ae-b6e2-023324864dc9/id-preview-022dd992--e9f1059d-1690-4784-87b5-65e83fff33da.lovable.app-1776850513563.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c2d85d3-e7e3-46ae-b6e2-023324864dc9/id-preview-022dd992--e9f1059d-1690-4784-87b5-65e83fff33da.lovable.app-1776850513563.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

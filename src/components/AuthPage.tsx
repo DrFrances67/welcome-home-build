@@ -37,7 +37,9 @@ const signupSchema = z.object({
     .regex(/^[a-zA-Z0-9_.@+-]+$/, "Letters, numbers, _ . @ + - only"),
   email: z.string().trim().email("Invalid email").max(255),
   password: passwordSchema,
-  agreedPrivacy: z.literal(true, { errorMap: () => ({ message: "You must accept the privacy notice" }) }),
+  agreedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the privacy notice" }),
+  }),
 });
 
 const themeCss = `
@@ -83,9 +85,11 @@ export function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
-  const [verificationStatus, setVerificationStatus] = useState<
-    null | { state: "verified" | "unverified" | "unknown"; email: string; checkedAt: Date }
-  >(null);
+  const [verificationStatus, setVerificationStatus] = useState<null | {
+    state: "verified" | "unverified" | "unknown";
+    email: string;
+    checkedAt: Date;
+  }>(null);
   const [resendHistory, setResendHistory] = useState<
     Array<{ requested_at: string; status: string; error_message: string | null }>
   >([]);
@@ -118,8 +122,15 @@ export function AuthPage() {
         loginEmail = data as string;
       }
       // Clear any stale local session before attempting a fresh sign-in
-      try { await supabase.auth.signOut({ scope: "local" } as never); } catch { /* ignore */ }
-      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      try {
+        await supabase.auth.signOut({ scope: "local" } as never);
+      } catch {
+        /* ignore */
+      }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password,
+      });
       if (error) {
         const isUnverified = /confirm|verif/i.test(error.message);
         setError(error.message);
@@ -142,7 +153,9 @@ export function AuthPage() {
             localStorage.setItem("tst-session-only", "1");
             sessionStorage.setItem("tst-session-alive", "1");
           }
-        } catch { /* storage unavailable */ }
+        } catch {
+          /* storage unavailable */
+        }
         setInfo("Signed in. Loading your account…");
         window.location.assign("/");
       } else {
@@ -248,8 +261,12 @@ export function AuthPage() {
               email: parsed.data.email,
               timestamp: new Date().toISOString(),
             }),
-          }).catch(() => { /* ignore */ });
-        } catch { /* ignore */ }
+          }).catch(() => {
+            /* ignore */
+          });
+        } catch {
+          /* ignore */
+        }
         setInfo("Check your email to verify your account, then sign in.");
         setMode("signin");
       }
@@ -314,16 +331,38 @@ export function AuthPage() {
           The Tech Savvy Teacher
         </h1>
         <p style={{ color: "var(--auth-subtle)", marginBottom: 24, fontSize: 14 }}>
-          {mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Sign in to continue"}
+          {mode === "signup"
+            ? "Create your account"
+            : mode === "reset"
+              ? "Reset your password"
+              : "Sign in to continue"}
         </p>
 
         {error && (
-          <div style={{ background: "var(--auth-error-bg)", color: "var(--auth-error-text)", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+          <div
+            style={{
+              background: "var(--auth-error-bg)",
+              color: "var(--auth-error-text)",
+              padding: 12,
+              borderRadius: 8,
+              marginBottom: 16,
+              fontSize: 14,
+            }}
+          >
             {error}
           </div>
         )}
         {info && (
-          <div style={{ background: "var(--auth-info-bg)", color: "var(--auth-info-text)", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+          <div
+            style={{
+              background: "var(--auth-info-bg)",
+              color: "var(--auth-info-text)",
+              padding: 12,
+              borderRadius: 8,
+              marginBottom: 16,
+              fontSize: 14,
+            }}
+          >
             {info}
           </div>
         )}
@@ -362,19 +401,43 @@ export function AuthPage() {
               {verificationStatus.state === "unknown" && "Verification status unknown"}
             </div>
             <div style={{ fontSize: 12, opacity: 0.85 }}>
-              {verificationStatus.email} · checked {verificationStatus.checkedAt.toLocaleTimeString()}
+              {verificationStatus.email} · checked{" "}
+              {verificationStatus.checkedAt.toLocaleTimeString()}
             </div>
           </div>
         )}
 
         {resendHistory.length > 0 && (
-          <div style={{ marginBottom: 16, padding: 10, borderRadius: 8, background: "#F9FAFB", border: "1px solid #E5E7EB", fontSize: 12, color: "#374151" }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>Recent verification email resends</div>
-            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div
+            style={{
+              marginBottom: 16,
+              padding: 10,
+              borderRadius: 8,
+              background: "#F9FAFB",
+              border: "1px solid #E5E7EB",
+              fontSize: 12,
+              color: "#374151",
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>
+              Recent verification email resends
+            </div>
+            <ul
+              style={{
+                margin: 0,
+                padding: 0,
+                listStyle: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              }}
+            >
               {resendHistory.map((r, i) => (
                 <li key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                   <span>{new Date(r.requested_at).toLocaleString()}</span>
-                  <span style={{ fontWeight: 600, color: r.status === "sent" ? "#047857" : "#B91C1C" }}>
+                  <span
+                    style={{ fontWeight: 600, color: r.status === "sent" ? "#047857" : "#B91C1C" }}
+                  >
                     {r.status}
                     {r.error_message ? ` — ${r.error_message}` : ""}
                   </span>
@@ -385,10 +448,35 @@ export function AuthPage() {
         )}
 
         {mode === "signin" && (
-          <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Username or email" value={identifier} onChange={setIdentifier} autoComplete="username" required />
-            <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" required />
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--auth-label)", userSelect: "none" }}>
+          <form
+            onSubmit={handleSignIn}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <Field
+              label="Username or email"
+              value={identifier}
+              onChange={setIdentifier}
+              autoComplete="username"
+              required
+            />
+            <Field
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              required
+            />
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 13,
+                color: "var(--auth-label)",
+                userSelect: "none",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={rememberMe}
@@ -397,18 +485,60 @@ export function AuthPage() {
               />
               <span>Remember me — keep me signed in on this device</span>
             </label>
-            <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>{busy ? "Signing in…" : "Sign in"}</button>
+            <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
             {unverifiedEmail && (
-              <button type="button" disabled={busy} onClick={() => handleResendVerification(unverifiedEmail)} style={{ ...primaryBtn, background: "transparent", color: "var(--auth-primary)", border: "1px solid var(--auth-primary)", marginTop: 0 }}>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => handleResendVerification(unverifiedEmail)}
+                style={{
+                  ...primaryBtn,
+                  background: "transparent",
+                  color: "var(--auth-primary)",
+                  border: "1px solid var(--auth-primary)",
+                  marginTop: 0,
+                }}
+              >
                 Resend verification email
               </button>
             )}
             <div style={linkRow}>
-              <button type="button" onClick={() => { setMode("signup"); setError(null); setInfo(null); setUnverifiedEmail(null); }} style={linkBtn}>Create account</button>
-              <button type="button" onClick={() => { setMode("reset"); setError(null); setInfo(null); setUnverifiedEmail(null); }} style={linkBtn}>Forgot password?</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signup");
+                  setError(null);
+                  setInfo(null);
+                  setUnverifiedEmail(null);
+                }}
+                style={linkBtn}
+              >
+                Create account
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("reset");
+                  setError(null);
+                  setInfo(null);
+                  setUnverifiedEmail(null);
+                }}
+                style={linkBtn}
+              >
+                Forgot password?
+              </button>
             </div>
             <div style={{ textAlign: "center", marginTop: 4 }}>
-              <button type="button" onClick={() => handleResendVerification(identifier.includes("@") ? identifier : undefined)} disabled={busy} style={linkBtn}>
+              <button
+                type="button"
+                onClick={() =>
+                  handleResendVerification(identifier.includes("@") ? identifier : undefined)
+                }
+                disabled={busy}
+                style={linkBtn}
+              >
                 Didn't get the verification email? Resend
               </button>
             </div>
@@ -416,44 +546,143 @@ export function AuthPage() {
         )}
 
         {mode === "signup" && (
-          <form onSubmit={handleSignUp} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Full name" value={fullName} onChange={setFullName} autoComplete="name" required />
-            <Field label="Username" value={username} onChange={setUsername} autoComplete="username" required />
-            <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" required />
-            <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" required />
+          <form
+            onSubmit={handleSignUp}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <Field
+              label="Full name"
+              value={fullName}
+              onChange={setFullName}
+              autoComplete="name"
+              required
+            />
+            <Field
+              label="Username"
+              value={username}
+              onChange={setUsername}
+              autoComplete="username"
+              required
+            />
+            <Field
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              required
+            />
+            <Field
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+              required
+            />
             <PasswordStrength password={password} />
-            <PasswordRequirements password={password} highlightUnmet={weakAttempt} ref={requirementsRef} />
+            <PasswordRequirements
+              password={password}
+              highlightUnmet={weakAttempt}
+              ref={requirementsRef}
+            />
             <p style={{ fontSize: 12, color: "var(--auth-subtle)", marginTop: -2 }}>
               Min 10 characters with upper, lower, number, and symbol.
             </p>
 
-            <div style={{ background: "var(--auth-notice-bg)", border: "1px solid var(--auth-notice-border)", padding: 12, borderRadius: 8, fontSize: 12, color: "var(--auth-notice-text)", lineHeight: 1.5 }}>
-              <strong style={{ color: "var(--auth-notice-strong)" }}>Privacy notice.</strong> By creating an account you agree we may store
-              your full name, email, username, and account timestamp, and that we record your sign-in sessions, the
-              features you use (Lesson Plan Generator, Danielson Review, Worksheet Builder, Professional Communication
-              Support), the actions you take, and time spent per feature. This data is used to operate the service and
-              is visible to the site owner. Read the full{" "}
-              <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "var(--auth-link)" }}>privacy statement</a>.
+            <div
+              style={{
+                background: "var(--auth-notice-bg)",
+                border: "1px solid var(--auth-notice-border)",
+                padding: 12,
+                borderRadius: 8,
+                fontSize: 12,
+                color: "var(--auth-notice-text)",
+                lineHeight: 1.5,
+              }}
+            >
+              <strong style={{ color: "var(--auth-notice-strong)" }}>Privacy notice.</strong> By
+              creating an account you agree we may store your full name, email, username, and
+              account timestamp, and that we record your sign-in sessions, the features you use
+              (Lesson Plan Generator, Danielson Review, Worksheet Builder, Professional
+              Communication Support), the actions you take, and time spent per feature. This data is
+              used to operate the service and is visible to the site owner. Read the full{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "var(--auth-link)" }}
+              >
+                privacy statement
+              </a>
+              .
             </div>
 
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "var(--auth-label)" }}>
-              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 3, accentColor: "var(--auth-primary)" }} />
+            <label
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                fontSize: 13,
+                color: "var(--auth-label)",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                style={{ marginTop: 3, accentColor: "var(--auth-primary)" }}
+              />
               <span>I have read and agree to the privacy notice above.</span>
             </label>
 
-            <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>{busy ? "Creating…" : "Create account"}</button>
+            <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>
+              {busy ? "Creating…" : "Create account"}
+            </button>
             <div style={linkRow}>
-              <button type="button" onClick={() => { setMode("signin"); setError(null); setInfo(null); }} style={linkBtn}>Already have an account? Sign in</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setError(null);
+                  setInfo(null);
+                }}
+                style={linkBtn}
+              >
+                Already have an account? Sign in
+              </button>
             </div>
           </form>
         )}
 
         {mode === "reset" && (
-          <form onSubmit={handleReset} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" required />
-            <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>{busy ? "Sending…" : "Send reset link"}</button>
+          <form
+            onSubmit={handleReset}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <Field
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              required
+            />
+            <button type="submit" disabled={busy} className="auth-btn-primary" style={primaryBtn}>
+              {busy ? "Sending…" : "Send reset link"}
+            </button>
             <div style={linkRow}>
-              <button type="button" onClick={() => { setMode("signin"); setError(null); setInfo(null); }} style={linkBtn}>Back to sign in</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setError(null);
+                  setInfo(null);
+                }}
+                style={linkBtn}
+              >
+                Back to sign in
+              </button>
             </div>
           </form>
         )}
@@ -462,12 +691,34 @@ export function AuthPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", required, autoComplete }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; autoComplete?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required,
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  required?: boolean;
+  autoComplete?: string;
+}) {
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
   const effectiveType = isPassword && show ? "text" : type;
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: "var(--auth-label)" }}>
+    <label
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        fontSize: 13,
+        color: "var(--auth-label)",
+      }}
+    >
       {label}
       <div style={{ position: "relative" }}>
         <input
@@ -512,14 +763,34 @@ function Field({ label, value, onChange, type = "text", required, autoComplete }
             }}
           >
             {show ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                 <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
                 <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88" />
                 <line x1="1" y1="1" x2="23" y2="23" />
               </svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
@@ -542,10 +813,26 @@ const primaryBtn: React.CSSProperties = {
   marginTop: 4,
   letterSpacing: 0.2,
 };
-const linkRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginTop: 4 };
-const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "var(--auth-link)", cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 600 };
+const linkRow: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginTop: 4,
+};
+const linkBtn: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  color: "var(--auth-link)",
+  cursor: "pointer",
+  fontSize: 13,
+  padding: 0,
+  fontWeight: 600,
+};
 
-export function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+export function scorePassword(pw: string): {
+  score: 0 | 1 | 2 | 3 | 4;
+  label: string;
+  color: string;
+} {
   if (!pw) return { score: 0, label: "Empty", color: "#E5E7EB" };
   let score = 0;
   if (pw.length >= 10) score++;
@@ -554,7 +841,8 @@ export function scorePassword(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: st
   if (classes >= 3) score++;
   if (classes === 4 && pw.length >= 12) score++;
   // Penalize common patterns
-  if (/(.)\1\1/.test(pw) || /^(?:password|qwerty|12345|letmein|welcome)/i.test(pw)) score = Math.max(0, score - 1);
+  if (/(.)\1\1/.test(pw) || /^(?:password|qwerty|12345|letmein|welcome)/i.test(pw))
+    score = Math.max(0, score - 1);
   const s = Math.min(4, Math.max(0, score)) as 0 | 1 | 2 | 3 | 4;
   const map = [
     { label: "Very weak", color: "#DC2626" },
@@ -588,7 +876,17 @@ export function PasswordStrength({ password }: { password: string }) {
         ))}
       </div>
       {password && (
-        <div style={{ fontSize: 12, color, marginTop: 4, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+        <div
+          style={{
+            fontSize: 12,
+            color,
+            marginTop: 4,
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
           <span>Password strength: {label}</span>
           <span
             tabIndex={0}
@@ -617,7 +915,10 @@ export function PasswordStrength({ password }: { password: string }) {
         </div>
       )}
       {password && (
-        <div data-testid="pw-strength-explanation" style={{ fontSize: 11, color: "var(--auth-subtle)", marginTop: 4, lineHeight: 1.4 }}>
+        <div
+          data-testid="pw-strength-explanation"
+          style={{ fontSize: 11, color: "var(--auth-subtle)", marginTop: 4, lineHeight: 1.4 }}
+        >
           {strengthExplanation(label)}
         </div>
       )}
@@ -645,7 +946,10 @@ export function getPasswordRequirements(pw: string): PasswordRequirement[] {
     {
       id: "no-pattern",
       label: "No repeating triples or common words",
-      met: pw.length > 0 && !/(.)\1\1/.test(pw) && !/^(?:password|qwerty|12345|letmein|welcome)/i.test(pw),
+      met:
+        pw.length > 0 &&
+        !/(.)\1\1/.test(pw) &&
+        !/^(?:password|qwerty|12345|letmein|welcome)/i.test(pw),
     },
   ];
   const reachedGood = scorePassword(pw).score >= 3;
@@ -679,12 +983,28 @@ export const PasswordRequirements = React.forwardRef<HTMLDivElement, PasswordReq
           scrollMarginTop: 80,
         }}
       >
-        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: failing ? "#B91C1C" : "var(--auth-label)" }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            marginBottom: 6,
+            color: failing ? "#B91C1C" : "var(--auth-label)",
+          }}
+        >
           {failing
             ? "Fix these to reach Good:"
             : `Password requirements ${reachedGood ? "✓ Good or better" : "— items needed for Good are highlighted"}`}
         </div>
-        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+        <ul
+          style={{
+            margin: 0,
+            padding: 0,
+            listStyle: "none",
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
           {reqs.map((r) => {
             const failedItem = failing && !r.met;
             const itemColor = r.met
@@ -710,12 +1030,16 @@ export const PasswordRequirements = React.forwardRef<HTMLDivElement, PasswordReq
                   fontWeight: failedItem || r.neededForGood ? 700 : 500,
                 }}
               >
-                <span aria-hidden="true">{r.met ? "✓" : failedItem ? "✕" : r.neededForGood ? "●" : "○"}</span>
+                <span aria-hidden="true">
+                  {r.met ? "✓" : failedItem ? "✕" : r.neededForGood ? "●" : "○"}
+                </span>
                 <span>{r.label}</span>
                 {failedItem ? (
                   <span style={{ fontSize: 10, color: "#B91C1C", fontWeight: 700 }}>(missing)</span>
                 ) : r.neededForGood ? (
-                  <span style={{ fontSize: 10, color: "#B45309", fontWeight: 700 }}>(needed for Good)</span>
+                  <span style={{ fontSize: 10, color: "#B45309", fontWeight: 700 }}>
+                    (needed for Good)
+                  </span>
                 ) : null}
               </li>
             );
@@ -725,4 +1049,3 @@ export const PasswordRequirements = React.forwardRef<HTMLDivElement, PasswordReq
     );
   },
 );
-

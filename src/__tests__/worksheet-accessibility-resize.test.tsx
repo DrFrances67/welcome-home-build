@@ -15,19 +15,16 @@ const BASELINE_WIDTH_PCT = 32;
 
 // Mirrors src/components/TheTechSavvyTeacherApp.tsx::ScaledContent math.
 function scaledContent(opts: {
-  outerW: number;          // measured outer container width (px)
+  outerW: number; // measured outer container width (px)
   widthOverridePct: number; // current widthOverride %
-  naturalH: number;         // natural intrinsic height of inner content (px)
+  naturalH: number; // natural intrinsic height of inner content (px)
   heightOverridePx?: number;
 }) {
   const { outerW, widthOverridePct, naturalH, heightOverridePx } = opts;
-  const baselineWidthPx = outerW > 0
-    ? (outerW * BASELINE_WIDTH_PCT) / Math.max(1, widthOverridePct)
-    : 0;
+  const baselineWidthPx =
+    outerW > 0 ? (outerW * BASELINE_WIDTH_PCT) / Math.max(1, widthOverridePct) : 0;
   const sx = baselineWidthPx > 0 ? outerW / baselineWidthPx : 1;
-  const sy = heightOverridePx && naturalH > 0
-    ? Math.max(heightOverridePx / naturalH, sx)
-    : sx;
+  const sy = heightOverridePx && naturalH > 0 ? Math.max(heightOverridePx / naturalH, sx) : sx;
   // The outer wrapper height is set to naturalH * sy so it matches the
   // visually scaled inner content exactly (no clipping, no extra gap).
   const containerH = naturalH > 0 ? naturalH * sy : 0;
@@ -46,7 +43,7 @@ function imageFillStyle(el: { widthOverride?: number; heightOverride?: number })
       userSized: false,
       width: undefined,
       height: undefined,
-      maxWidth: "62%",     // medium preset
+      maxWidth: "62%", // medium preset
       maxHeight: 360,
       objectFit: "contain" as const,
     };
@@ -85,7 +82,10 @@ describe("accessibility: increasing element size grows inner content", () => {
     let prevSy = 0;
     for (const h of heights) {
       const r = scaledContent({
-        outerW, widthOverridePct: 32, naturalH, heightOverridePx: h,
+        outerW,
+        widthOverridePct: 32,
+        naturalH,
+        heightOverridePx: h,
       });
       expect(r.sy).toBeGreaterThan(prevSy);
       prevSy = r.sy;
@@ -100,7 +100,7 @@ describe("clipping: container always contains the scaled inner content", () => {
     { outerW: 192, widthOverridePct: 32, naturalH: 60 },
     { outerW: 384, widthOverridePct: 64, naturalH: 60 },
     { outerW: 600, widthOverridePct: 100, naturalH: 200 },
-    { outerW: 96,  widthOverridePct: 16, naturalH: 40 },
+    { outerW: 96, widthOverridePct: 16, naturalH: 40 },
     { outerW: 192, widthOverridePct: 32, naturalH: 100, heightOverridePx: 500 },
     { outerW: 600, widthOverridePct: 100, naturalH: 100, heightOverridePx: 1000 },
   ];
@@ -132,7 +132,7 @@ describe("overlap: resized elements do not collide with siblings", () => {
   it("siblings positioned below a grown element should be repositioned to clear it", () => {
     // Initial layout: two stacked elements, 200px apart.
     const els = [
-      { y: 0,   heightOverride: 80, naturalH: 80 },
+      { y: 0, heightOverride: 80, naturalH: 80 },
       { y: 200, heightOverride: 80, naturalH: 80 },
     ];
     // User grows the first element to 300px tall — it now overflows into 300px.
@@ -158,7 +158,7 @@ describe("overlap: resized elements do not collide with siblings", () => {
       { y: 0, heightOverride: 80 },
       { y: 100, heightOverride: 600 }, // user-grown for accessibility
     ];
-    const minHeight = Math.max(700, ...els.map(e => (e.y || 0) + (e.heightOverride || 180) + 40));
+    const minHeight = Math.max(700, ...els.map((e) => (e.y || 0) + (e.heightOverride || 180) + 40));
     // Bottom of grown element = 100 + 600 = 700; +40 gap = 740 → page expands.
     expect(minHeight).toBe(740);
     expect(minHeight).toBeGreaterThan(els[1].y + els[1].heightOverride);
