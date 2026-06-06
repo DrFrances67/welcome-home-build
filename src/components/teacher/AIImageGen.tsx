@@ -1,5 +1,5 @@
 // @ts-nocheck
-/* eslint-disable */
+
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";

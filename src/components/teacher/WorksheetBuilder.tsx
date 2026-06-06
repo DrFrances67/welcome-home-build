@@ -1025,13 +1025,13 @@ Output ONLY the JSON array.`,
     setLpNotes("");
     setLpMsg("✓ Lesson plan received. Auto-generating worksheet…");
     setPendingAutoRun(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
   useEffect(() => {
     if (!pendingAutoRun || !lpFile?.raw) return;
     setPendingAutoRun(false);
     generateWorksheetFromLessonPlan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [pendingAutoRun, lpFile]);
 
   // ━━ Worksheet-scoped keyboard shortcuts ━━

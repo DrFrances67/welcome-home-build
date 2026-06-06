@@ -138,7 +138,7 @@ export function repairAndParse<T = JsonValue>(
       lastErr = (e as Error).message;
       const m = lastErr.match(/position\s+(\d+)/i);
       if (!m) break;
-      let pos = parseInt(m[1], 10);
+      const pos = parseInt(m[1], 10);
       if (!Number.isFinite(pos) || pos <= 0 || pos > attempt.length) break;
       // Walk back to the nearest safe boundary: end of last complete value
       let cut = pos;
