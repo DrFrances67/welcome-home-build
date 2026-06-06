@@ -19,11 +19,13 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   Object.defineProperty(window, "innerHeight", { value: height, configurable: true });
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches:
-      query.includes("pointer: coarse") ? pointer === "coarse" :
-      query.includes("max-width: 768px") ? width <= 768 :
-      query.includes("max-width: 1024px") ? width <= 1024 :
-      false,
+    matches: query.includes("pointer: coarse")
+      ? pointer === "coarse"
+      : query.includes("max-width: 768px")
+        ? width <= 768
+        : query.includes("max-width: 1024px")
+          ? width <= 1024
+          : false,
     media: query,
     onchange: null,
     addEventListener: vi.fn(),
@@ -81,7 +83,10 @@ function parseScale(transform: string): { sx: number; sy: number } {
 async function dragRightHandle(wrapper: HTMLElement, dx: number) {
   // Right handle is the 3rd handle in source order (bottom, top, right, left, corner)
   const handles = wrapper.querySelectorAll<HTMLElement>("[data-resize-handle]");
-  expect(handles.length, "resize handles must be visible (element selected)").toBeGreaterThanOrEqual(5);
+  expect(
+    handles.length,
+    "resize handles must be visible (element selected)",
+  ).toBeGreaterThanOrEqual(5);
   const right = handles[2];
   await act(async () => {
     fireEvent.pointerDown(right, { clientX: 100, clientY: 100 });
@@ -106,7 +111,7 @@ function primeScaledContent(wrapper: HTMLElement, outerW: number, naturalH: numb
 
 const VIEWPORTS = [
   { label: "desktop", width: 1440, height: 900, pointer: "fine" as const },
-  { label: "mobile",  width: 390,  height: 844, pointer: "coarse" as const },
+  { label: "mobile", width: 390, height: 844, pointer: "coarse" as const },
 ];
 
 describe("worksheet element resizing scales inner content proportionally", () => {
@@ -120,7 +125,10 @@ describe("worksheet element resizing scales inner content proportionally", () =>
     };
   });
 
-  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
   for (const vp of VIEWPORTS) {
     describe(`viewport: ${vp.label} (${vp.width}x${vp.height})`, () => {
@@ -185,7 +193,7 @@ describe("worksheet element resizing scales inner content proportionally", () =>
         // axes when the user has resized. We can verify the wrapper has the
         // resize handles and that no axis cap (maxWidth/maxHeight) constrains
         // the image fill style. (Style asserted in worksheet-resize-scaling.)
-        const handles = wrapper.querySelectorAll('[data-resize-handle]');
+        const handles = wrapper.querySelectorAll("[data-resize-handle]");
         expect(handles.length).toBeGreaterThanOrEqual(5);
       });
     });

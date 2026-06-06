@@ -22,13 +22,10 @@ function computeScale(opts: {
   heightOverridePx?: number;
 }) {
   const { outerW, widthOverridePct, naturalH = 0, heightOverridePx } = opts;
-  const baselineWidthPx = outerW > 0
-    ? (outerW * BASELINE_WIDTH_PCT) / Math.max(1, widthOverridePct)
-    : 0;
+  const baselineWidthPx =
+    outerW > 0 ? (outerW * BASELINE_WIDTH_PCT) / Math.max(1, widthOverridePct) : 0;
   const sx = baselineWidthPx > 0 ? outerW / baselineWidthPx : 1;
-  const sy = heightOverridePx && naturalH > 0
-    ? Math.max(heightOverridePx / naturalH, sx)
-    : sx;
+  const sy = heightOverridePx && naturalH > 0 ? Math.max(heightOverridePx / naturalH, sx) : sx;
   return { sx, sy, baselineWidthPx };
 }
 

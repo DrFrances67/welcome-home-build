@@ -1,7 +1,7 @@
 // Shared font-family strings and the print/export stylesheet used by the
 // worksheet tools.
 
-export const F  = "'Inter', 'Segoe UI', sans-serif";
+export const F = "'Inter', 'Segoe UI', sans-serif";
 export const FF = "'Playfair Display', Georgia, serif";
 
 export const PRINT_CSS = `

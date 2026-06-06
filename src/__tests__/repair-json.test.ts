@@ -43,10 +43,9 @@ describe("sliceContainer", () => {
 
 describe("removeTrailingCommas", () => {
   it("strips trailing commas before ] and }", () => {
-    expect(removeTrailingCommas('[1,2,3,]')).toBe('[1,2,3]');
+    expect(removeTrailingCommas("[1,2,3,]")).toBe("[1,2,3]");
     expect(removeTrailingCommas('{"a":1,"b":2,}')).toBe('{"a":1,"b":2}');
-    expect(removeTrailingCommas('[{"a":1,},{"b":2,},]'))
-      .toBe('[{"a":1},{"b":2}]');
+    expect(removeTrailingCommas('[{"a":1,},{"b":2,},]')).toBe('[{"a":1},{"b":2}]');
   });
 });
 
@@ -61,7 +60,7 @@ describe("repairTruncatedArray", () => {
 
 describe("bruteClose", () => {
   it("closes nested unbalanced brackets in correct order", () => {
-    expect(bruteClose("[1,[2,{\"a\":3")).toBe("[1,[2,{\"a\":3}]]");
+    expect(bruteClose('[1,[2,{"a":3')).toBe('[1,[2,{"a":3}]]');
   });
   it("terminates an unterminated string before closing", () => {
     const closed = bruteClose('[{"a":"hello');
@@ -104,7 +103,7 @@ describe("repairAndParse", () => {
   it("repairs the exact truncation shape from the original error report", () => {
     // Position 840-ish truncation — array cut mid-string
     const truncated =
-      '[' +
+      "[" +
       '{"level":1,"label":"Recall & Reproduction","items":["Who is the main character?","What happened first?","What is the title of the story?"]},' +
       '{"level":2,"label":"Skills & Concepts","items":["Describe how the character felt.","Sort the events from beginning to end.","Show the part where the problem starts."]},' +
       '{"level":3,"label":"Strategic Thinking","items":["Why do you think the character made that choice?","Predict what would happen if the setting were different.","Use evidence from the text to expla';
@@ -129,7 +128,9 @@ describe("repairAndParse", () => {
 
   it("repairs an object payload truncated mid-value", () => {
     const truncated = '{"title":"DOK","levels":[{"level":1,"items":["x"]},{"level":2,"items":["y"';
-    const out = repairAndParse<{ title: string; levels: unknown[] }>(truncated, { container: "object" });
+    const out = repairAndParse<{ title: string; levels: unknown[] }>(truncated, {
+      container: "object",
+    });
     expect(out.title).toBe("DOK");
     expect(Array.isArray(out.levels)).toBe(true);
   });

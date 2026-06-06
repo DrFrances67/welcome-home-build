@@ -13,11 +13,11 @@ import {
 
 // Sample passwords engineered to land on each strength level.
 const samples: Record<string, string> = {
-  "Very weak": "aaaa",                  // 4 chars, one class, repeating triple penalty
-  Weak: "abcdefghij",                   // 10 chars, one class
-  Fair: "Abcdefghij",                   // 10 chars, two classes -> classes>=3? no, score=1 only
-  Good: "Abcdef1!xy",                   // 10 chars, all 4 classes -> len>=10(1)+classes>=3(1)+? len<12 so no 4th, score=2 -> Fair actually
-  Strong: "Abcdefghij1!XY",             // 14+, all 4 classes
+  "Very weak": "aaaa", // 4 chars, one class, repeating triple penalty
+  Weak: "abcdefghij", // 10 chars, one class
+  Fair: "Abcdefghij", // 10 chars, two classes -> classes>=3? no, score=1 only
+  Good: "Abcdef1!xy", // 10 chars, all 4 classes -> len>=10(1)+classes>=3(1)+? len<12 so no 4th, score=2 -> Fair actually
+  Strong: "Abcdefghij1!XY", // 14+, all 4 classes
 };
 
 // Verify our test fixtures actually map to the labels we expect; if any drift,
@@ -28,8 +28,8 @@ describe("scorePassword sample fixtures", () => {
     const cases: Array<[string, string]> = [
       ["Very weak", "aaaa"],
       ["Weak", "abcdefghij"],
-      ["Fair", "Abcdef1!xy"],     // score 2
-      ["Good", "Abcdef1!xyzQ"],   // 12 chars, all 4 classes -> score 3
+      ["Fair", "Abcdef1!xy"], // score 2
+      ["Good", "Abcdef1!xyzQ"], // 12 chars, all 4 classes -> score 3
       ["Strong", "Abcdefghij1!XY"], // 14+, all 4 classes -> score 4
     ];
     for (const [label, pw] of cases) {

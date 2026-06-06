@@ -41,7 +41,10 @@ export function AdminDashboard() {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detailRows, setDetailRows] = useState<UsageRow[] | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [sessionSort, setSessionSort] = useState<{ key: "tool" | "credits"; dir: "asc" | "desc" } | null>(null);
+  const [sessionSort, setSessionSort] = useState<{
+    key: "tool" | "credits";
+    dir: "asc" | "desc";
+  } | null>(null);
 
   async function openSessionDetails(sessionId: string) {
     setDetailSessionId(sessionId);
@@ -95,15 +98,29 @@ export function AdminDashboard() {
   const fmtCredits = (n: number) => (n <= 0 ? "0 credits" : `${parseFloat(n.toFixed(3))} credits`);
 
   // Per-user aggregates for the Users table.
-  const userAgg = new Map<string, { lastActive: string | null; sessions: number; tools: Set<string>; total: number }>();
+  const userAgg = new Map<
+    string,
+    { lastActive: string | null; sessions: number; tools: Set<string>; total: number }
+  >();
   for (const s of sessions) {
-    const a = userAgg.get(s.user_id) ?? { lastActive: null, sessions: 0, tools: new Set<string>(), total: 0 };
+    const a = userAgg.get(s.user_id) ?? {
+      lastActive: null,
+      sessions: 0,
+      tools: new Set<string>(),
+      total: 0,
+    };
     a.sessions += 1;
-    if (!a.lastActive || +new Date(s.started_at) > +new Date(a.lastActive)) a.lastActive = s.started_at;
+    if (!a.lastActive || +new Date(s.started_at) > +new Date(a.lastActive))
+      a.lastActive = s.started_at;
     userAgg.set(s.user_id, a);
   }
   for (const r of toolUsage) {
-    const a = userAgg.get(r.user_id) ?? { lastActive: null, sessions: 0, tools: new Set<string>(), total: 0 };
+    const a = userAgg.get(r.user_id) ?? {
+      lastActive: null,
+      sessions: 0,
+      tools: new Set<string>(),
+      total: 0,
+    };
     a.total += 1;
     a.tools.add(r.tool_name);
     if (!a.lastActive || +new Date(r.used_at) > +new Date(a.lastActive)) a.lastActive = r.used_at;
@@ -111,7 +128,10 @@ export function AdminDashboard() {
   }
 
   // AI cost aggregates
-  const aiPerUser = new Map<string, { calls: number; inTok: number; outTok: number; cost: number; lastAt: string | null }>();
+  const aiPerUser = new Map<
+    string,
+    { calls: number; inTok: number; outTok: number; cost: number; lastAt: string | null }
+  >();
   for (const r of aiUsage) {
     const a = aiPerUser.get(r.user_id) ?? { calls: 0, inTok: 0, outTok: 0, cost: 0, lastAt: null };
     a.calls += 1;
@@ -124,40 +144,70 @@ export function AdminDashboard() {
   const totalAiCost = aiUsage.reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
   const fmt = (n: number) => `$${n.toFixed(n < 0.01 ? 6 : n < 1 ? 4 : 2)}`;
 
-
   return (
     <div style={pageStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
         <h1 style={{ fontSize: 28, fontWeight: 800 }}>Admin Dashboard</h1>
-        <Link to="/" style={{ color: "#4f46e5", fontSize: 14 }}>← Back to app</Link>
+        <Link to="/" style={{ color: "#4f46e5", fontSize: 14 }}>
+          ← Back to app
+        </Link>
       </div>
 
       {loading ? (
         <p>Loading data…</p>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 16,
+              marginBottom: 32,
+            }}
+          >
             <Stat label="Total users" value={totalUsers} />
             <Stat label="Active sessions" value={activeSessions} />
             <Stat label="Total sessions" value={sessions.length} />
             <Stat label="Tracked actions" value={totalActions} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 16,
+              marginBottom: 32,
+            }}
+          >
             <Stat label="AI calls" value={aiUsage.length} />
             <Stat label="AI cost (USD)" value={totalAiCost} format={fmt} />
           </div>
-
 
           <Section title="AI cost per user">
             {aiUsage.length === 0 ? (
               <p style={muted}>No AI usage tracked yet.</p>
             ) : (
-              <Table headers={["User", "Calls", "Input tokens", "Output tokens", "Total cost", "Last call"]}>
+              <Table
+                headers={[
+                  "User",
+                  "Calls",
+                  "Input tokens",
+                  "Output tokens",
+                  "Total cost",
+                  "Last call",
+                ]}
+              >
                 {users
                   .map((u) => ({ u, a: aiPerUser.get(u.id) }))
                   .filter((x) => x.a)
-                  .sort((a, b) => (b.a!.cost - a.a!.cost))
+                  .sort((a, b) => b.a!.cost - a.a!.cost)
                   .map(({ u, a }) => (
                     <tr key={u.id}>
                       <td style={td}>{u.username}</td>
@@ -185,7 +235,9 @@ export function AdminDashboard() {
                       <td style={td}>{u?.username ?? r.user_id.slice(0, 8)}</td>
                       <td style={td}>{r.tool_name ?? r.endpoint ?? "—"}</td>
                       <td style={{ ...td, fontFamily: "monospace", fontSize: 12 }}>{r.model}</td>
-                      <td style={{ ...td, fontFamily: "monospace", fontSize: 11 }}>{r.session_id ? r.session_id.slice(0, 8) : "—"}</td>
+                      <td style={{ ...td, fontFamily: "monospace", fontSize: 11 }}>
+                        {r.session_id ? r.session_id.slice(0, 8) : "—"}
+                      </td>
                       <td style={td}>{r.input_tokens.toLocaleString()}</td>
                       <td style={td}>{r.output_tokens.toLocaleString()}</td>
                       <td style={{ ...td, fontWeight: 600 }}>{fmt(Number(r.cost_usd))}</td>
@@ -200,7 +252,16 @@ export function AdminDashboard() {
             {Object.keys(featureCounts).length === 0 ? (
               <p style={muted}>No usage yet.</p>
             ) : (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}
+              >
                 {Object.entries(featureCounts)
                   .sort((a, b) => b[1] - a[1])
                   .map(([f, c]) => (
@@ -213,9 +274,19 @@ export function AdminDashboard() {
             )}
           </Section>
 
-
           <Section title={`Users (${totalUsers})`}>
-            <Table headers={["Username", "Name", "Email", "Joined", "Last Active", "Sessions", "Tools Used", "Total Uses"]}>
+            <Table
+              headers={[
+                "Username",
+                "Name",
+                "Email",
+                "Joined",
+                "Last Active",
+                "Sessions",
+                "Tools Used",
+                "Total Uses",
+              ]}
+            >
               {users.map((u) => {
                 const a = userAgg.get(u.id);
                 const tools = a ? Array.from(a.tools) : [];
@@ -225,7 +296,9 @@ export function AdminDashboard() {
                     <td style={td}>{u.full_name || "—"}</td>
                     <td style={td}>{u.email}</td>
                     <td style={td}>{new Date(u.created_at).toLocaleString()}</td>
-                    <td style={td}>{a?.lastActive ? new Date(a.lastActive).toLocaleString() : "—"}</td>
+                    <td style={td}>
+                      {a?.lastActive ? new Date(a.lastActive).toLocaleString() : "—"}
+                    </td>
                     <td style={td}>{a?.sessions ?? 0}</td>
                     <td style={td}>{tools.length === 0 ? "—" : tools.join(", ")}</td>
                     <td style={td}>{a?.total ?? 0}</td>
@@ -236,7 +309,15 @@ export function AdminDashboard() {
           </Section>
 
           <Section title="Recent sessions">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 12,
+                flexWrap: "wrap",
+              }}
+            >
               <button
                 onClick={async () => {
                   if (endingSessions) return;
@@ -245,12 +326,14 @@ export function AdminDashboard() {
                   setEndMessage(null);
                   try {
                     const res = await endAll();
-                    setEndMessage(`All sessions terminated.${res?.ended != null ? ` (${res.ended})` : ""}`);
+                    setEndMessage(
+                      `All sessions terminated.${res?.ended != null ? ` (${res.ended})` : ""}`,
+                    );
                     const refreshed = await fetchSessions();
                     queryClient.setQueryData(
                       ["admin-dashboard"],
                       (prev: typeof data | undefined) =>
-                        prev ? { ...prev, sessions: refreshed } : prev
+                        prev ? { ...prev, sessions: refreshed } : prev,
                     );
                   } catch (e) {
                     setEndMessage(`Failed: ${(e as Error).message}`);
@@ -278,13 +361,17 @@ export function AdminDashboard() {
             {(() => {
               const toggleSort = (key: "tool" | "credits") =>
                 setSessionSort((cur) =>
-                  cur?.key === key ? { key, dir: cur.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }
+                  cur?.key === key
+                    ? { key, dir: cur.dir === "asc" ? "desc" : "asc" }
+                    : { key, dir: "asc" },
                 );
               const arrow = (key: "tool" | "credits") =>
                 sessionSort?.key === key ? (sessionSort.dir === "asc" ? " ▲" : " ▼") : "";
 
               const rows = sessions.slice(0, 100).map((s) => {
-                const dur = s.ended_at ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000) : null;
+                const dur = s.ended_at
+                  ? Math.round((+new Date(s.ended_at) - +new Date(s.started_at)) / 1000)
+                  : null;
                 const u = userMap.get(s.user_id);
                 const apps = sessionUsage.get(s.id)?.apps ?? [];
                 const toolLabel = apps.length === 0 ? "—" : apps.join(", ");
@@ -322,8 +409,12 @@ export function AdminDashboard() {
                         <th style={plainTh}>Started</th>
                         <th style={plainTh}>Ended</th>
                         <th style={plainTh}>Duration</th>
-                        <th style={sortableTh} onClick={() => toggleSort("tool")}>Tool Used{arrow("tool")}</th>
-                        <th style={sortableTh} onClick={() => toggleSort("credits")}>Credits{arrow("credits")}</th>
+                        <th style={sortableTh} onClick={() => toggleSort("tool")}>
+                          Tool Used{arrow("tool")}
+                        </th>
+                        <th style={sortableTh} onClick={() => toggleSort("credits")}>
+                          Credits{arrow("credits")}
+                        </th>
                         <th style={plainTh}>Details</th>
                       </tr>
                     </thead>
@@ -332,7 +423,9 @@ export function AdminDashboard() {
                         <tr key={s.id}>
                           <td style={td}>{u?.username ?? s.user_id.slice(0, 8)}</td>
                           <td style={td}>{new Date(s.started_at).toLocaleString()}</td>
-                          <td style={td}>{s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}</td>
+                          <td style={td}>
+                            {s.ended_at ? new Date(s.ended_at).toLocaleString() : "active"}
+                          </td>
                           <td style={td}>{dur != null ? `${dur}s` : "—"}</td>
                           <td style={td}>{toolLabel}</td>
                           <td style={td}>{fmtCredits(credits)}</td>
@@ -386,14 +479,30 @@ export function AdminDashboard() {
                   flexDirection: "column",
                 }}
               >
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{
+                    padding: "16px 20px",
+                    borderBottom: "1px solid #e2e8f0",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 700 }}>Session activity</div>
-                    <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>{detailSessionId}</div>
+                    <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>
+                      {detailSessionId}
+                    </div>
                   </div>
                   <button
                     onClick={() => setDetailSessionId(null)}
-                    style={{ background: "transparent", border: "none", fontSize: 22, cursor: "pointer", color: "#475569" }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontSize: 22,
+                      cursor: "pointer",
+                      color: "#475569",
+                    }}
                     aria-label="Close"
                   >
                     ×
@@ -416,7 +525,9 @@ export function AdminDashboard() {
                             <td style={td}>{FEATURE_LABELS[r.feature] ?? r.feature}</td>
                             <td style={td}>{r.action ?? "—"}</td>
                             <td style={td}>{isBillableAction(r.action) ? "Yes" : "No"}</td>
-                            <td style={td}>{r.duration_ms != null ? `${Math.round(r.duration_ms / 1000)}s` : "—"}</td>
+                            <td style={td}>
+                              {r.duration_ms != null ? `${Math.round(r.duration_ms / 1000)}s` : "—"}
+                            </td>
                             <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
                           </tr>
                         ))}
@@ -427,23 +538,52 @@ export function AdminDashboard() {
               </div>
             </div>
           )}
-
         </>
       )}
     </div>
   );
 }
 
-const pageStyle: React.CSSProperties = { maxWidth: 1100, margin: "0 auto", padding: "32px 24px 64px" };
+const pageStyle: React.CSSProperties = {
+  maxWidth: 1100,
+  margin: "0 auto",
+  padding: "32px 24px 64px",
+};
 const muted: React.CSSProperties = { color: "#64748b" };
-const td: React.CSSProperties = { padding: "8px 10px", borderBottom: "1px solid #f1f5f9", fontSize: 13 };
-const row: React.CSSProperties = { display: "flex", justifyContent: "space-between", padding: "8px 12px", background: "#f8fafc", borderRadius: 6 };
+const td: React.CSSProperties = {
+  padding: "8px 10px",
+  borderBottom: "1px solid #f1f5f9",
+  fontSize: 13,
+};
+const row: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  padding: "8px 12px",
+  background: "#f8fafc",
+  borderRadius: 6,
+};
 
-function Stat({ label, value, format }: { label: string; value: number; format?: (n: number) => string }) {
+function Stat({
+  label,
+  value,
+  format,
+}: {
+  label: string;
+  value: number;
+  format?: (n: number) => string;
+}) {
   return (
-    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16 }}>
-      <div style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{format ? format(value) : value}</div>
+    <div
+      style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16 }}
+    >
+      <div
+        style={{ fontSize: 12, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+        {format ? format(value) : value}
+      </div>
     </div>
   );
 }
@@ -464,7 +604,17 @@ function Table({ headers, children }: { headers: string[]; children: React.React
         <thead style={{ background: "#f8fafc" }}>
           <tr>
             {headers.map((h) => (
-              <th key={h} style={{ textAlign: "left", padding: "10px", fontSize: 12, color: "#475569", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <th
+                key={h}
+                style={{
+                  textAlign: "left",
+                  padding: "10px",
+                  fontSize: 12,
+                  color: "#475569",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
                 {h}
               </th>
             ))}

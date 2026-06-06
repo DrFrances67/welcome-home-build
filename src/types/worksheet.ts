@@ -5,10 +5,23 @@
 // model permissive for incremental adoption while the known fields document
 // the common shape.
 export type WorksheetElementType =
-  | "instruction" | "text" | "image" | "blank" | "wordBank" | "matching"
-  | "multipleChoice" | "truefalse" | "shortAnswer" | "fillBlank" | "essay"
-  | "table" | "customShape" | "successCriteria" | "exitTicket"
-  | "dokQuestions" | "divider";
+  | "instruction"
+  | "text"
+  | "image"
+  | "blank"
+  | "wordBank"
+  | "matching"
+  | "multipleChoice"
+  | "truefalse"
+  | "shortAnswer"
+  | "fillBlank"
+  | "essay"
+  | "table"
+  | "customShape"
+  | "successCriteria"
+  | "exitTicket"
+  | "dokQuestions"
+  | "divider";
 
 export interface DokLevel {
   level: number;

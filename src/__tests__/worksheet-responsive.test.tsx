@@ -27,11 +27,13 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   Object.defineProperty(window, "innerHeight", { value: height, configurable: true });
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches:
-      query.includes("pointer: coarse") ? pointer === "coarse" :
-      query.includes("max-width: 768px") ? width <= 768 :
-      query.includes("max-width: 1024px") ? width <= 1024 :
-      false,
+    matches: query.includes("pointer: coarse")
+      ? pointer === "coarse"
+      : query.includes("max-width: 768px")
+        ? width <= 768
+        : query.includes("max-width: 1024px")
+          ? width <= 1024
+          : false,
     media: query,
     onchange: null,
     addEventListener: vi.fn(),
@@ -72,26 +74,36 @@ describe("worksheet builder responsive sidebar", () => {
     fireEvent.scroll(sidebar);
 
     expect(sidebar.scrollTop).toBe(560);
-    expect(within(sidebar).getByRole("listitem", { name: /add section break element/i })).toBeTruthy();
+    expect(
+      within(sidebar).getByRole("listitem", { name: /add section break element/i }),
+    ).toBeTruthy();
   });
 
   it("keeps every worksheet section and option reachable in the mobile stacked layout", () => {
     setViewport(390, 844, "coarse");
     const sidebar = openWorksheetBuilder();
 
-    expect(within(sidebar).getByRole("button", { name: /browse ny state standards/i })).toBeTruthy();
+    expect(
+      within(sidebar).getByRole("button", { name: /browse ny state standards/i }),
+    ).toBeTruthy();
     expect(within(sidebar).getByLabelText(/upload reference worksheet/i)).toBeTruthy();
     expect(within(sidebar).getByLabelText(/upload worksheet file to recreate/i)).toBeTruthy();
 
     for (const option of worksheetOptions) {
-      const button = within(sidebar).getByRole("listitem", { name: new RegExp(`add ${option} element`, "i") });
+      const button = within(sidebar).getByRole("listitem", {
+        name: new RegExp(`add ${option} element`, "i"),
+      });
       button.focus();
       expect(document.activeElement).toBe(button);
     }
 
-    const css = Array.from(document.querySelectorAll("style")).map((style) => style.textContent || "").join("\n");
+    const css = Array.from(document.querySelectorAll("style"))
+      .map((style) => style.textContent || "")
+      .join("\n");
     expect(css).toContain("@media (max-width: 768px)");
-    expect(css).toContain(".ws-body { flex-direction: column !important; overflow: visible !important; height: auto !important; }");
+    expect(css).toContain(
+      ".ws-body { flex-direction: column !important; overflow: visible !important; height: auto !important; }",
+    );
     expect(css).toContain(".ws-sidebar-left, .ws-sidebar-right");
     expect(css).toContain("overflow: visible !important");
   });

@@ -16,16 +16,23 @@ describe("matchesShortcut", () => {
   });
   it("respects shift requirement", () => {
     expect(matchesShortcut({ key: "?", shiftKey: true }, { key: "?", mods: ["shift"] })).toBe(true);
-    expect(matchesShortcut({ key: "?", shiftKey: false }, { key: "?", mods: ["shift"] })).toBe(false);
+    expect(matchesShortcut({ key: "?", shiftKey: false }, { key: "?", mods: ["shift"] })).toBe(
+      false,
+    );
   });
 });
 
 describe("isEditableTarget", () => {
-  beforeEach(() => { document.body.innerHTML = ""; });
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
   it("returns true for INPUT, TEXTAREA, SELECT", () => {
-    const i = document.createElement("input"); document.body.appendChild(i);
-    const t = document.createElement("textarea"); document.body.appendChild(t);
-    const s = document.createElement("select"); document.body.appendChild(s);
+    const i = document.createElement("input");
+    document.body.appendChild(i);
+    const t = document.createElement("textarea");
+    document.body.appendChild(t);
+    const s = document.createElement("select");
+    document.body.appendChild(s);
     expect(isEditableTarget(i)).toBe(true);
     expect(isEditableTarget(t)).toBe(true);
     expect(isEditableTarget(s)).toBe(true);
@@ -37,8 +44,10 @@ describe("isEditableTarget", () => {
     expect(isEditableTarget(d)).toBe(true);
   });
   it("returns false for buttons / divs / null", () => {
-    const b = document.createElement("button"); document.body.appendChild(b);
-    const d = document.createElement("div"); document.body.appendChild(d);
+    const b = document.createElement("button");
+    document.body.appendChild(b);
+    const d = document.createElement("div");
+    document.body.appendChild(d);
     expect(isEditableTarget(b)).toBe(false);
     expect(isEditableTarget(d)).toBe(false);
     expect(isEditableTarget(null)).toBe(false);
@@ -56,7 +65,9 @@ function fireKey(opts: KeyboardEventInit & { key: string }, target?: EventTarget
 }
 
 describe("useGlobalShortcuts", () => {
-  afterEach(() => { document.body.innerHTML = ""; });
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
 
   it("invokes the matching handler and prevents default", () => {
     const run = vi.fn();
@@ -88,18 +99,16 @@ describe("useGlobalShortcuts", () => {
     const run = vi.fn();
     const input = document.createElement("input");
     document.body.appendChild(input);
-    renderHook(() => useGlobalShortcuts([
-      { key: "Escape", description: "x", allowInInput: true, run },
-    ]));
+    renderHook(() =>
+      useGlobalShortcuts([{ key: "Escape", description: "x", allowInInput: true, run }]),
+    );
     fireKey({ key: "Escape" }, input);
     expect(run).toHaveBeenCalledTimes(1);
   });
 
   it("matches modifier combinations", () => {
     const run = vi.fn();
-    renderHook(() => useGlobalShortcuts([
-      { key: "k", mods: ["mod"], description: "search", run },
-    ]));
+    renderHook(() => useGlobalShortcuts([{ key: "k", mods: ["mod"], description: "search", run }]));
     fireKey({ key: "k" }); // no mod
     expect(run).not.toHaveBeenCalled();
     fireKey({ key: "k", ctrlKey: true });
@@ -119,7 +128,8 @@ describe("useGlobalShortcuts", () => {
   });
 
   it("re-reads the latest handler list without re-binding the listener", () => {
-    const a = vi.fn(); const b = vi.fn();
+    const a = vi.fn();
+    const b = vi.fn();
     let handlers = [{ key: "1", description: "a", run: a }];
     const { rerender } = renderHook(() => useGlobalShortcuts(handlers));
     fireKey({ key: "1" });
@@ -132,16 +142,20 @@ describe("useGlobalShortcuts", () => {
   });
 
   it("simulates the full app shortcut surface (1-4 + ? + g + Esc)", () => {
-    const setTool = vi.fn(); const help = vi.fn(); const top = vi.fn();
-    renderHook(() => useGlobalShortcuts([
-      { key: "1", description: "lesson",    run: () => setTool("lesson") },
-      { key: "2", description: "danielson", run: () => setTool("danielson") },
-      { key: "3", description: "worksheet", run: () => setTool("worksheet") },
-      { key: "4", description: "email",     run: () => setTool("email") },
-      { key: "?", mods: ["shift"], description: "help", run: help },
-      { key: "g", description: "top", run: top },
-      { key: "Escape", description: "close", allowInInput: true, run: help },
-    ]));
+    const setTool = vi.fn();
+    const help = vi.fn();
+    const top = vi.fn();
+    renderHook(() =>
+      useGlobalShortcuts([
+        { key: "1", description: "lesson", run: () => setTool("lesson") },
+        { key: "2", description: "danielson", run: () => setTool("danielson") },
+        { key: "3", description: "worksheet", run: () => setTool("worksheet") },
+        { key: "4", description: "email", run: () => setTool("email") },
+        { key: "?", mods: ["shift"], description: "help", run: help },
+        { key: "g", description: "top", run: top },
+        { key: "Escape", description: "close", allowInInput: true, run: help },
+      ]),
+    );
     fireKey({ key: "1" });
     fireKey({ key: "3" });
     fireKey({ key: "?", shiftKey: true });

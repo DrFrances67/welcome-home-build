@@ -75,10 +75,26 @@ export const getAdminDashboardData = createServerFn({ method: "GET" })
 
     const [u, s, f, t, ai] = await Promise.all([
       supabaseAdmin.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabaseAdmin.from("user_sessions").select("*").order("started_at", { ascending: false }).limit(500),
-      supabaseAdmin.from("feature_usage").select("*").order("created_at", { ascending: false }).limit(500),
-      supabaseAdmin.from("tool_usage").select("*").order("used_at", { ascending: false }).limit(2000),
-      supabaseAdmin.from("ai_usage_log").select("*").order("created_at", { ascending: false }).limit(2000),
+      supabaseAdmin
+        .from("user_sessions")
+        .select("*")
+        .order("started_at", { ascending: false })
+        .limit(500),
+      supabaseAdmin
+        .from("feature_usage")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabaseAdmin
+        .from("tool_usage")
+        .select("*")
+        .order("used_at", { ascending: false })
+        .limit(2000),
+      supabaseAdmin
+        .from("ai_usage_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(2000),
     ]);
 
     return {

@@ -19,7 +19,11 @@ export function renderInlineMarkdown(input: string | undefined | null): React.Re
     const bold = m[2] ?? m[3];
     const ital = m[4] ?? m[5];
     if (bold != null) {
-      out.push(<strong key={key++} style={{ fontWeight: 700 }}>{bold}</strong>);
+      out.push(
+        <strong key={key++} style={{ fontWeight: 700 }}>
+          {bold}
+        </strong>,
+      );
     } else if (ital != null) {
       out.push(<em key={key++}>{ital}</em>);
     }
@@ -43,10 +47,7 @@ export function stripInlineMarkdown(input: string | undefined | null): string {
 // HTML variant for export (PDF/print). Escapes HTML then applies bold/italic.
 export function inlineMarkdownToHtml(input: string | undefined | null): string {
   if (input == null) return "";
-  const esc = String(input)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  const esc = String(input).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return esc
     .replace(/\*\*([^*\n]+?)\*\*/g, "<strong>$1</strong>")
     .replace(/__([^_\n]+?)__/g, "<strong>$1</strong>")

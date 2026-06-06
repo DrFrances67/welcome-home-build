@@ -72,34 +72,73 @@ function ResendsAdminPage() {
   if (!isAdmin) return <Navigate to="/" />;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#8B0AB0", margin: 0 }}>Verification email resends</h1>
+    <div
+      style={{
+        padding: 24,
+        maxWidth: 1100,
+        margin: "0 auto",
+        fontFamily: "Inter, system-ui, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#8B0AB0", margin: 0 }}>
+          Verification email resends
+        </h1>
         <Link to="/admin" style={{ color: "#8B0AB0", fontSize: 13, fontWeight: 600 }}>
           ← Back to admin
         </Link>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         <Stat label="Total attempts" value={stats.total} />
         <Stat label="Sent" value={stats.sent} color="#047857" />
         <Stat label="Failed" value={stats.failed} color="#B91C1C" />
         <Stat label="Unique emails" value={stats.uniqueEmails} />
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12, alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 12,
+          alignItems: "center",
+        }}
+      >
         <input
           placeholder="Filter by email…"
           value={emailFilter}
           onChange={(e) => setEmailFilter(e.target.value)}
           style={inputStyle}
         />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as never)} style={inputStyle}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as never)}
+          style={inputStyle}
+        >
           <option value="all">All statuses</option>
           <option value="sent">Sent</option>
           <option value="failed">Failed</option>
         </select>
-        <select value={range} onChange={(e) => setRange(e.target.value as never)} style={inputStyle}>
+        <select
+          value={range}
+          onChange={(e) => setRange(e.target.value as never)}
+          style={inputStyle}
+        >
           <option value="24h">Last 24 hours</option>
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
@@ -108,12 +147,27 @@ function ResendsAdminPage() {
       </div>
 
       {error && (
-        <div style={{ background: "#fef2f2", color: "#b91c1c", padding: 12, borderRadius: 8, marginBottom: 12 }}>
+        <div
+          style={{
+            background: "#fef2f2",
+            color: "#b91c1c",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+          }}
+        >
           {error}
         </div>
       )}
 
-      <div style={{ background: "white", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #E5E7EB",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ background: "#F9FAFB", textAlign: "left" }}>
@@ -125,9 +179,17 @@ function ResendsAdminPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} style={{ padding: 16, textAlign: "center", color: "#6B7280" }}>Loading…</td></tr>
+              <tr>
+                <td colSpan={4} style={{ padding: 16, textAlign: "center", color: "#6B7280" }}>
+                  Loading…
+                </td>
+              </tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={4} style={{ padding: 16, textAlign: "center", color: "#6B7280" }}>No attempts in this range.</td></tr>
+              <tr>
+                <td colSpan={4} style={{ padding: 16, textAlign: "center", color: "#6B7280" }}>
+                  No attempts in this range.
+                </td>
+              </tr>
             ) : (
               filtered.map((r) => (
                 <tr key={r.id} style={{ borderTop: "1px solid #F3F4F6" }}>
@@ -161,7 +223,9 @@ function ResendsAdminPage() {
 
 function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div style={{ background: "white", border: "1px solid #E5E7EB", borderRadius: 12, padding: 14 }}>
+    <div
+      style={{ background: "white", border: "1px solid #E5E7EB", borderRadius: 12, padding: 14 }}
+    >
       <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 22, fontWeight: 800, color: color ?? "#111827" }}>{value}</div>
     </div>
@@ -176,5 +240,10 @@ const inputStyle: React.CSSProperties = {
   background: "white",
   color: "#111827",
 };
-const th: React.CSSProperties = { padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#374151" };
+const th: React.CSSProperties = {
+  padding: "10px 12px",
+  fontSize: 12,
+  fontWeight: 700,
+  color: "#374151",
+};
 const td: React.CSSProperties = { padding: "10px 12px", verticalAlign: "top" };

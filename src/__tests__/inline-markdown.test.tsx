@@ -35,7 +35,7 @@ describe("renderInlineMarkdown (React)", () => {
     );
     const strongs = container.querySelectorAll("strong");
     expect(strongs).toHaveLength(3);
-    expect(Array.from(strongs).map(s => s.textContent)).toEqual(["One", "two", "three"]);
+    expect(Array.from(strongs).map((s) => s.textContent)).toEqual(["One", "two", "three"]);
   });
 
   it("returns plain text when no markers are present", () => {
@@ -78,8 +78,9 @@ describe("inlineMarkdownToHtml (HTML / print export)", () => {
 
 describe("stripInlineMarkdown", () => {
   it("removes ** and __ markers but keeps text", () => {
-    expect(stripInlineMarkdown("Read the **important** __notes__."))
-      .toBe("Read the important notes.");
+    expect(stripInlineMarkdown("Read the **important** __notes__.")).toBe(
+      "Read the important notes.",
+    );
   });
 });
 

@@ -29,7 +29,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }, IDLE_TIMEOUT_MS);
     };
     const events: (keyof WindowEventMap)[] = [
-      "mousemove", "mousedown", "keydown", "touchstart", "scroll", "wheel", "click",
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+      "wheel",
+      "click",
     ];
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
     reset();
@@ -40,7 +46,19 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [user?.id]);
 
   if (loading) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>Loading…</div>;
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#64748b",
+        }}
+      >
+        Loading…
+      </div>
+    );
   }
 
   if (!user) {

@@ -27,13 +27,22 @@ export function UserMenu() {
     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
     textDecoration: "none",
   };
-  const primary: React.CSSProperties = { ...btn, background: "#4f46e5", color: "white", border: "1px solid #4f46e5" };
+  const primary: React.CSSProperties = {
+    ...btn,
+    background: "#4f46e5",
+    color: "white",
+    border: "1px solid #4f46e5",
+  };
 
   if (!user) {
     return (
       <div style={wrap}>
-        <Link to="/auth" search={{ mode: "signin" }} style={btn}>Sign in</Link>
-        <Link to="/auth" search={{ mode: "signup" }} style={primary}>Sign up</Link>
+        <Link to="/auth" search={{ mode: "signin" }} style={btn}>
+          Sign in
+        </Link>
+        <Link to="/auth" search={{ mode: "signup" }} style={primary}>
+          Sign up
+        </Link>
       </div>
     );
   }
@@ -43,12 +52,27 @@ export function UserMenu() {
       <Link
         to="/account"
         title="Account settings"
-        style={{ fontSize: 12, color: "#475569", background: "white", padding: "6px 10px", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", textDecoration: "none", fontWeight: 600 }}
+        style={{
+          fontSize: 12,
+          color: "#475569",
+          background: "white",
+          padding: "6px 10px",
+          borderRadius: 8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          textDecoration: "none",
+          fontWeight: 600,
+        }}
       >
         {profile?.username ?? user.email}
       </Link>
-      {isAdmin && <Link to="/admin" style={btn}>Admin</Link>}
-      <button onClick={signOut} style={btn}>Sign out</button>
+      {isAdmin && (
+        <Link to="/admin" style={btn}>
+          Admin
+        </Link>
+      )}
+      <button onClick={signOut} style={btn}>
+        Sign out
+      </button>
     </div>
   );
 }

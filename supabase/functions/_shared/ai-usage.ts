@@ -3,21 +3,21 @@
 
 // Prices in USD per 1M tokens (input, output). Rough public rates; safe defaults.
 const TEXT_PRICING: Record<string, { in: number; out: number }> = {
-  "google/gemini-2.5-flash": { in: 0.30, out: 2.50 },
-  "google/gemini-2.5-flash-lite": { in: 0.10, out: 0.40 },
-  "google/gemini-2.5-pro": { in: 1.25, out: 10.00 },
-  "google/gemini-3-flash-preview": { in: 0.30, out: 2.50 },
-  "google/gemini-3.1-flash-lite-preview": { in: 0.10, out: 0.40 },
-  "google/gemini-3.1-pro-preview": { in: 1.25, out: 10.00 },
-  "google/gemini-3.5-flash": { in: 0.30, out: 2.50 },
-  "openai/gpt-5": { in: 1.25, out: 10.00 },
-  "openai/gpt-5-mini": { in: 0.25, out: 2.00 },
-  "openai/gpt-5-nano": { in: 0.05, out: 0.40 },
-  "openai/gpt-5.2": { in: 1.25, out: 10.00 },
-  "openai/gpt-5.4": { in: 2.50, out: 15.00 },
-  "openai/gpt-5.4-mini": { in: 0.30, out: 2.50 },
-  "openai/gpt-5.4-nano": { in: 0.05, out: 0.40 },
-  "openai/gpt-5.5": { in: 3.00, out: 18.00 },
+  "google/gemini-2.5-flash": { in: 0.3, out: 2.5 },
+  "google/gemini-2.5-flash-lite": { in: 0.1, out: 0.4 },
+  "google/gemini-2.5-pro": { in: 1.25, out: 10.0 },
+  "google/gemini-3-flash-preview": { in: 0.3, out: 2.5 },
+  "google/gemini-3.1-flash-lite-preview": { in: 0.1, out: 0.4 },
+  "google/gemini-3.1-pro-preview": { in: 1.25, out: 10.0 },
+  "google/gemini-3.5-flash": { in: 0.3, out: 2.5 },
+  "openai/gpt-5": { in: 1.25, out: 10.0 },
+  "openai/gpt-5-mini": { in: 0.25, out: 2.0 },
+  "openai/gpt-5-nano": { in: 0.05, out: 0.4 },
+  "openai/gpt-5.2": { in: 1.25, out: 10.0 },
+  "openai/gpt-5.4": { in: 2.5, out: 15.0 },
+  "openai/gpt-5.4-mini": { in: 0.3, out: 2.5 },
+  "openai/gpt-5.4-nano": { in: 0.05, out: 0.4 },
+  "openai/gpt-5.5": { in: 3.0, out: 18.0 },
 };
 
 // Image generation: flat per-image USD cost.

@@ -55,9 +55,10 @@ export function scrollEverythingToTop(opts?: {
   const canvas =
     opts?.canvas ??
     (typeof document !== "undefined"
-      ? (document.getElementById("worksheet-canvas") as unknown as
-          | { scrollTop: number; scrollTo: (o: ScrollToOptions) => void }
-          | null)
+      ? (document.getElementById("worksheet-canvas") as unknown as {
+          scrollTop: number;
+          scrollTo: (o: ScrollToOptions) => void;
+        } | null)
       : null);
   const win =
     opts?.win ??

@@ -15,7 +15,7 @@ export function validateSituations(selected) {
     issues.push({
       level: "warning",
       message: `"Other" is a catch-all — pairing it with specific situations confuses the AI's focus.`,
-      suggestion: selected.filter(s => s !== "Other"),
+      suggestion: selected.filter((s) => s !== "Other"),
     });
   }
   for (const rule of SITUATION_CONFLICTS) {
