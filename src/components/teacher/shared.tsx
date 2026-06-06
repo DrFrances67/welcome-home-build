@@ -583,10 +583,11 @@ function ElView({ el, gv, selected, onClick, onResize, onDelete, onDragStart, on
     const accent = el.type === "successCriteria" ? gv.color : "#0369A1";
     const bg = el.type === "successCriteria" ? gv.light : "#EFF6FF";
     const sc = resizeScaleFor(el);
-    // Line spacing must stay CONSTANT regardless of box height — vertical
-    // resizing should never add gaps between items. Items always pack from
-    // the top with a fixed gap that only scales with width (sc.s tracks width).
-    const itemGap = 8 * sc.s;
+    // Line spacing must stay tight and CONSTANT regardless of box size —
+    // neither vertical nor horizontal resizing should add gaps between items.
+    // Items pack from the top with a fixed gap; we only allow it to shrink
+    // (cap the scale at 1) so widening the box never spreads items apart.
+    const itemGap = 8 * Math.min(1, sc.s);
     return (
       <div className="ws-element" style={wrap} onPointerDown={handleMouseDown} onClick={onClick} role="group" tabIndex={0} aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`} onKeyDown={e => e.key === "Enter" && onClick()}>
         <div style={{ background: bg, border: `2px solid ${accent}45`, borderLeft: `${6 * sc.s}px solid ${accent}`, borderRadius: 10, padding: `${12 * sc.s}px ${16 * sc.s}px`, height: el.heightOverride ? "100%" : undefined, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
