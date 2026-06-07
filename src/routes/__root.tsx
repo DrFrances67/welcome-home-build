@@ -117,17 +117,24 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserMenu } from "@/components/UserMenu";
 
 import { ContactWidget } from "@/components/ContactWidget";
 
 function RootComponent() {
+  // Create one QueryClient per render tree (per request on the server) so
+  // cached data never leaks between SSR requests.
+  const [queryClient] = useState(() => new QueryClient());
   return (
-    <AuthProvider>
-      <UserMenu />
-      <Outlet />
-      <ContactWidget />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <UserMenu />
+        <Outlet />
+        <ContactWidget />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
