@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
