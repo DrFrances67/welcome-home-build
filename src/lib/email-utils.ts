@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Validation for the email assistant's situation selection.
 import { SITUATION_MAX, SITUATION_CONFLICTS } from "@/data/email";
 
