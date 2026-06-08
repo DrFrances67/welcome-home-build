@@ -111,7 +111,7 @@ function innerScaleOf(wrapper: HTMLElement): { sx: number; sy: number; raw: stri
   const inner = wrapper.querySelector<HTMLElement>(":scope > div > div");
   expect(inner, "ScaledContent inner div must exist").toBeTruthy();
   const raw = inner!.style.transform || "";
-  const m = raw.match(/^scale\(([\-0-9.]+)\s*,\s*([\-0-9.]+)\)\s*$/);
+  const m = raw.match(/^scale\(([-0-9.]+)\s*,\s*([-0-9.]+)\)\s*$/);
   // Critical: transform must ONLY be scale(sx, sy). No rotate/skew/translate
   // leaking from a previous resize. If the regex fails, the transform string
   // contains something other than a clean scale call.
