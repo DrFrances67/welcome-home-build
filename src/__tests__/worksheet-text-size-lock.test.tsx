@@ -16,7 +16,7 @@ import { TheTechSavvyTeacherApp } from "../components/TheTechSavvyTeacherApp";
  */
 
 beforeEach(() => {
-  (globalThis as any).ResizeObserver = class {
+  (globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
