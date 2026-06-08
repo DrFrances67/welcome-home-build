@@ -70,7 +70,7 @@ function widthPctOf(wrapper: HTMLElement): number {
 }
 
 function parseScale(transform: string): { sx: number; sy: number } {
-  const m = transform.match(/scale\(([\-0-9.]+)\s*,\s*([\-0-9.]+)\)/);
+  const m = transform.match(/scale\(([-0-9.]+)\s*,\s*([-0-9.]+)\)/);
   if (!m) throw new Error(`expected scale() transform, got: "${transform}"`);
   return { sx: parseFloat(m[1]), sy: parseFloat(m[2]) };
 }
