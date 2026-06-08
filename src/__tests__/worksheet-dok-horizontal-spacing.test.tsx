@@ -124,7 +124,7 @@ function getListLayout(wrapper: HTMLElement): { gap: number; justify: string } {
 
 describe("worksheet builder: horizontal-only resize keeps inner box spacing tight", () => {
   beforeEach(() => {
-    (globalThis as any).ResizeObserver = class {
+    (globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = class {
       observe() {}
       unobserve() {}
       disconnect() {}

@@ -118,7 +118,7 @@ describe("worksheet element resizing scales inner content proportionally", () =>
   beforeEach(() => {
     // Stub ResizeObserver so ScaledContent's effect installs cleanly. We drive
     // re-measurement by triggering React re-renders via the resize handler.
-    (globalThis as any).ResizeObserver = class {
+    (globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = class {
       observe() {}
       unobserve() {}
       disconnect() {}

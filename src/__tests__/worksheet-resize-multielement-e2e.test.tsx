@@ -165,7 +165,7 @@ const ALL_ELEMENT_TYPES = [
 
 describe("worksheet builder: multi-element back-to-back resize E2E", () => {
   beforeEach(() => {
-    (globalThis as any).ResizeObserver = class {
+    (globalThis as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = class {
       observe() {}
       unobserve() {}
       disconnect() {}
