@@ -66,7 +66,7 @@ export function detectPII(text: string): PiiHit[] {
   if (!text || typeof text !== "string") return hits;
 
   // ── Birthdays / dates of birth ───────────────────────────────────────
-  const dateRe = /\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])[\/\-](\d{2}|\d{4})\b/g;
+  const dateRe = /\b(0?[1-9]|1[0-2])[/-](0?[1-9]|[12]\d|3[01])[/-](\d{2}|\d{4})\b/g;
   let m: RegExpExecArray | null;
   while ((m = dateRe.exec(text))) hits.push({ type: "birthday", match: m[0] });
 

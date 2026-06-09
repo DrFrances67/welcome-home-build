@@ -66,7 +66,8 @@ const ContactMessageEmail = ({
 
 export const template = {
   component: ContactMessageEmail,
-  subject: (data: Record<string, any>) => `📬 Contact form: ${data?.subject || "New message"}`,
+  subject: (data: Record<string, unknown>) =>
+    `📬 Contact form: ${(data?.subject as string) || "New message"}`,
   displayName: "Contact form message",
   to: "Edtechsavvyteach@gmail.com",
   previewData: {

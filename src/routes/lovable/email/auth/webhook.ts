@@ -21,6 +21,7 @@ const EMAIL_SUBJECTS: Record<string, string> = {
 };
 
 // Template mapping
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
   signup: SignupEmail,
   invite: InviteEmail,
@@ -55,6 +56,8 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
         }
 
         // Verify signature + timestamp, then parse payload.
+        // Payload shape comes from the external email webhook SDK.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let payload: any;
         let run_id = "";
         try {
