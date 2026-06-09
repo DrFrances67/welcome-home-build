@@ -20,6 +20,7 @@ export function stripFences(raw: string): string {
 
 /** Remove control chars (except tab/newline/cr) that break JSON.parse. */
 export function stripControlChars(s: string): string {
+  // eslint-disable-next-line no-control-regex -- intentionally strips raw control chars that break JSON.parse
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 }
 
