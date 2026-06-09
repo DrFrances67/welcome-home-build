@@ -60,8 +60,8 @@ const AdminNewSignupEmail = ({ username, name, email, timestamp }: AdminNewSignu
 
 export const template = {
   component: AdminNewSignupEmail,
-  subject: (data: Record<string, any>) =>
-    `🎓 New Teacher Signed Up — ${data?.username || "new user"}`,
+  subject: (data: Record<string, unknown>) =>
+    `🎓 New Teacher Signed Up — ${(data?.username as string) || "new user"}`,
   displayName: "Admin: new signup notification",
   to: "admin@techsavvyteacher.app",
   previewData: {

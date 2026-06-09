@@ -66,12 +66,12 @@ export async function callAiRaw(
         signal: ctrl.signal,
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}) as any);
+        const e = await res.json().catch(() => ({}));
         throw new Error(e?.error?.message || e?.error || `API error ${res.status}`);
       }
       const data = await res.json();
       if (data.error) throw new Error(data.error.message || data.error || "AI error");
-      return (data.content?.map((b: any) => b.text || "").join("") as string) || "";
+      return (data.content?.map((b: { text?: string }) => b.text || "").join("") as string) || "";
     } finally {
       clearTimeout(timer);
     }
@@ -79,16 +79,16 @@ export async function callAiRaw(
 
   try {
     return await doFetch();
-  } catch (e: any) {
-    const msg = String(e?.message || e);
+  } catch (e) {
+    const msg = String((e as { message?: string })?.message || e);
     if (!retry || !TRANSIENT_RE.test(msg)) throw e;
     await new Promise((r) => setTimeout(r, 800));
     try {
       return await doFetch();
-    } catch (e2: any) {
+    } catch (e2) {
       throw new Error(
         "Network request to the AI service failed. Please check your internet connection and try again. " +
-          `(${String(e2?.message || e2)})`,
+          `(${String((e2 as { message?: string })?.message || e2)})`,
       );
     }
   }
@@ -123,7 +123,7 @@ export async function generateImage(opts: GenerateImageOptions): Promise<string>
       continue;
     }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}) as any);
+      const err = await res.json().catch(() => ({}));
       throw new Error(err?.error || `API error ${res.status}`);
     }
     const data = await res.json();
