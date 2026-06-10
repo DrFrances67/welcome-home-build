@@ -8,19 +8,20 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const userId = user?.id;
 
   useEffect(() => {
-    if (user) {
-      startTrackingSession(user.id);
+    if (userId) {
+      startTrackingSession(userId);
       return () => {
         endTrackingSession();
       };
     }
-  }, [user?.id]);
+  }, [userId]);
 
   // Auto-logout after 30 minutes of inactivity.
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let timer: ReturnType<typeof setTimeout>;
     const reset = () => {
       clearTimeout(timer);
