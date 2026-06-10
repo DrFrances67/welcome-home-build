@@ -44,7 +44,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, reset));
     };
-  }, [user?.id]);
+  }, [userId]);
 
   if (loading) {
     return (
