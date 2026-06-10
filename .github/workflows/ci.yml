@@ -27,3 +27,6 @@ jobs:
 
       - name: Run Prettier check
         run: bunx prettier --check .
+
+      - name: Run tests
+        run: bun run test
