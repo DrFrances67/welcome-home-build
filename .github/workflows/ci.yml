@@ -29,4 +29,8 @@ jobs:
         run: bunx prettier --check .
 
       - name: Run tests
-        run: bun run test
+        run: |
+          if ! bun run test 2> test-stderr.log; then
+            cat test-stderr.log
+            exit 1
+          fi
