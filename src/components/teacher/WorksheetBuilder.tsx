@@ -1227,7 +1227,6 @@ Output ONLY the JSON array.`,
 
         <fieldset
           style={{
-            border: "none",
             margin: 0,
             padding: "4px 10px",
             background: "#F9FAFB",
