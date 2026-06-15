@@ -2653,6 +2653,45 @@ function TheTechSavvyTeacherAppRoot() {
         </button>
       )}
 
+      {/* Keyboard shortcuts — floating bottom right */}
+      <button
+        type="button"
+        onClick={() => setHelpOpen(true)}
+        aria-label="Show keyboard shortcuts (press ? )"
+        title="Keyboard shortcuts (?)"
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          zIndex: 900,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          background: SITE_COLOR,
+          color: "white",
+          border: "1px solid rgba(255,255,255,0.35)",
+          borderRadius: 22,
+          padding: "8px 14px",
+          fontSize: 12.5,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "'Inter',sans-serif",
+          boxShadow: "0 6px 20px rgba(207,39,245,0.45)",
+        }}
+      >
+        <kbd
+          style={{
+            background: "rgba(0,0,0,0.25)",
+            borderRadius: 4,
+            padding: "1px 6px",
+            fontSize: 11,
+          }}
+        >
+          ?
+        </kbd>
+        Shortcuts
+      </button>
+
       {/* Keyboard shortcuts help overlay */}
       <ShortcutsHelpOverlay
         open={helpOpen}
