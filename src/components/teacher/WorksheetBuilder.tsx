@@ -1143,7 +1143,7 @@ Output ONLY the JSON array.`,
                 letterSpacing: 0.5,
               }}
             >
-              NY Standards · Pre-K–12
+              {stHasStandards ? `${stInfo.standardsShort} · ` : ""}Pre-K–12
             </div>
           </div>
         </div>
