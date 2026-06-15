@@ -11,6 +11,7 @@ import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { BANDS, F } from "./shared";
+import { getActiveStateInfo } from "@/data/state-standards";
 
 export function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   const [msgs, setMsgs] = useState([
@@ -150,7 +151,7 @@ Your role:
 - Generate ready-to-use worksheet content (questions, activities, word banks, matching pairs, passages)
 - Suggest ideas appropriate for ${gv.name} cognitive level
 - Help simplify or increase text complexity when requested
-- Align suggestions with NY State learning standards when relevant
+- Align suggestions with ${getActiveStateInfo().standardsName} when relevant
 - Be warm and practical — provide content the teacher can directly copy
 - Use bullet points and clear formatting for readability
 - IMPORTANT: If the teacher asks you to "make / create / build a worksheet", do NOT respond here — that is handled separately and produces real worksheet blocks.

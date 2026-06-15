@@ -35,6 +35,8 @@ import {
   HelpModal,
   AlignmentModal,
 } from "./shared";
+import { getActiveStateInfo } from "@/data/state-standards";
+import { useAppState } from "@/contexts/AppStateContext";
 
 export function WorksheetBuilder() {
   const [ws, setWs] = useState({
@@ -60,6 +62,7 @@ export function WorksheetBuilder() {
   const [showAlignment, setShowAlignment] = useState(false);
   const [refImg, setRefImg] = useState(null);
   const [refDesc, setRefDesc] = useState("");
+  const { hasStandards: stHasStandards, info: stInfo } = useAppState();
   const [analyzing, setAnalyzing] = useState(false);
   // Worksheet-file uploader (PDF/CSV) state
   const [wsFile, setWsFile] = useState(null); // { name, raw }
@@ -488,11 +491,11 @@ export function WorksheetBuilder() {
         (await callAiRaw({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          system: `You are an expert curriculum designer creating complete, print-ready worksheets for NY State teachers. Always respond with valid JSON only — no markdown, no preamble, no explanation outside the JSON array.`,
+          system: `You are an expert curriculum designer creating complete, print-ready worksheets for ${getActiveStateInfo().name} teachers. Always respond with valid JSON only — no markdown, no preamble, no explanation outside the JSON array.`,
           messages: [
             {
               role: "user",
-              content: `Design a complete, engaging worksheet for ${g.name} students (${bandLabel}) aligned to NY State Standard ${std.code}: "${std.desc}".
+              content: `Design a complete, engaging worksheet for ${g.name} students (${bandLabel}) aligned to ${getActiveStateInfo().name} Standard ${std.code}: "${std.desc}".
 
 Return ONLY a JSON array of 5–8 worksheet elements. Each element must use EXACTLY one of these types and shapes:
 
@@ -1140,7 +1143,7 @@ Output ONLY the JSON array.`,
                 letterSpacing: 0.5,
               }}
             >
-              NY Standards · Pre-K–12
+              {stHasStandards ? `${stInfo.standardsShort} · ` : ""}Pre-K–12
             </div>
           </div>
         </div>
@@ -1335,23 +1338,25 @@ Output ONLY the JSON array.`,
         >
           🔀 Versions
         </button>
-        <button
-          onClick={() => setShowAlignment(true)}
-          aria-label="View standards alignment for each question"
-          style={{
-            padding: "6px 12px",
-            borderRadius: 7,
-            border: "1.5px solid #E5E7EB",
-            background: "white",
-            cursor: "pointer",
-            fontFamily: F,
-            fontWeight: 600,
-            fontSize: 13,
-            color: "#374151",
-          }}
-        >
-          🎯 Alignment
-        </button>
+        {stHasStandards && (
+          <button
+            onClick={() => setShowAlignment(true)}
+            aria-label="View standards alignment for each question"
+            style={{
+              padding: "6px 12px",
+              borderRadius: 7,
+              border: "1.5px solid #E5E7EB",
+              background: "white",
+              cursor: "pointer",
+              fontFamily: F,
+              fontWeight: 600,
+              fontSize: 13,
+              color: "#374151",
+            }}
+          >
+            🎯 Alignment
+          </button>
+        )}
         <button
           onClick={() => setShowExport(true)}
           aria-label="Export or print worksheet"
@@ -1397,40 +1402,42 @@ Output ONLY the JSON array.`,
             minHeight: 0,
           }}
         >
-          {/* Standards button */}
-          <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
-            <button
-              onClick={() => setShowStds(true)}
-              aria-label="Browse NY State Standards"
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: `1.5px solid ${gv.color}`,
-                background: gv.light,
-                color: gv.color,
-                fontFamily: F,
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = gv.color;
-                e.currentTarget.style.color = "white";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = gv.light;
-                e.currentTarget.style.color = gv.color;
-              }}
-            >
-              🗽 NY Standards
-            </button>
-          </div>
+          {/* Standards button — hidden when the selected state has no standards loaded */}
+          {stHasStandards && (
+            <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
+              <button
+                onClick={() => setShowStds(true)}
+                aria-label={`Browse ${stInfo.name} Standards`}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: `1.5px solid ${gv.color}`,
+                  background: gv.light,
+                  color: gv.color,
+                  fontFamily: F,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = gv.color;
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = gv.light;
+                  e.currentTarget.style.color = gv.color;
+                }}
+              >
+                {stInfo.flag} {stInfo.standardsShort}
+              </button>
+            </div>
+          )}
 
           {/* Lesson Plan Upload — DOC/PDF/TXT → AI builds aligned worksheet */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>

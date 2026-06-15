@@ -10,7 +10,9 @@ import { trackToolUse, setActiveTool as setActiveToolName } from "@/lib/tracking
 import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
-import { GRADES, NY_STANDARDS, gradeIdToStdBand } from "./shared";
+import { GRADES, gradeIdToStdBand } from "./shared";
+import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
+import { useAppState } from "@/contexts/AppStateContext";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 export function LessonPlanGenerator({
@@ -25,6 +27,7 @@ export function LessonPlanGenerator({
 } = {}) {
   const BRAND = "#CF27F5";
   const LIGHT = "#FDF4FF";
+  const { hasStandards: stHasStandards, info: stInfo } = useAppState();
 
   const [form, setForm] = useState({
     grade: "k",
@@ -453,10 +456,13 @@ export function LessonPlanGenerator({
       "12": "Grade 12",
     };
     const gradeBandKey = gradeNameMap[form.grade] || form.grade;
+    const stdInfo = getActiveStateInfo();
+    const STD = getActiveStandards();
+    const hasStds = Object.keys(STD).length > 0;
     const collectStandards = () => {
       const out: string[] = [];
       const subjGuess = (form.subject || "").toLowerCase();
-      const subjects = Object.keys(NY_STANDARDS);
+      const subjects = Object.keys(STD);
       const matchSubj =
         subjects.find((s) => s.toLowerCase() === subjGuess) ||
         subjects.find(
@@ -464,7 +470,7 @@ export function LessonPlanGenerator({
         );
       const subjList = matchSubj ? [matchSubj] : subjects;
       for (const s of subjList) {
-        const bands = NY_STANDARDS[s] || {};
+        const bands = STD[s] || {};
         // Try exact grade-band first, fall back to all bands of subject
         const bandKeys = Object.keys(bands);
         const exact = bandKeys.find((b) => b === gradeBandKey);
@@ -478,9 +484,11 @@ export function LessonPlanGenerator({
     const candidateStds = collectStandards();
     const standardsBlock = form.standard
       ? `Standard chosen by the teacher (use exactly): ${form.standard}`
-      : `No standard was selected. You MUST pick the single best-fit standard from this approved NYS Next Generation Learning Standards list (do NOT invent codes, do NOT use CCLS / Common Core codes — only use entries from this list). Copy the chosen entry verbatim into the "standard" field:\n${candidateStds.join("\n")}`;
+      : hasStds
+        ? `No standard was selected. You MUST pick the single best-fit standard from this approved ${stdInfo.standardsName} list (do NOT invent codes — only use entries from this list). Copy the chosen entry verbatim into the "standard" field:\n${candidateStds.join("\n")}`
+        : `No state standards are loaded for ${stdInfo.name}. Leave the "standard" field as a brief, generic alignment note (e.g. grade-appropriate ${form.subject} skills) and do NOT invent specific standard codes.`;
 
-    const systemPrompt = `You are an expert New York State curriculum designer. You ONLY align lessons to NYS Next Generation Learning Standards (the codes contained in the user prompt). You NEVER reference, cite, or invent Common Core / CCLS codes (e.g. CCSS.ELA-Literacy.RL.K.1, CCLS, CCSS, etc.). If the teacher did not pick a standard, you MUST select one from the provided NYS list and copy it verbatim into the "standard" field. Respond with ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
+    const systemPrompt = `You are an expert ${stdInfo.name} curriculum designer.${hasStds ? ` You ONLY align lessons to the ${stdInfo.standardsName} (the codes contained in the user prompt). You NEVER invent standard codes. If the teacher did not pick a standard, you MUST select one from the provided list and copy it verbatim into the "standard" field.` : ` No specific state standards are provided, so do NOT invent standard codes — describe alignment in plain language only.`} Respond with ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
 
     const userPrompt = `Create a lesson plan for:
 Grade: ${form.grade} | Subject: ${form.subject} | Topic: ${form.topic}
@@ -1588,8 +1596,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
   const [stdSubj, setStdSubj] = useState("ELA");
   const [stdBand, setStdBand] = useState("Kindergarten");
   const [stdSearch, setStdSearch] = useState("");
-  const stdBands = Object.keys(NY_STANDARDS[stdSubj] || {});
-  const stdList = (NY_STANDARDS[stdSubj]?.[stdBand] || []).filter(
+  const stdBands = Object.keys(getActiveStandards()[stdSubj] || {});
+  const stdList = (getActiveStandards()[stdSubj]?.[stdBand] || []).filter(
     (s) =>
       !stdSearch.trim() ||
       s.code.toLowerCase().includes(stdSearch.toLowerCase()) ||
@@ -1763,9 +1771,10 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             />
           </div>
 
-          {/* NY Standard Picker */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>NY State Standard</label>
+          {/* State Standard Picker — hidden when the selected state has no standards loaded */}
+          {stHasStandards && (
+            <div style={{ marginBottom: 14 }}>
+              <label style={lbl}>{stInfo.name} Standard</label>
             {form.standard ? (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <div
@@ -1819,7 +1828,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                   cursor: "pointer",
                 }}
               >
-                {showStdPicker ? "▲ Hide Standards" : "🗽 Browse NY Standards"}
+                {showStdPicker
+                  ? "▲ Hide Standards"
+                  : `${stInfo.flag} Browse ${stInfo.standardsShort}`}
               </button>
             )}
 
@@ -1851,12 +1862,12 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                         gradeIdToStdBand(form.grade, s) ||
                           (s === "ELA"
                             ? "Kindergarten"
-                            : Object.keys(NY_STANDARDS[s] || {})[0] || ""),
+                            : Object.keys(getActiveStandards()[s] || {})[0] || ""),
                       );
                     }}
                     style={{ ...inp, flex: 1, padding: "6px 8px", fontSize: 12 }}
                   >
-                    {Object.keys(NY_STANDARDS).map((s) => (
+                    {Object.keys(getActiveStandards()).map((s) => (
                       <option key={s}>{s}</option>
                     ))}
                   </select>
@@ -1947,7 +1958,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Exemplar Upload */}
           <div style={{ marginBottom: 18 }}>

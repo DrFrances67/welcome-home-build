@@ -21,6 +21,8 @@ import {
 } from "@/data/email";
 import { validateSituations } from "@/lib/email-utils";
 import { DANIELSON_COMPONENTS, DANIELSON_RUBRIC_REFERENCE } from "@/data/danielson";
+import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
+import { STATES, type StateCode } from "@/data/state-standards";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // EMAIL ASSISTANT TOOL
@@ -1918,6 +1920,7 @@ const SITE_COLOR = "#CF27F5";
 const SITE_DARK = "#8B0AB0";
 
 function TheTechSavvyTeacherAppRoot() {
+  const { stateCode, setStateCode, info: stateInfo } = useAppState();
   const [activeTool, setActiveTool] = useState("lesson");
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const [swipeHint, setSwipeHint] = useState<string | null>(null);
@@ -2361,7 +2364,7 @@ function TheTechSavvyTeacherAppRoot() {
           position: "relative",
         }}
       >
-        {/* Keyboard help — top left */}
+        {/* State selector — top left */}
         <div
           style={{
             position: "absolute",
@@ -2373,39 +2376,46 @@ function TheTechSavvyTeacherAppRoot() {
             zIndex: 2,
           }}
         >
-          <button
-            type="button"
-            onClick={() => setHelpOpen(true)}
-            aria-label="Show keyboard shortcuts (press ? )"
-            title="Keyboard shortcuts (?)"
+          <label
+            htmlFor="state-select"
             style={{
-              background: "rgba(255,255,255,0.14)",
+              fontSize: 11,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.85)",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              fontFamily: "'Inter',sans-serif",
+            }}
+          >
+            State
+          </label>
+          <select
+            id="state-select"
+            value={stateCode}
+            onChange={(e) => setStateCode(e.target.value as StateCode)}
+            aria-label="Select your state"
+            style={{
+              background: "rgba(255,255,255,0.16)",
               color: "white",
-              border: "1px solid rgba(255,255,255,0.25)",
+              border: "1px solid rgba(255,255,255,0.3)",
               borderRadius: 20,
               padding: "5px 12px",
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
               fontFamily: "'Inter',sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
+              backdropFilter: "blur(6px)",
+              outline: "none",
             }}
           >
-            <kbd
-              style={{
-                background: "rgba(0,0,0,0.25)",
-                borderRadius: 4,
-                padding: "1px 6px",
-                fontSize: 11,
-              }}
-            >
-              ?
-            </kbd>
-            Shortcuts
-          </button>
+            {STATES.map((s) => (
+              <option key={s.code} value={s.code} style={{ color: "#111827" }}>
+                {s.flag} {s.name}
+              </option>
+            ))}
+          </select>
         </div>
+
 
         {/* Powered-by badge — top right */}
         <div
@@ -2496,7 +2506,7 @@ function TheTechSavvyTeacherAppRoot() {
               margin: "0 0 0",
             }}
           >
-            TOOLS FOR NEW YORK EDUCATORS
+            Tools for {stateInfo.name} Educators
           </p>
         </div>
 
@@ -2643,6 +2653,45 @@ function TheTechSavvyTeacherAppRoot() {
         </button>
       )}
 
+      {/* Keyboard shortcuts — floating bottom right */}
+      <button
+        type="button"
+        onClick={() => setHelpOpen(true)}
+        aria-label="Show keyboard shortcuts (press ? )"
+        title="Keyboard shortcuts (?)"
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          zIndex: 900,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          background: SITE_COLOR,
+          color: "white",
+          border: "1px solid rgba(255,255,255,0.35)",
+          borderRadius: 22,
+          padding: "8px 14px",
+          fontSize: 12.5,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "'Inter',sans-serif",
+          boxShadow: "0 6px 20px rgba(207,39,245,0.45)",
+        }}
+      >
+        <kbd
+          style={{
+            background: "rgba(0,0,0,0.25)",
+            borderRadius: 4,
+            padding: "1px 6px",
+            fontSize: 11,
+          }}
+        >
+          ?
+        </kbd>
+        Shortcuts
+      </button>
+
       {/* Keyboard shortcuts help overlay */}
       <ShortcutsHelpOverlay
         open={helpOpen}
@@ -2658,7 +2707,11 @@ function TheTechSavvyTeacherAppRoot() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function TheTechSavvyTeacherApp() {
-  return <TheTechSavvyTeacherAppRoot />;
+  return (
+    <AppStateProvider>
+      <TheTechSavvyTeacherAppRoot />
+    </AppStateProvider>
+  );
 }
 
 export { WorksheetBuilder };

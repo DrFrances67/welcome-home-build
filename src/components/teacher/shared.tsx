@@ -12,6 +12,7 @@ import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { BANDS, GRADES, gInfo } from "@/data/grades";
 import { NY_STANDARDS } from "@/data/ny-standards";
+import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import {
   IMG_STYLES,
   PALETTE,
@@ -4200,18 +4201,20 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
 }
 
 function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
-  const subjects = Object.keys(NY_STANDARDS);
-  const [subj, setSubj] = useState("ELA");
+  const STD = getActiveStandards();
+  const stateInfo = getActiveStateInfo();
+  const subjects = Object.keys(STD);
+  const [subj, setSubj] = useState(subjects[0] || "ELA");
   const [band, setBand] = useState(() =>
-    gradeId ? gradeIdToStdBand(gradeId, "ELA") || "Kindergarten" : "Kindergarten",
+    gradeId ? gradeIdToStdBand(gradeId, subjects[0] || "ELA") || "Kindergarten" : "Kindergarten",
   );
   const [search, setSearch] = useState("");
   const [picked, setPicked] = useState(null);
   const [showHeader, setShowHeader] = useState(true);
   const [matchGrade, setMatchGrade] = useState(!!gradeId);
 
-  const bands = Object.keys(NY_STANDARDS[subj] || {});
-  const stds = NY_STANDARDS[subj]?.[band] || [];
+  const bands = Object.keys(STD[subj] || {});
+  const stds = STD[subj]?.[band] || [];
   const filtered = search.trim()
     ? stds.filter(
         (s) =>
@@ -4228,7 +4231,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
   const onSubjChange = (s) => {
     setSubj(s);
     if (matchGrade && gradeId) setBand(gradeIdToStdBand(gradeId, s));
-    else setBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s] || {})[0] || "");
+    else setBand(s === "ELA" ? "Kindergarten" : Object.keys(STD[s] || {})[0] || "");
     setPicked(null);
   };
 
@@ -4279,7 +4282,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}>
-              🗽 New York State Standards
+              {stateInfo.flag} {stateInfo.name} Standards
             </h2>
             <button
               onClick={onClose}
@@ -5194,7 +5197,7 @@ function ExportModal({ gv, ws, onClose }) {
       lines.push("═══════════════════════════════════════");
       lines.push("STANDARDS CITATIONS");
       lines.push("═══════════════════════════════════════");
-      lines.push("Aligned to the New York State Next Generation Learning Standards.");
+      lines.push(`Aligned to the ${getActiveStateInfo().standardsName}.`);
       lines.push("");
       stds.forEach((s) => {
         lines.push(`• ${s.code}: ${s.desc}`);
@@ -5327,7 +5330,7 @@ function ExportModal({ gv, ws, onClose }) {
         .join("");
       citationsHtml = `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif">
         <h2 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize + 4}px;margin:0 0 6px;border-bottom:3px solid ${gv2.color}25;padding-bottom:8px">📚 Standards Citations</h2>
-        <p style="font-size:12.5px;color:#666;margin:0 0 16px">Aligned to the New York State Next Generation Learning Standards.</p>
+        <p style="font-size:12.5px;color:#666;margin:0 0 16px">Aligned to the ${getActiveStateInfo().standardsName}.</p>
         <ul style="padding-left:18px;margin:0;font-size:13.5px;color:#222">${items}</ul>
       </div>`;
     }
@@ -5545,9 +5548,9 @@ function HelpModal({ onClose, gv }) {
       body: "Font size and spacing scale automatically by grade:\n🌱 Pre-K: 38pt  •  K: 32pt  •  Gr 1: 28pt  •  Gr 2: 24pt\n⭐ Gr 3: 22pt  •  Gr 4: 20pt  •  Gr 5: 18pt\n🏫 Gr 6: 17pt  •  Gr 7: 16pt  •  Gr 8: 15pt\n🎓 Grades 9–12: 14pt (standard print size)\nColor themes change by grade band automatically.",
     },
     {
-      icon: "🗽",
-      title: "NY Standards Picker",
-      body: "Click '🗽 NY Standards' in the left panel to browse New York State standards. Filter by Subject (ELA, Math, Science, Social Studies, Health, Arts, Technology) and Grade Band. Search by keyword. Click any standard to add it as a header at the top of your worksheet.",
+      icon: getActiveStateInfo().flag,
+      title: `${getActiveStateInfo().standardsShort} Picker`,
+      body: `Click '${getActiveStateInfo().flag} ${getActiveStateInfo().standardsShort}' in the left panel to browse ${getActiveStateInfo().name} standards. Filter by Subject and Grade Band. Search by keyword. Click any standard to add it as a header at the top of your worksheet.`,
     },
     {
       icon: "🎨",
@@ -5663,6 +5666,7 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
+  const stateInfo = getActiveStateInfo();
   const standards = ws.standards || [];
   const items = (ws.elements || []).filter((e) => !["divider"].includes(e.type));
 
@@ -5709,7 +5713,8 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
               🎯 Standards Alignment
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: 12, color: "#666", fontFamily: F }}>
-              See which NYS standard each worksheet item maps to. Click a standard chip to assign or
+              See which {stateInfo.standardsShort.replace(" Standards", "")} standard each worksheet
+              item maps to. Click a standard chip to assign or
               remove it.
             </p>
           </div>
@@ -5745,7 +5750,11 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
                 marginBottom: 14,
               }}
             >
-              No standards have been added yet. Use the <strong>🗽 NY Standards</strong> button in
+              No standards have been added yet. Use the{" "}
+              <strong>
+                {stateInfo.flag} {stateInfo.standardsShort}
+              </strong>{" "}
+              button in
               the left panel to add one or more standards. Items will then map to those standards
               here.
             </div>
