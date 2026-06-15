@@ -27,6 +27,7 @@ export function LessonPlanGenerator({
 } = {}) {
   const BRAND = "#CF27F5";
   const LIGHT = "#FDF4FF";
+  const { hasStandards: stHasStandards, info: stInfo } = useAppState();
 
   const [form, setForm] = useState({
     grade: "k",
