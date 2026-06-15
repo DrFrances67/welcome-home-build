@@ -62,6 +62,7 @@ export function WorksheetBuilder() {
   const [showAlignment, setShowAlignment] = useState(false);
   const [refImg, setRefImg] = useState(null);
   const [refDesc, setRefDesc] = useState("");
+  const { hasStandards: stHasStandards, info: stInfo } = useAppState();
   const [analyzing, setAnalyzing] = useState(false);
   // Worksheet-file uploader (PDF/CSV) state
   const [wsFile, setWsFile] = useState(null); // { name, raw }
