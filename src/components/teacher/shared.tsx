@@ -5666,6 +5666,7 @@ function HelpModal({ onClose, gv }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
+  const stateInfo = getActiveStateInfo();
   const standards = ws.standards || [];
   const items = (ws.elements || []).filter((e) => !["divider"].includes(e.type));
 
