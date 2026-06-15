@@ -5548,8 +5548,8 @@ function HelpModal({ onClose, gv }) {
       body: "Font size and spacing scale automatically by grade:\n🌱 Pre-K: 38pt  •  K: 32pt  •  Gr 1: 28pt  •  Gr 2: 24pt\n⭐ Gr 3: 22pt  •  Gr 4: 20pt  •  Gr 5: 18pt\n🏫 Gr 6: 17pt  •  Gr 7: 16pt  •  Gr 8: 15pt\n🎓 Grades 9–12: 14pt (standard print size)\nColor themes change by grade band automatically.",
     },
     {
-      icon: "🗽",
-      title: "NY Standards Picker",
+      icon: getActiveStateInfo().flag,
+      title: `${getActiveStateInfo().standardsShort} Picker`,
       body: "Click '🗽 NY Standards' in the left panel to browse New York State standards. Filter by Subject (ELA, Math, Science, Social Studies, Health, Arts, Technology) and Grade Band. Search by keyword. Click any standard to add it as a header at the top of your worksheet.",
     },
     {
