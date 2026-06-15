@@ -1771,9 +1771,10 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             />
           </div>
 
-          {/* NY Standard Picker */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>NY State Standard</label>
+          {/* State Standard Picker — hidden when the selected state has no standards loaded */}
+          {stHasStandards && (
+            <div style={{ marginBottom: 14 }}>
+              <label style={lbl}>{stInfo.name} Standard</label>
             {form.standard ? (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <div
