@@ -4282,7 +4282,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}>
-              🗽 New York State Standards
+              {stateInfo.flag} {stateInfo.name} Standards
             </h2>
             <button
               onClick={onClose}
