@@ -2707,7 +2707,11 @@ function TheTechSavvyTeacherAppRoot() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function TheTechSavvyTeacherApp() {
-  return <TheTechSavvyTeacherAppRoot />;
+  return (
+    <AppStateProvider>
+      <TheTechSavvyTeacherAppRoot />
+    </AppStateProvider>
+  );
 }
 
 export { WorksheetBuilder };
