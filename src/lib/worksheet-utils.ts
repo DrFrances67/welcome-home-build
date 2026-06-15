@@ -4,7 +4,7 @@
 // element factory, proportional resize scaling, randomization, and
 // standard-band lookup. Extracted from the component layer so they can be
 // reused and unit-tested independently of the UI.
-import { NY_STANDARDS } from "@/data/ny-standards";
+import { getActiveStandards } from "@/data/state-standards";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -210,7 +210,7 @@ export const resizeScaleFor = (el) => {
 };
 
 export const gradeIdToStdBand = (gradeId, subj) => {
-  const bands = Object.keys(NY_STANDARDS[subj] || {});
+  const bands = Object.keys(getActiveStandards()[subj] || {});
   if (subj === "ELA") {
     const map = {
       pk: "Pre-Kindergarten",
