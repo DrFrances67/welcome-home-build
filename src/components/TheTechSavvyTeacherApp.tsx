@@ -2506,7 +2506,7 @@ function TheTechSavvyTeacherAppRoot() {
               margin: "0 0 0",
             }}
           >
-            TOOLS FOR NEW YORK EDUCATORS
+            Tools for {stateInfo.name} Educators
           </p>
         </div>
 
