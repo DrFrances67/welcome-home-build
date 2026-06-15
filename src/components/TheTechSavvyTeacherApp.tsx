@@ -21,6 +21,8 @@ import {
 } from "@/data/email";
 import { validateSituations } from "@/lib/email-utils";
 import { DANIELSON_COMPONENTS, DANIELSON_RUBRIC_REFERENCE } from "@/data/danielson";
+import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
+import { STATES, type StateCode } from "@/data/state-standards";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // EMAIL ASSISTANT TOOL
@@ -1918,6 +1920,7 @@ const SITE_COLOR = "#CF27F5";
 const SITE_DARK = "#8B0AB0";
 
 function TheTechSavvyTeacherAppRoot() {
+  const { stateCode, setStateCode, info: stateInfo } = useAppState();
   const [activeTool, setActiveTool] = useState("lesson");
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const [swipeHint, setSwipeHint] = useState<string | null>(null);
