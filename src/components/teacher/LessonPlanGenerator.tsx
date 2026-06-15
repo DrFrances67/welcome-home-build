@@ -1862,12 +1862,12 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                         gradeIdToStdBand(form.grade, s) ||
                           (s === "ELA"
                             ? "Kindergarten"
-                            : Object.keys(NY_STANDARDS[s] || {})[0] || ""),
+                            : Object.keys(getActiveStandards()[s] || {})[0] || ""),
                       );
                     }}
                     style={{ ...inp, flex: 1, padding: "6px 8px", fontSize: 12 }}
                   >
-                    {Object.keys(NY_STANDARDS).map((s) => (
+                    {Object.keys(getActiveStandards()).map((s) => (
                       <option key={s}>{s}</option>
                     ))}
                   </select>
