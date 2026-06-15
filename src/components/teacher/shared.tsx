@@ -5330,7 +5330,7 @@ function ExportModal({ gv, ws, onClose }) {
         .join("");
       citationsHtml = `<div class="ws-page" style="max-width:760px;margin:0 auto;padding:52px 64px;font-family:'Nunito',sans-serif">
         <h2 style="font-family:'Fredoka One',cursive;color:${gv2.color};font-size:${gv2.fontSize + 4}px;margin:0 0 6px;border-bottom:3px solid ${gv2.color}25;padding-bottom:8px">📚 Standards Citations</h2>
-        <p style="font-size:12.5px;color:#666;margin:0 0 16px">Aligned to the New York State Next Generation Learning Standards.</p>
+        <p style="font-size:12.5px;color:#666;margin:0 0 16px">Aligned to the ${getActiveStateInfo().standardsName}.</p>
         <ul style="padding-left:18px;margin:0;font-size:13.5px;color:#222">${items}</ul>
       </div>`;
     }
