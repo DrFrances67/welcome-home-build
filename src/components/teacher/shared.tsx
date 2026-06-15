@@ -5713,7 +5713,8 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
               🎯 Standards Alignment
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: 12, color: "#666", fontFamily: F }}>
-              See which NYS standard each worksheet item maps to. Click a standard chip to assign or
+              See which {stateInfo.standardsShort.replace(" Standards", "")} standard each worksheet
+              item maps to. Click a standard chip to assign or
               remove it.
             </p>
           </div>
@@ -5749,7 +5750,11 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
                 marginBottom: 14,
               }}
             >
-              No standards have been added yet. Use the <strong>🗽 NY Standards</strong> button in
+              No standards have been added yet. Use the{" "}
+              <strong>
+                {stateInfo.flag} {stateInfo.standardsShort}
+              </strong>{" "}
+              button in
               the left panel to add one or more standards. Items will then map to those standards
               here.
             </div>
