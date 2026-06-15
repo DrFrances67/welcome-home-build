@@ -4231,7 +4231,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
   const onSubjChange = (s) => {
     setSubj(s);
     if (matchGrade && gradeId) setBand(gradeIdToStdBand(gradeId, s));
-    else setBand(s === "ELA" ? "Kindergarten" : Object.keys(NY_STANDARDS[s] || {})[0] || "");
+    else setBand(s === "ELA" ? "Kindergarten" : Object.keys(STD[s] || {})[0] || "");
     setPicked(null);
   };
 
