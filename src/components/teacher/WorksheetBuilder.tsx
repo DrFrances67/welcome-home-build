@@ -491,7 +491,7 @@ export function WorksheetBuilder() {
         (await callAiRaw({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          system: `You are an expert curriculum designer creating complete, print-ready worksheets for NY State teachers. Always respond with valid JSON only — no markdown, no preamble, no explanation outside the JSON array.`,
+          system: `You are an expert curriculum designer creating complete, print-ready worksheets for ${getActiveStateInfo().name} teachers. Always respond with valid JSON only — no markdown, no preamble, no explanation outside the JSON array.`,
           messages: [
             {
               role: "user",
