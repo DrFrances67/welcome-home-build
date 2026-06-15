@@ -10,7 +10,9 @@ import { trackToolUse, setActiveTool as setActiveToolName } from "@/lib/tracking
 import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
-import { GRADES, NY_STANDARDS, gradeIdToStdBand } from "./shared";
+import { GRADES, gradeIdToStdBand } from "./shared";
+import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
+import { useAppState } from "@/contexts/AppStateContext";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 export function LessonPlanGenerator({
