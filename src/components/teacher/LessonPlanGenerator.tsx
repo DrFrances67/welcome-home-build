@@ -1596,8 +1596,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
   const [stdSubj, setStdSubj] = useState("ELA");
   const [stdBand, setStdBand] = useState("Kindergarten");
   const [stdSearch, setStdSearch] = useState("");
-  const stdBands = Object.keys(NY_STANDARDS[stdSubj] || {});
-  const stdList = (NY_STANDARDS[stdSubj]?.[stdBand] || []).filter(
+  const stdBands = Object.keys(getActiveStandards()[stdSubj] || {});
+  const stdList = (getActiveStandards()[stdSubj]?.[stdBand] || []).filter(
     (s) =>
       !stdSearch.trim() ||
       s.code.toLowerCase().includes(stdSearch.toLowerCase()) ||
