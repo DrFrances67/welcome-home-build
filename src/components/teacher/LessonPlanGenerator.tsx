@@ -1828,7 +1828,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                   cursor: "pointer",
                 }}
               >
-                {showStdPicker ? "▲ Hide Standards" : "🗽 Browse NY Standards"}
+                {showStdPicker
+                  ? "▲ Hide Standards"
+                  : `${stInfo.flag} Browse ${stInfo.standardsShort}`}
               </button>
             )}
 
@@ -1956,7 +1958,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Exemplar Upload */}
           <div style={{ marginBottom: 18 }}>
