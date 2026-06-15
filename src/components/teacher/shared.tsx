@@ -4201,18 +4201,20 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
 }
 
 function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
-  const subjects = Object.keys(NY_STANDARDS);
-  const [subj, setSubj] = useState("ELA");
+  const STD = getActiveStandards();
+  const stateInfo = getActiveStateInfo();
+  const subjects = Object.keys(STD);
+  const [subj, setSubj] = useState(subjects[0] || "ELA");
   const [band, setBand] = useState(() =>
-    gradeId ? gradeIdToStdBand(gradeId, "ELA") || "Kindergarten" : "Kindergarten",
+    gradeId ? gradeIdToStdBand(gradeId, subjects[0] || "ELA") || "Kindergarten" : "Kindergarten",
   );
   const [search, setSearch] = useState("");
   const [picked, setPicked] = useState(null);
   const [showHeader, setShowHeader] = useState(true);
   const [matchGrade, setMatchGrade] = useState(!!gradeId);
 
-  const bands = Object.keys(NY_STANDARDS[subj] || {});
-  const stds = NY_STANDARDS[subj]?.[band] || [];
+  const bands = Object.keys(STD[subj] || {});
+  const stds = STD[subj]?.[band] || [];
   const filtered = search.trim()
     ? stds.filter(
         (s) =>
