@@ -1402,40 +1402,42 @@ Output ONLY the JSON array.`,
             minHeight: 0,
           }}
         >
-          {/* Standards button */}
-          <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
-            <button
-              onClick={() => setShowStds(true)}
-              aria-label="Browse NY State Standards"
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: 8,
-                border: `1.5px solid ${gv.color}`,
-                background: gv.light,
-                color: gv.color,
-                fontFamily: F,
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = gv.color;
-                e.currentTarget.style.color = "white";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = gv.light;
-                e.currentTarget.style.color = gv.color;
-              }}
-            >
-              🗽 NY Standards
-            </button>
-          </div>
+          {/* Standards button — hidden when the selected state has no standards loaded */}
+          {stHasStandards && (
+            <div style={{ padding: "10px 10px 8px", borderBottom: "1px solid #F3F4F6" }}>
+              <button
+                onClick={() => setShowStds(true)}
+                aria-label={`Browse ${stInfo.name} Standards`}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: `1.5px solid ${gv.color}`,
+                  background: gv.light,
+                  color: gv.color,
+                  fontFamily: F,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = gv.color;
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = gv.light;
+                  e.currentTarget.style.color = gv.color;
+                }}
+              >
+                {stInfo.flag} {stInfo.standardsShort}
+              </button>
+            </div>
+          )}
 
           {/* Lesson Plan Upload — DOC/PDF/TXT → AI builds aligned worksheet */}
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F3F4F6" }}>
