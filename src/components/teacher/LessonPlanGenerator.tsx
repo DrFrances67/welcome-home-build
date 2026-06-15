@@ -456,10 +456,13 @@ export function LessonPlanGenerator({
       "12": "Grade 12",
     };
     const gradeBandKey = gradeNameMap[form.grade] || form.grade;
+    const stdInfo = getActiveStateInfo();
+    const STD = getActiveStandards();
+    const hasStds = Object.keys(STD).length > 0;
     const collectStandards = () => {
       const out: string[] = [];
       const subjGuess = (form.subject || "").toLowerCase();
-      const subjects = Object.keys(NY_STANDARDS);
+      const subjects = Object.keys(STD);
       const matchSubj =
         subjects.find((s) => s.toLowerCase() === subjGuess) ||
         subjects.find(
@@ -467,7 +470,7 @@ export function LessonPlanGenerator({
         );
       const subjList = matchSubj ? [matchSubj] : subjects;
       for (const s of subjList) {
-        const bands = NY_STANDARDS[s] || {};
+        const bands = STD[s] || {};
         // Try exact grade-band first, fall back to all bands of subject
         const bandKeys = Object.keys(bands);
         const exact = bandKeys.find((b) => b === gradeBandKey);
@@ -481,9 +484,11 @@ export function LessonPlanGenerator({
     const candidateStds = collectStandards();
     const standardsBlock = form.standard
       ? `Standard chosen by the teacher (use exactly): ${form.standard}`
-      : `No standard was selected. You MUST pick the single best-fit standard from this approved NYS Next Generation Learning Standards list (do NOT invent codes, do NOT use CCLS / Common Core codes — only use entries from this list). Copy the chosen entry verbatim into the "standard" field:\n${candidateStds.join("\n")}`;
+      : hasStds
+        ? `No standard was selected. You MUST pick the single best-fit standard from this approved ${stdInfo.standardsName} list (do NOT invent codes — only use entries from this list). Copy the chosen entry verbatim into the "standard" field:\n${candidateStds.join("\n")}`
+        : `No state standards are loaded for ${stdInfo.name}. Leave the "standard" field as a brief, generic alignment note (e.g. grade-appropriate ${form.subject} skills) and do NOT invent specific standard codes.`;
 
-    const systemPrompt = `You are an expert New York State curriculum designer. You ONLY align lessons to NYS Next Generation Learning Standards (the codes contained in the user prompt). You NEVER reference, cite, or invent Common Core / CCLS codes (e.g. CCSS.ELA-Literacy.RL.K.1, CCLS, CCSS, etc.). If the teacher did not pick a standard, you MUST select one from the provided NYS list and copy it verbatim into the "standard" field. Respond with ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
+    const systemPrompt = `You are an expert ${stdInfo.name} curriculum designer.${hasStds ? ` You ONLY align lessons to the ${stdInfo.standardsName} (the codes contained in the user prompt). You NEVER invent standard codes. If the teacher did not pick a standard, you MUST select one from the provided list and copy it verbatim into the "standard" field.` : ` No specific state standards are provided, so do NOT invent standard codes — describe alignment in plain language only.`} Respond with ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON. Start with { and end with }. Keep all field values concise — under 80 words each — so the full response fits within the token limit. CRITICAL: Always provide a real, concrete homework activity AND a real, concrete extension activity. Never write "N/A", "None", "Not applicable", or leave them blank — even for Kindergarten, propose a developmentally-appropriate at-home family activity (e.g. drawing, sorting objects at home, reading with a caregiver) for homework, and a deeper challenge or enrichment task for extension.`;
 
     const userPrompt = `Create a lesson plan for:
 Grade: ${form.grade} | Subject: ${form.subject} | Topic: ${form.topic}
