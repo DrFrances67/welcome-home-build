@@ -495,7 +495,7 @@ export function WorksheetBuilder() {
           messages: [
             {
               role: "user",
-              content: `Design a complete, engaging worksheet for ${g.name} students (${bandLabel}) aligned to NY State Standard ${std.code}: "${std.desc}".
+              content: `Design a complete, engaging worksheet for ${g.name} students (${bandLabel}) aligned to ${getActiveStateInfo().name} Standard ${std.code}: "${std.desc}".
 
 Return ONLY a JSON array of 5–8 worksheet elements. Each element must use EXACTLY one of these types and shapes:
 
