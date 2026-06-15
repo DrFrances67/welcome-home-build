@@ -5197,7 +5197,7 @@ function ExportModal({ gv, ws, onClose }) {
       lines.push("═══════════════════════════════════════");
       lines.push("STANDARDS CITATIONS");
       lines.push("═══════════════════════════════════════");
-      lines.push("Aligned to the New York State Next Generation Learning Standards.");
+      lines.push(`Aligned to the ${getActiveStateInfo().standardsName}.`);
       lines.push("");
       stds.forEach((s) => {
         lines.push(`• ${s.code}: ${s.desc}`);
