@@ -5550,7 +5550,7 @@ function HelpModal({ onClose, gv }) {
     {
       icon: getActiveStateInfo().flag,
       title: `${getActiveStateInfo().standardsShort} Picker`,
-      body: "Click '🗽 NY Standards' in the left panel to browse New York State standards. Filter by Subject (ELA, Math, Science, Social Studies, Health, Arts, Technology) and Grade Band. Search by keyword. Click any standard to add it as a header at the top of your worksheet.",
+      body: `Click '${getActiveStateInfo().flag} ${getActiveStateInfo().standardsShort}' in the left panel to browse ${getActiveStateInfo().name} standards. Filter by Subject and Grade Band. Search by keyword. Click any standard to add it as a header at the top of your worksheet.`,
     },
     {
       icon: "🎨",
