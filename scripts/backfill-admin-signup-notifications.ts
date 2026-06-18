@@ -131,6 +131,16 @@ async function main() {
         ? adminNewSignup.subject(templateData)
         : adminNewSignup.subject;
 
+    // The queue processor derives retry count from prior `failed`/`dlq` log
+    // rows for the same message_id. Clear the stale non-sent history so the
+    // re-send starts with a clean attempt counter (and re-runs stay idempotent
+    // on the original key).
+    await sb
+      .from("email_send_log")
+      .delete()
+      .eq("message_id", messageId)
+      .neq("status", "sent");
+
     await sb.from("email_send_log").insert({
       message_id: messageId,
       template_name: TEMPLATE_NAME,
