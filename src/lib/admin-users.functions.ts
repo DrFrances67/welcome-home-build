@@ -162,7 +162,7 @@ export const resendVerificationEmails = createServerFn({ method: "POST" })
         await supabaseAdmin.rpc("log_verification_resend", {
           _email: email,
           _status: result.ok ? "sent" : "failed",
-          _error_message: result.ok ? null : (result.detail ?? null),
+          _error_message: result.ok ? undefined : (result.detail ?? undefined),
         });
       } catch {
         // ignore logging failures
