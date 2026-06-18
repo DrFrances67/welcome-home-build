@@ -25,6 +25,15 @@ function redactEmail(email: string | null | undefined): string {
   return `${l[0]}***@${d}`;
 }
 
+// Generate a cryptographically random 32-byte hex token
+function generateToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export const Route = createFileRoute("/api/public/notify-admin-signup")({
   server: {
     handlers: {
