@@ -97,6 +97,34 @@ export const Route = createFileRoute("/api/public/notify-admin-signup")({
         const subject =
           typeof entry.subject === "function" ? entry.subject(templateData) : entry.subject;
 
+        // Transactional sends require an unsubscribe token. Get-or-create one
+        // per recipient (mirrors the main transactional send route).
+        const normalizedRecipient = recipient.toLowerCase();
+        let unsubscribeToken: string;
+        const { data: existingToken } = await supabase
+          .from("email_unsubscribe_tokens")
+          .select("token")
+          .eq("email", normalizedRecipient)
+          .maybeSingle();
+
+        if (existingToken?.token) {
+          unsubscribeToken = existingToken.token;
+        } else {
+          unsubscribeToken = generateToken();
+          await supabase
+            .from("email_unsubscribe_tokens")
+            .upsert(
+              { token: unsubscribeToken, email: normalizedRecipient },
+              { onConflict: "email", ignoreDuplicates: true },
+            );
+          const { data: storedToken } = await supabase
+            .from("email_unsubscribe_tokens")
+            .select("token")
+            .eq("email", normalizedRecipient)
+            .maybeSingle();
+          if (storedToken?.token) unsubscribeToken = storedToken.token;
+        }
+
         await supabase.from("email_send_log").insert({
           message_id: idempotencyKey,
           template_name: TEMPLATE_NAME,
@@ -117,6 +145,7 @@ export const Route = createFileRoute("/api/public/notify-admin-signup")({
             text,
             purpose: "transactional",
             label: TEMPLATE_NAME,
+            unsubscribe_token: unsubscribeToken,
             queued_at: new Date().toISOString(),
           },
         });
