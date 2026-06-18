@@ -155,9 +155,17 @@ export function AdminDashboard() {
         }}
       >
         <h1 style={{ fontSize: 28, fontWeight: 800 }}>Admin Dashboard</h1>
-        <Link to="/" style={{ color: "#4f46e5", fontSize: 14 }}>
-          ← Back to app
-        </Link>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <Link to="/admin/users" style={{ color: "#8B0AB0", fontSize: 14, fontWeight: 600 }}>
+            User search
+          </Link>
+          <Link to="/admin/resends" style={{ color: "#8B0AB0", fontSize: 14, fontWeight: 600 }}>
+            Resend log
+          </Link>
+          <Link to="/" style={{ color: "#4f46e5", fontSize: 14 }}>
+            ← Back to app
+          </Link>
+        </div>
       </div>
 
       {loading ? (

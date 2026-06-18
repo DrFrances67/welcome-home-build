@@ -18,6 +18,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminResendsRouteImport } from './routes/admin.resends'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicNotifyAdminSignupRouteImport } from './routes/api/public/notify-admin-signup'
@@ -72,6 +73,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminResendsRoute = AdminResendsRouteImport.update({
   id: '/resends',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/resends': typeof AdminResendsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/resends': typeof AdminResendsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/resends': typeof AdminResendsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/admin/resends'
+    | '/admin/users'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
     | '/api/public/notify-admin-signup'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/admin/resends'
+    | '/admin/users'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
     | '/api/public/notify-admin-signup'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/admin/resends'
+    | '/admin/users'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
     | '/api/public/notify-admin-signup'
@@ -332,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/resends': {
       id: '/admin/resends'
       path: '/resends'
@@ -400,10 +419,12 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminResendsRoute: typeof AdminResendsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminResendsRoute: AdminResendsRoute,
+  AdminUsersRoute: AdminUsersRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
