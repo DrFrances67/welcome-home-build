@@ -70,6 +70,16 @@ serve(async (req) => {
     const body = await req.json();
     const { model, system, messages, max_tokens } = body ?? {};
 
+    // Enforce the model allowlist before forwarding to the gateway.
+    const mappedModel = resolveModel(model);
+    if (!mappedModel) {
+      return new Response(
+        JSON.stringify({ error: { message: `Model '${model}' is not allowed` } }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+
     // Convert Anthropic-style content (string OR blocks of {type:text|image}) to
     // OpenAI-compatible content. For multimodal we emit an array of parts:
     //   { type:"text", text } | { type:"image_url", image_url:{ url } }
