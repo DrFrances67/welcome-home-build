@@ -22,6 +22,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminResendsRouteImport } from './routes/admin.resends'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicNotifyAdminSignupRouteImport } from './routes/api/public/notify-admin-signup'
+import { Route as ApiPublicLoginRouteImport } from './routes/api/public/login'
 import { Route as ApiPublicContactMessageRouteImport } from './routes/api/public/contact-message'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -95,6 +96,11 @@ const ApiPublicNotifyAdminSignupRoute =
     path: '/api/public/notify-admin-signup',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLoginRoute = ApiPublicLoginRouteImport.update({
+  id: '/api/public/login',
+  path: '/api/public/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicContactMessageRoute = ApiPublicContactMessageRouteImport.update({
   id: '/api/public/contact-message',
   path: '/api/public/contact-message',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
+  '/api/public/login': typeof ApiPublicLoginRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
+  '/api/public/login': typeof ApiPublicLoginRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
+  '/api/public/login': typeof ApiPublicLoginRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
+    | '/api/public/login'
     | '/api/public/notify-admin-signup'
     | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
+    | '/api/public/login'
     | '/api/public/notify-admin-signup'
     | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/email/unsubscribe'
     | '/api/public/contact-message'
+    | '/api/public/login'
     | '/api/public/notify-admin-signup'
     | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
@@ -270,6 +282,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicContactMessageRoute: typeof ApiPublicContactMessageRoute
+  ApiPublicLoginRoute: typeof ApiPublicLoginRoute
   ApiPublicNotifyAdminSignupRoute: typeof ApiPublicNotifyAdminSignupRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -372,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNotifyAdminSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/login': {
+      id: '/api/public/login'
+      path: '/api/public/login'
+      fullPath: '/api/public/login'
+      preLoaderRoute: typeof ApiPublicLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/contact-message': {
       id: '/api/public/contact-message'
       path: '/api/public/contact-message'
@@ -440,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicContactMessageRoute: ApiPublicContactMessageRoute,
+  ApiPublicLoginRoute: ApiPublicLoginRoute,
   ApiPublicNotifyAdminSignupRoute: ApiPublicNotifyAdminSignupRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
