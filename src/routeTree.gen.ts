@@ -21,6 +21,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminResendsRouteImport } from './routes/admin.resends'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiPublicResendVerificationRouteImport } from './routes/api/public/resend-verification'
 import { Route as ApiPublicNotifyAdminSignupRouteImport } from './routes/api/public/notify-admin-signup'
 import { Route as ApiPublicLoginRouteImport } from './routes/api/public/login'
 import { Route as ApiPublicContactMessageRouteImport } from './routes/api/public/contact-message'
@@ -90,6 +91,12 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicResendVerificationRoute =
+  ApiPublicResendVerificationRouteImport.update({
+    id: '/api/public/resend-verification',
+    path: '/api/public/resend-verification',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicNotifyAdminSignupRoute =
   ApiPublicNotifyAdminSignupRouteImport.update({
     id: '/api/public/notify-admin-signup',
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/login': typeof ApiPublicLoginRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
+  '/api/public/resend-verification': typeof ApiPublicResendVerificationRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/login': typeof ApiPublicLoginRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
+  '/api/public/resend-verification': typeof ApiPublicResendVerificationRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -195,6 +204,7 @@ export interface FileRoutesById {
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/login': typeof ApiPublicLoginRoute
   '/api/public/notify-admin-signup': typeof ApiPublicNotifyAdminSignupRoute
+  '/api/public/resend-verification': typeof ApiPublicResendVerificationRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/api/public/contact-message'
     | '/api/public/login'
     | '/api/public/notify-admin-signup'
+    | '/api/public/resend-verification'
     | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/api/public/contact-message'
     | '/api/public/login'
     | '/api/public/notify-admin-signup'
+    | '/api/public/resend-verification'
     | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -263,6 +275,7 @@ export interface FileRouteTypes {
     | '/api/public/contact-message'
     | '/api/public/login'
     | '/api/public/notify-admin-signup'
+    | '/api/public/resend-verification'
     | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -284,6 +297,7 @@ export interface RootRouteChildren {
   ApiPublicContactMessageRoute: typeof ApiPublicContactMessageRoute
   ApiPublicLoginRoute: typeof ApiPublicLoginRoute
   ApiPublicNotifyAdminSignupRoute: typeof ApiPublicNotifyAdminSignupRoute
+  ApiPublicResendVerificationRoute: typeof ApiPublicResendVerificationRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -378,6 +392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/resend-verification': {
+      id: '/api/public/resend-verification'
+      path: '/api/public/resend-verification'
+      fullPath: '/api/public/resend-verification'
+      preLoaderRoute: typeof ApiPublicResendVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notify-admin-signup': {
       id: '/api/public/notify-admin-signup'
       path: '/api/public/notify-admin-signup'
@@ -462,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicContactMessageRoute: ApiPublicContactMessageRoute,
   ApiPublicLoginRoute: ApiPublicLoginRoute,
   ApiPublicNotifyAdminSignupRoute: ApiPublicNotifyAdminSignupRoute,
+  ApiPublicResendVerificationRoute: ApiPublicResendVerificationRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
