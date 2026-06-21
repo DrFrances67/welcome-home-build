@@ -157,7 +157,7 @@ serve(async (req) => {
     const text: string = data?.choices?.[0]?.message?.content ?? "";
 
     // Log token usage + cost (fire and forget — never blocks the response)
-    const mapped = mapModel(model);
+    const mapped = mappedModel;
     const inTok = Number(data?.usage?.prompt_tokens ?? data?.usage?.input_tokens ?? 0);
     const outTok = Number(data?.usage?.completion_tokens ?? data?.usage?.output_tokens ?? 0);
     const cost = computeTextCost(mapped, inTok, outTok);
