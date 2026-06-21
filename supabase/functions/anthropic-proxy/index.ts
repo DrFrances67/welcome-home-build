@@ -178,7 +178,7 @@ serve(async (req) => {
         id: data?.id ?? "msg_proxied",
         type: "message",
         role: "assistant",
-        model: mapModel(model),
+        model: mappedModel,
         content: [{ type: "text", text }],
         stop_reason: "end_turn",
       }),
