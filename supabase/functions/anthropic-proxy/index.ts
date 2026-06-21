@@ -13,13 +13,26 @@ const corsHeaders = {
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-// Map any incoming model id (incl. Anthropic ids) to a Lovable AI model.
-function mapModel(model?: string): string {
-  if (!model) return "google/gemini-2.5-flash";
-  if (model.startsWith("google/") || model.startsWith("openai/")) return model;
-  // Default for any anthropic/claude-* id
-  return "google/gemini-2.5-flash";
+// Allowlist of permitted upstream models. Anthropic/Claude ids map to the
+// default; explicit google/openai ids must be in this set or the request is
+// rejected. This prevents authenticated callers from selecting expensive models
+// (e.g. openai/gpt-5.4) to inflate AI credit consumption.
+const DEFAULT_TEXT_MODEL = "google/gemini-2.5-flash";
+const ALLOWED_TEXT_MODELS = new Set<string>([
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+]);
+
+// Returns the resolved model, or null if an explicit model is not allowed.
+function resolveModel(model?: string): string | null {
+  if (!model) return DEFAULT_TEXT_MODEL;
+  if (model.startsWith("google/") || model.startsWith("openai/")) {
+    return ALLOWED_TEXT_MODELS.has(model) ? model : null;
+  }
+  // Any anthropic/claude-* id maps to the default.
+  return DEFAULT_TEXT_MODEL;
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
