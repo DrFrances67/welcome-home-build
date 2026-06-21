@@ -83,6 +83,20 @@ serve(async (req) => {
     const chosenModel =
       typeof model === "string" && model.trim() ? model : "google/gemini-2.5-flash-image";
 
+    // Enforce an explicit allowlist so authenticated callers cannot request
+    // arbitrary (potentially expensive) models and inflate AI costs.
+    const ALLOWED_IMAGE_MODELS = new Set<string>([
+      "google/gemini-2.5-flash-image",
+      "google/gemini-3-pro-image-preview",
+      "google/gemini-3.1-flash-image-preview",
+    ]);
+    if (!ALLOWED_IMAGE_MODELS.has(chosenModel)) {
+      return new Response(JSON.stringify({ error: `Model '${chosenModel}' is not allowed` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const upstream = await fetch(GATEWAY_URL, {
       method: "POST",
       headers: {
