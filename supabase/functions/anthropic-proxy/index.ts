@@ -13,13 +13,26 @@ const corsHeaders = {
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-// Map any incoming model id (incl. Anthropic ids) to a Lovable AI model.
-function mapModel(model?: string): string {
-  if (!model) return "google/gemini-2.5-flash";
-  if (model.startsWith("google/") || model.startsWith("openai/")) return model;
-  // Default for any anthropic/claude-* id
-  return "google/gemini-2.5-flash";
+// Allowlist of permitted upstream models. Anthropic/Claude ids map to the
+// default; explicit google/openai ids must be in this set or the request is
+// rejected. This prevents authenticated callers from selecting expensive models
+// (e.g. openai/gpt-5.4) to inflate AI credit consumption.
+const DEFAULT_TEXT_MODEL = "google/gemini-2.5-flash";
+const ALLOWED_TEXT_MODELS = new Set<string>([
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+]);
+
+// Returns the resolved model, or null if an explicit model is not allowed.
+function resolveModel(model?: string): string | null {
+  if (!model) return DEFAULT_TEXT_MODEL;
+  if (model.startsWith("google/") || model.startsWith("openai/")) {
+    return ALLOWED_TEXT_MODELS.has(model) ? model : null;
+  }
+  // Any anthropic/claude-* id maps to the default.
+  return DEFAULT_TEXT_MODEL;
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -56,6 +69,16 @@ serve(async (req) => {
 
     const body = await req.json();
     const { model, system, messages, max_tokens } = body ?? {};
+
+    // Enforce the model allowlist before forwarding to the gateway.
+    const mappedModel = resolveModel(model);
+    if (!mappedModel) {
+      return new Response(
+        JSON.stringify({ error: { message: `Model '${model}' is not allowed` } }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
 
     // Convert Anthropic-style content (string OR blocks of {type:text|image}) to
     // OpenAI-compatible content. For multimodal we emit an array of parts:
@@ -101,7 +124,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: mapModel(model),
+        model: mappedModel,
         messages: oaiMessages,
         max_tokens: typeof max_tokens === "number" ? max_tokens : undefined,
       }),
@@ -134,7 +157,7 @@ serve(async (req) => {
     const text: string = data?.choices?.[0]?.message?.content ?? "";
 
     // Log token usage + cost (fire and forget — never blocks the response)
-    const mapped = mapModel(model);
+    const mapped = mappedModel;
     const inTok = Number(data?.usage?.prompt_tokens ?? data?.usage?.input_tokens ?? 0);
     const outTok = Number(data?.usage?.completion_tokens ?? data?.usage?.output_tokens ?? 0);
     const cost = computeTextCost(mapped, inTok, outTok);
@@ -155,7 +178,7 @@ serve(async (req) => {
         id: data?.id ?? "msg_proxied",
         type: "message",
         role: "assistant",
-        model: mapModel(model),
+        model: mappedModel,
         content: [{ type: "text", text }],
         stop_reason: "end_turn",
       }),

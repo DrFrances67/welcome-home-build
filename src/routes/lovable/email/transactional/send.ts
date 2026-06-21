@@ -95,6 +95,19 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           );
         }
 
+        // Templates with a fixed recipient (e.g. admin-new-signup -> the site
+        // owner's inbox) must not be triggerable by arbitrary authenticated
+        // users with forged data. Require an admin caller for those templates.
+        if (template.to) {
+          const { data: isAdmin } = await supabase.rpc("has_role", {
+            _user_id: user.id,
+            _role: "admin",
+          });
+          if (!isAdmin) {
+            return Response.json({ error: "Forbidden" }, { status: 403 });
+          }
+        }
+
         // Resolve effective recipient: template-level `to` takes precedence over
         // the caller-provided recipientEmail. This allows notification templates
         // to always send to a fixed address (e.g., site owner from env var).

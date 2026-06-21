@@ -97,11 +97,6 @@ export function AuthPage() {
   const [weakAttempt, setWeakAttempt] = useState(false);
   const requirementsRef = useRef<HTMLDivElement | null>(null);
 
-  const loadResendHistory = async (addr: string) => {
-    const { data } = await supabase.rpc("get_recent_verification_resends", { _email: addr });
-    setResendHistory((data as typeof resendHistory) ?? []);
-  };
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -110,41 +105,36 @@ export function AuthPage() {
     setVerificationStatus(null);
     setBusy(true);
     try {
-      let loginEmail = identifier.trim();
-      if (!loginEmail.includes("@")) {
-        const { data, error: rpcErr } = await supabase.rpc("get_email_by_username", {
-          _username: loginEmail,
+      // Username->email resolution and the password sign-in both happen
+      // server-side so user email addresses are never exposed to anonymous
+      // callers (see /api/public/login).
+      const res = await fetch("/api/public/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier.trim(), password }),
+      });
+      const result = await res.json().catch(() => null);
+
+      if (!result || result.code === "server_error") {
+        setError("Sign-in is temporarily unavailable. Please try again.");
+        return;
+      }
+
+      if (result.ok) {
+        // Clear any stale local session, then install the server-issued session.
+        try {
+          await supabase.auth.signOut({ scope: "local" } as never);
+        } catch {
+          /* ignore */
+        }
+        const { error: setErr } = await supabase.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.refresh_token,
         });
-        if (rpcErr || !data) {
-          setError("No account found with that username.");
-          setBusy(false);
+        if (setErr) {
+          setError("Sign-in failed. Please try again.");
           return;
         }
-        loginEmail = data as string;
-      }
-      // Clear any stale local session before attempting a fresh sign-in
-      try {
-        await supabase.auth.signOut({ scope: "local" } as never);
-      } catch {
-        /* ignore */
-      }
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password,
-      });
-      if (error) {
-        const isUnverified = /confirm|verif/i.test(error.message);
-        setError(error.message);
-        setVerificationStatus({
-          state: isUnverified ? "unverified" : "unknown",
-          email: loginEmail,
-          checkedAt: new Date(),
-        });
-        if (isUnverified) {
-          setUnverifiedEmail(loginEmail);
-          await loadResendHistory(loginEmail);
-        }
-      } else if (data?.session) {
         // Remember-me: when unchecked, mark this session as tab-scoped so the
         // app signs the user out on the next cold load (after the tab closes).
         try {
@@ -159,8 +149,19 @@ export function AuthPage() {
         }
         setInfo("Signed in. Loading your account…");
         window.location.assign("/");
+        return;
+      }
+
+      if (result.code === "no_account") {
+        setError("No account found with that username.");
+      } else if (result.code === "unverified") {
+        setError(result.message ?? "Please confirm your email before signing in.");
+        setVerificationStatus({ state: "unverified", email: result.email, checkedAt: new Date() });
+        setUnverifiedEmail(result.email);
+        setResendHistory((result.recent as typeof resendHistory) ?? []);
       } else {
-        setError("Sign-in returned no session. Please try again.");
+        setError(result.message ?? "Invalid login credentials.");
+        setVerificationStatus({ state: "unknown", email: identifier.trim(), checkedAt: new Date() });
       }
     } finally {
       setBusy(false);
@@ -178,30 +179,23 @@ export function AuthPage() {
     setBusy(true);
     const startedAt = new Date();
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: addr,
-        options: { emailRedirectTo: `${window.location.origin}/` },
+      // The resend AND its audit-log write happen server-side so the log can't
+      // be forged by anonymous callers (see /api/public/resend-verification).
+      const res = await fetch("/api/public/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: addr, redirectTo: `${window.location.origin}/` }),
       });
-      const status = error ? "failed" : "sent";
-      const errMsg = error?.message ?? null;
-      // Backend log
-      await supabase.rpc("log_verification_resend", {
-        _email: addr,
-        _status: status,
-        _error_message: errMsg ?? undefined,
-        _message_id: undefined,
-      });
-      // UI feedback
+      const result = await res.json().catch(() => null);
       const ts = startedAt.toLocaleString();
-      if (error) {
-        setError(`Resend failed at ${ts}: ${error.message}`);
+      if (!result || !result.ok) {
+        setError(`Resend failed at ${ts}: ${result?.message ?? "Unknown error"}`);
       } else {
         setInfo(
           `Verification email resent to ${addr} at ${ts}. Allow up to a few minutes; also check spam/junk and any quarantine folder.`,
         );
       }
-      await loadResendHistory(addr);
+      setResendHistory((result?.recent as typeof resendHistory) ?? []);
     } finally {
       setBusy(false);
     }
