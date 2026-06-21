@@ -124,7 +124,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: mapModel(model),
+        model: mappedModel,
         messages: oaiMessages,
         max_tokens: typeof max_tokens === "number" ? max_tokens : undefined,
       }),
