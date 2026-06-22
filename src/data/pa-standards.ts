@@ -1485,3 +1485,10 @@ const PA_CORE_STANDARDS: NyStandards = {
     ],
   },
 };
+
+// Merge the core PA Core Standards (ELA, Math, literacy, Business & Technology)
+// with the additional subject-area standards extracted from the official PDFs.
+export const PA_STANDARDS: NyStandards = {
+  ...PA_CORE_STANDARDS,
+  ...PA_EXTRA_STANDARDS,
+};
