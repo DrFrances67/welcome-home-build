@@ -4,8 +4,9 @@
 // the content-area Reading/Writing literacy standards, March 2014) and the
 // PA Academic Standards for Business, Computer and Information Technology.
 import type { NyStandards } from "./ny-standards";
+import { PA_EXTRA_STANDARDS } from "./pa-standards-extra";
 
-export const PA_STANDARDS: NyStandards = {
+const PA_CORE_STANDARDS: NyStandards = {
   ELA: {
     "Pre-Kindergarten": [
       { code: "CC.1.1.PK.A", desc: "Practice appropriate book handling skills." },
@@ -1483,4 +1484,11 @@ export const PA_STANDARDS: NyStandards = {
       { code: "15.9.12.M", desc: "Evaluate laws and regulations impacting marketing." },
     ],
   },
+};
+
+// Merge the core PA Core Standards (ELA, Math, literacy, Business & Technology)
+// with the additional subject-area standards extracted from the official PDFs.
+export const PA_STANDARDS: NyStandards = {
+  ...PA_CORE_STANDARDS,
+  ...PA_EXTRA_STANDARDS,
 };
