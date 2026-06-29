@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:standards": "bun scripts/validate-standards.ts",
-    "check:dedup": "bun scripts/check-standards-dedup.ts"
+    "check:dedup": "bun scripts/check-standards-dedup.ts",
+    "integrate:standards": "bun scripts/integrate-standards.ts"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
