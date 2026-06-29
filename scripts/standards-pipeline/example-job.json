@@ -1,0 +1,20 @@
+{
+  "state": "PA",
+  "outFile": "src/data/pa-batch-example.ts",
+  "exportName": "PA_BATCH_EXAMPLE_STANDARDS",
+  "jobs": [
+    {
+      "subject": "Music",
+      "band": "Grades K-2",
+      "pdf": "/absolute/path/to/pa-music-k2.pdf",
+      "codeRegex": "\\b\\d+\\.\\d+\\.\\d+\\.[A-Z]\\b",
+      "pages": "1-5"
+    },
+    {
+      "subject": "Music",
+      "band": "Grades 3-5",
+      "pdf": "/absolute/path/to/pa-music-35.pdf",
+      "codeRegex": "\\b\\d+\\.\\d+\\.\\d+\\.[A-Z]\\b"
+    }
+  ]
+}
