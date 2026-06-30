@@ -20,8 +20,35 @@ const EMAIL_SUBJECTS: Record<string, string> = {
   reauthentication: "Your verification code",
 };
 
+// Shared prop surface across all auth email templates. Each template consumes
+// a subset; requiring the full set keeps the component map type-safe.
+type AuthEmailTemplateProps = {
+  siteName: string;
+  siteUrl: string;
+  recipient: string;
+  confirmationUrl: string;
+  oldEmail: string;
+  email: string;
+  newEmail: string;
+  token: string;
+};
+
+interface AuthWebhookPayload {
+  run_id: string;
+  version: string;
+  type: string;
+  data: {
+    action_type: string;
+    email: string;
+    url: string;
+    token: string;
+    old_email: string;
+    new_email: string;
+  };
+}
+
 // Template mapping
-const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
+const EMAIL_TEMPLATES: Record<string, React.ComponentType<AuthEmailTemplateProps>> = {
   signup: SignupEmail,
   invite: InviteEmail,
   magiclink: MagicLinkEmail,
