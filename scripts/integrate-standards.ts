@@ -134,7 +134,9 @@ config!.jobs.forEach((job, i) => {
   const res = spawnSync(python, cmd, { encoding: "utf8" });
   if (res.status !== 0) {
     if (!keepJson) rmSync(workDir, { recursive: true, force: true });
-    fail(`Extraction failed for ${job.subject} / ${job.band} (${pdfPath}):\n${res.stderr || res.stdout}`);
+    fail(
+      `Extraction failed for ${job.subject} / ${job.band} (${pdfPath}):\n${res.stderr || res.stdout}`,
+    );
   }
   console.log(`  ✓ ${job.subject} / ${job.band}: ${res.stdout.trim()}`);
   const standards = JSON.parse(readFileSync(outJson, "utf8")) as Standard[];
@@ -176,7 +178,7 @@ if (dupCount > 0) {
 // Build the normalized candidate dataset (subject → band → Standard[]).
 const incomingDataset: NyStandards = {};
 for (const e of extracted) {
-  (incomingDataset[e.subject] ??= {});
+  incomingDataset[e.subject] ??= {};
   const arr = (incomingDataset[e.subject][e.band] ??= []);
   for (const s of e.standards) arr.push({ code: normalizeCode(s.code), desc: s.desc.trim() });
 }
@@ -185,7 +187,7 @@ for (const e of extracted) {
 console.log(`\n[3/4] Validating candidate "${state} existing + incoming" dataset`);
 const merged: NyStandards = structuredClone(existing);
 for (const [subject, bands] of Object.entries(incomingDataset)) {
-  (merged[subject] ??= {});
+  merged[subject] ??= {};
   for (const [band, arr] of Object.entries(bands)) {
     merged[subject][band] = [...(merged[subject][band] ?? []), ...arr];
   }
@@ -221,8 +223,12 @@ if (!keepJson) rmSync(workDir, { recursive: true, force: true });
 console.log(`\n[4/4] Wrote ${totalNew} standard(s) → ${config!.outFile}`);
 console.log("\nWire it into the state by merging the export, e.g. in the state data file:");
 console.log(`  import { ${config!.exportName} } from "./${moduleSpecifier(config!.outFile)}";`);
-console.log(`  export const ${state}_STANDARDS = { ...${state}_STANDARDS_BASE, ...${config!.exportName} };`);
-console.log("\nThen run `bun run validate:standards` and `bun run test` to confirm CI stays green.");
+console.log(
+  `  export const ${state}_STANDARDS = { ...${state}_STANDARDS_BASE, ...${config!.exportName} };`,
+);
+console.log(
+  "\nThen run `bun run validate:standards` and `bun run test` to confirm CI stays green.",
+);
 console.log("\n✓ Integration complete.");
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -230,20 +236,16 @@ function moduleSpecifier(outFile: string): string {
   return outFile.replace(/^src\/data\//, "").replace(/\.tsx?$/, "");
 }
 
-function renderModule(
-  exportName: string,
-  dataset: NyStandards,
-  jobs: ExtractedJob[],
-): string {
-  const sources = [...new Set(jobs.map((j) => j.pdf))]
-    .map((p) => `//   - ${p}`)
-    .join("\n");
+function renderModule(exportName: string, dataset: NyStandards, jobs: ExtractedJob[]): string {
+  const sources = [...new Set(jobs.map((j) => j.pdf))].map((p) => `//   - ${p}`).join("\n");
   const body = Object.entries(dataset)
     .map(([subject, bands]) => {
       const bandLines = Object.entries(bands)
         .map(([band, arr]) => {
           const items = arr
-            .map((s) => `      { code: ${JSON.stringify(s.code)}, desc: ${JSON.stringify(s.desc)} },`)
+            .map(
+              (s) => `      { code: ${JSON.stringify(s.code)}, desc: ${JSON.stringify(s.desc)} },`,
+            )
             .join("\n");
           return `    ${JSON.stringify(band)}: [\n${items}\n    ],`;
         })

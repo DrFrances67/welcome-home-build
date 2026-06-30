@@ -1775,189 +1775,191 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           {stHasStandards && (
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>{stInfo.name} Standard</label>
-            {form.standard ? (
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <div
-                  style={{
-                    flex: 1,
-                    background: LIGHT,
-                    border: `1.5px solid ${BRAND}`,
-                    borderRadius: 7,
-                    padding: "8px 11px",
-                    fontSize: 12,
-                    color: "#111827",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {form.standard}
-                </div>
-                <button
-                  onClick={() => {
-                    setF("standard", "");
-                    setShowStdPicker(false);
-                  }}
-                  style={{
-                    padding: "6px 9px",
-                    borderRadius: 6,
-                    border: "1.5px solid #FCA5A5",
-                    background: "#FEF2F2",
-                    color: "#DC2626",
-                    cursor: "pointer",
-                    fontFamily: "'Inter',sans-serif",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  ✕ Clear
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowStdPicker((p) => !p)}
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  borderRadius: 7,
-                  border: `1.5px dashed ${BRAND}`,
-                  background: LIGHT,
-                  color: BRAND,
-                  fontFamily: "'Inter',sans-serif",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
-              >
-                {showStdPicker
-                  ? "▲ Hide Standards"
-                  : `${stInfo.flag} Browse ${stInfo.standardsShort}`}
-              </button>
-            )}
-
-            {showStdPicker && !form.standard && (
-              <div
-                style={{
-                  marginTop: 10,
-                  border: "1.5px solid #E5E7EB",
-                  borderRadius: 8,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    background: "#F9FAFB",
-                    borderBottom: "1px solid #E5E7EB",
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <select
-                    value={stdSubj}
-                    onChange={(e) => {
-                      const s = e.target.value;
-                      setStdSubj(s);
-                      setStdBand(
-                        gradeIdToStdBand(form.grade, s) ||
-                          (s === "ELA"
-                            ? "Kindergarten"
-                            : Object.keys(getActiveStandards()[s] || {})[0] || ""),
-                      );
-                    }}
-                    style={{ ...inp, flex: 1, padding: "6px 8px", fontSize: 12 }}
-                  >
-                    {Object.keys(getActiveStandards()).map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={stdBand}
-                    onChange={(e) => setStdBand(e.target.value)}
-                    style={{ ...inp, flex: 1, padding: "6px 8px", fontSize: 12 }}
-                  >
-                    {stdBands.map((b) => (
-                      <option key={b}>{b}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={stdSearch}
-                    onChange={(e) => setStdSearch(e.target.value)}
-                    placeholder="Search…"
-                    style={{ ...inp, flex: 2, padding: "6px 8px", fontSize: 12 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setStdBand(gradeIdToStdBand(form.grade, stdSubj))}
-                    title={`Match ${GRADES.find((g) => g.id === form.grade)?.name || form.grade}`}
+              {form.standard ? (
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div
                     style={{
-                      padding: "3px 8px",
-                      borderRadius: 10,
-                      border: `1px solid ${BRAND}`,
+                      flex: 1,
                       background: LIGHT,
-                      color: BRAND,
-                      fontFamily: "'Inter',sans-serif",
-                      fontWeight: 700,
-                      fontSize: 10,
+                      border: `1.5px solid ${BRAND}`,
+                      borderRadius: 7,
+                      padding: "8px 11px",
+                      fontSize: 12,
+                      color: "#111827",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {form.standard}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setF("standard", "");
+                      setShowStdPicker(false);
+                    }}
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: 6,
+                      border: "1.5px solid #FCA5A5",
+                      background: "#FEF2F2",
+                      color: "#DC2626",
                       cursor: "pointer",
+                      fontFamily: "'Inter',sans-serif",
+                      fontSize: 11,
+                      fontWeight: 700,
                       whiteSpace: "nowrap",
                     }}
                   >
-                    🎯 Match grade
+                    ✕ Clear
                   </button>
-                  <span style={{ fontSize: 10, color: "#9CA3AF", alignSelf: "center" }}>
-                    {stdList.length} found
-                  </span>
                 </div>
-                <div style={{ maxHeight: 380, overflowY: "auto" }}>
-                  {stdList.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setF("standard", `${s.code}: ${s.desc}`);
-                        setShowStdPicker(false);
-                        setStdSearch("");
+              ) : (
+                <button
+                  onClick={() => setShowStdPicker((p) => !p)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 7,
+                    border: `1.5px dashed ${BRAND}`,
+                    background: LIGHT,
+                    color: BRAND,
+                    fontFamily: "'Inter',sans-serif",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  {showStdPicker
+                    ? "▲ Hide Standards"
+                    : `${stInfo.flag} Browse ${stInfo.standardsShort}`}
+                </button>
+              )}
+
+              {showStdPicker && !form.standard && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    border: "1.5px solid #E5E7EB",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "10px 12px",
+                      background: "#F9FAFB",
+                      borderBottom: "1px solid #E5E7EB",
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <select
+                      value={stdSubj}
+                      onChange={(e) => {
+                        const s = e.target.value;
+                        setStdSubj(s);
+                        setStdBand(
+                          gradeIdToStdBand(form.grade, s) ||
+                            (s === "ELA"
+                              ? "Kindergarten"
+                              : Object.keys(getActiveStandards()[s] || {})[0] || ""),
+                        );
                       }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "9px 12px",
-                        border: "none",
-                        borderBottom: "1px solid #F3F4F6",
-                        background: "white",
-                        cursor: "pointer",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = LIGHT)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                      style={{ ...inp, flex: 1, padding: "6px 8px", fontSize: 12 }}
                     >
-                      <div
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: BRAND,
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                          marginBottom: 2,
-                        }}
-                      >
-                        {s.code}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.4 }}>
-                        {s.desc}
-                      </div>
+                      {Object.keys(getActiveStandards()).map((s) => (
+                        <option key={s}>{s}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={stdBand}
+                      onChange={(e) => setStdBand(e.target.value)}
+                      style={{ ...inp, flex: 1, padding: "6px 8px", fontSize: 12 }}
+                    >
+                      {stdBands.map((b) => (
+                        <option key={b}>{b}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={stdSearch}
+                      onChange={(e) => setStdSearch(e.target.value)}
+                      placeholder="Search…"
+                      style={{ ...inp, flex: 2, padding: "6px 8px", fontSize: 12 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setStdBand(gradeIdToStdBand(form.grade, stdSubj))}
+                      title={`Match ${GRADES.find((g) => g.id === form.grade)?.name || form.grade}`}
+                      style={{
+                        padding: "3px 8px",
+                        borderRadius: 10,
+                        border: `1px solid ${BRAND}`,
+                        background: LIGHT,
+                        color: BRAND,
+                        fontFamily: "'Inter',sans-serif",
+                        fontWeight: 700,
+                        fontSize: 10,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🎯 Match grade
                     </button>
-                  ))}
-                  {stdList.length === 0 && (
-                    <p style={{ padding: "14px 12px", fontSize: 12, color: "#9CA3AF", margin: 0 }}>
-                      No standards match.
-                    </p>
-                  )}
+                    <span style={{ fontSize: 10, color: "#9CA3AF", alignSelf: "center" }}>
+                      {stdList.length} found
+                    </span>
+                  </div>
+                  <div style={{ maxHeight: 380, overflowY: "auto" }}>
+                    {stdList.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setF("standard", `${s.code}: ${s.desc}`);
+                          setShowStdPicker(false);
+                          setStdSearch("");
+                        }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "9px 12px",
+                          border: "none",
+                          borderBottom: "1px solid #F3F4F6",
+                          background: "white",
+                          cursor: "pointer",
+                          transition: "background 0.1s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = LIGHT)}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: BRAND,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            marginBottom: 2,
+                          }}
+                        >
+                          {s.code}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.4 }}>
+                          {s.desc}
+                        </div>
+                      </button>
+                    ))}
+                    {stdList.length === 0 && (
+                      <p
+                        style={{ padding: "14px 12px", fontSize: 12, color: "#9CA3AF", margin: 0 }}
+                      >
+                        No standards match.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           )}
 

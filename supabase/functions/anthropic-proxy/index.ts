@@ -33,7 +33,6 @@ function resolveModel(model?: string): string | null {
   return DEFAULT_TEXT_MODEL;
 }
 
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -78,7 +77,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
 
     // Convert Anthropic-style content (string OR blocks of {type:text|image}) to
     // OpenAI-compatible content. For multimodal we emit an array of parts:

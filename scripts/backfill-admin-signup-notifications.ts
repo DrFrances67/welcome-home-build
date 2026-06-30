@@ -135,11 +135,7 @@ async function main() {
     // rows for the same message_id. Clear the stale non-sent history so the
     // re-send starts with a clean attempt counter (and re-runs stay idempotent
     // on the original key).
-    await sb
-      .from("email_send_log")
-      .delete()
-      .eq("message_id", messageId)
-      .neq("status", "sent");
+    await sb.from("email_send_log").delete().eq("message_id", messageId).neq("status", "sent");
 
     await sb.from("email_send_log").insert({
       message_id: messageId,
@@ -174,7 +170,9 @@ async function main() {
     console.log(`  queued ${messageId} (${profile.email})`);
   }
 
-  console.log(`\nDone. Enqueued ${queued}/${targets.length}. The cron processor will deliver them.`);
+  console.log(
+    `\nDone. Enqueued ${queued}/${targets.length}. The cron processor will deliver them.`,
+  );
 }
 
 main().catch((e) => {

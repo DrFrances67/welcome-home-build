@@ -5714,8 +5714,7 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: 12, color: "#666", fontFamily: F }}>
               See which {stateInfo.standardsShort.replace(" Standards", "")} standard each worksheet
-              item maps to. Click a standard chip to assign or
-              remove it.
+              item maps to. Click a standard chip to assign or remove it.
             </p>
           </div>
           <button
@@ -5754,9 +5753,8 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
               <strong>
                 {stateInfo.flag} {stateInfo.standardsShort}
               </strong>{" "}
-              button in
-              the left panel to add one or more standards. Items will then map to those standards
-              here.
+              button in the left panel to add one or more standards. Items will then map to those
+              standards here.
             </div>
           )}
 

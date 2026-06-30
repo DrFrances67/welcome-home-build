@@ -161,7 +161,11 @@ export function AuthPage() {
         setResendHistory((result.recent as typeof resendHistory) ?? []);
       } else {
         setError(result.message ?? "Invalid login credentials.");
-        setVerificationStatus({ state: "unknown", email: identifier.trim(), checkedAt: new Date() });
+        setVerificationStatus({
+          state: "unknown",
+          email: identifier.trim(),
+          checkedAt: new Date(),
+        });
       }
     } finally {
       setBusy(false);

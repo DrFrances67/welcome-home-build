@@ -31,7 +31,6 @@ jobs:
       - name: Validate state standards datasets
         run: bun run validate:standards
 
-
       - name: Run tests
         run: |
           if ! bun run test 2> test-stderr.log; then
