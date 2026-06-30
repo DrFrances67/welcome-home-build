@@ -39,7 +39,7 @@ const ROOT_DOMAIN = "techsavvyteacher.app";
 // even if the project's domain has changed since the template was scaffolded.
 const SAMPLE_PROJECT_URL = "https://thetechsavvyteacher.lovable.app";
 const SAMPLE_EMAIL = "user@example.test";
-const SAMPLE_DATA: Record<string, object> = {
+const SAMPLE_DATA: Record<string, Partial<AuthEmailTemplateProps>> = {
   signup: {
     siteName: SITE_NAME,
     siteUrl: SAMPLE_PROJECT_URL,
