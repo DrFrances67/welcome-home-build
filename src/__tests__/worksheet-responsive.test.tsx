@@ -84,7 +84,7 @@ describe("worksheet builder responsive sidebar", () => {
     const sidebar = openWorksheetBuilder();
 
     expect(
-      within(sidebar).getByRole("button", { name: /browse ny state standards/i }),
+      within(sidebar).getByRole("button", { name: /browse new york standards/i }),
     ).toBeTruthy();
     expect(within(sidebar).getByLabelText(/upload reference worksheet/i)).toBeTruthy();
     expect(within(sidebar).getByLabelText(/upload worksheet file to recreate/i)).toBeTruthy();
