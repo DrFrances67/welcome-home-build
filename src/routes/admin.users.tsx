@@ -11,10 +11,7 @@ import {
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({
-    meta: [
-      { title: "User Search — Admin" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "User Search — Admin" }, { name: "robots", content: "noindex" }],
   }),
   component: AdminUsersPage,
 });
@@ -128,7 +125,13 @@ function AdminUsersPage() {
           e.preventDefault();
           runSearch();
         }}
-        style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, alignItems: "center" }}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+          alignItems: "center",
+        }}
       >
         <input
           placeholder="Search by email…"
@@ -150,9 +153,7 @@ function AdminUsersPage() {
         </button>
       </form>
 
-      {error && (
-        <div style={errorBox}>{error}</div>
-      )}
+      {error && <div style={errorBox}>{error}</div>}
 
       {searched && (
         <div
@@ -186,8 +187,8 @@ function AdminUsersPage() {
 
       {results && (
         <div style={resultsBox}>
-          <strong>Resend results:</strong>{" "}
-          {results.filter((r) => r.ok).length} sent, {results.filter((r) => !r.ok).length} failed.
+          <strong>Resend results:</strong> {results.filter((r) => r.ok).length} sent,{" "}
+          {results.filter((r) => !r.ok).length} failed.
           {results.some((r) => !r.ok) && (
             <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
               {results

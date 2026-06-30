@@ -95,9 +95,7 @@ export const searchAuthUsers = createServerFn({ method: "POST" })
       }
     }
 
-    matches.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
+    matches.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return {
       total: matches.length,
@@ -125,8 +123,7 @@ export const resendVerificationEmails = createServerFn({ method: "POST" })
     const supabaseAdmin = await assertAdmin(context.userId);
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
-    const PUBLISHABLE_KEY =
-      process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!SUPABASE_URL || !PUBLISHABLE_KEY) {
       throw new Response("Email resend is not configured", { status: 500 });
     }

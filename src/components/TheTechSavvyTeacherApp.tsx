@@ -2416,7 +2416,6 @@ function TheTechSavvyTeacherAppRoot() {
           </select>
         </div>
 
-
         {/* Powered-by badge — top right */}
         <div
           style={{

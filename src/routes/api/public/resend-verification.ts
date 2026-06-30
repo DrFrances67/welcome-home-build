@@ -21,7 +21,10 @@ export const Route = createFileRoute("/api/public/resend-verification")({
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
         if (!supabaseUrl || !serviceKey || !publishableKey) {
-          return Response.json({ ok: false, message: "Server configuration error" }, { status: 500 });
+          return Response.json(
+            { ok: false, message: "Server configuration error" },
+            { status: 500 },
+          );
         }
 
         let body: z.infer<typeof BodySchema>;
