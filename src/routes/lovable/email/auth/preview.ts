@@ -8,7 +8,18 @@ import { RecoveryEmail } from "@/lib/email-templates/recovery";
 import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
-const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
+type AuthEmailTemplateProps = {
+  siteName: string;
+  siteUrl: string;
+  recipient: string;
+  confirmationUrl: string;
+  oldEmail: string;
+  email: string;
+  newEmail: string;
+  token: string;
+};
+
+const EMAIL_TEMPLATES: Record<string, React.ComponentType<AuthEmailTemplateProps>> = {
   signup: SignupEmail,
   invite: InviteEmail,
   magiclink: MagicLinkEmail,
