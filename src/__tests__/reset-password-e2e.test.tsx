@@ -151,9 +151,7 @@ describe("Forgot-password → set new password (E2E)", () => {
       render(<ResetPasswordPage />);
     });
 
-    await waitFor(() =>
-      expect(screen.getByText(/invalid or has expired/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/invalid or has expired/i)).toBeTruthy());
 
     // Input stays disabled and no password update is attempted.
     expect(getPasswordInput().disabled).toBe(true);
