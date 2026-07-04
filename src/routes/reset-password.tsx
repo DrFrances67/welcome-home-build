@@ -40,21 +40,43 @@ function ResetPasswordPage() {
         const errorDescription =
           url.searchParams.get("error_description") || hash.get("error_description");
 
+        // Diagnostics: log which recovery-link shape was detected (no secrets).
+        console.info("[reset-password] recovery link detected:", {
+          hasHashTokens: Boolean(accessToken && refreshToken),
+          hasAccessToken: Boolean(accessToken),
+          hasRefreshToken: Boolean(refreshToken),
+          hasCode: Boolean(code),
+          hasTokenHash: Boolean(tokenHash),
+          type,
+          hasErrorDescription: Boolean(errorDescription),
+          search: url.search,
+          hashPresent: Boolean(window.location.hash),
+        });
+
         if (errorDescription) {
+          console.warn("[reset-password] link returned an error:", errorDescription);
           if (!cancelled) setError(errorDescription);
         } else if (accessToken && refreshToken) {
+          console.info("[reset-password] exchanging implicit hash tokens via setSession");
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
           if (error) throw error;
         } else if (code) {
+          console.info("[reset-password] exchanging PKCE code via exchangeCodeForSession");
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
         } else if (tokenHash) {
+          console.info("[reset-password] verifying token_hash via verifyOtp");
           const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
           if (error) throw error;
+        } else {
+          console.warn(
+            "[reset-password] no recovery credentials found in URL (no hash tokens, code, or token_hash)",
+          );
         }
+
 
         // Clean the token out of the URL bar.
         window.history.replaceState(null, "", window.location.pathname);
