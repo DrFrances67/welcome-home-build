@@ -70,6 +70,36 @@ function redactEmail(email: string | null | undefined): string {
   return `${localPart[0]}***@${domain}`;
 }
 
+// Rewrite Supabase's server-side verify link into a direct link to our own
+// reset-password page carrying the token_hash.
+//
+// Supabase's default confirmation URL points at `/auth/v1/verify`, which
+// consumes the one-time recovery token on ANY plain GET request. Email
+// security scanners (Outlook SafeLinks, corporate mail proxies, antivirus
+// link-checkers) prefetch links before delivery, burning the token — so by
+// the time the user clicks, Supabase returns "Email link is invalid or has
+// expired". Landing on our own page instead means the token is only consumed
+// by client-side `verifyOtp`, which requires JS that scanners don't run.
+function toDirectRecoveryUrl(rawUrl: string, actionType: string): string {
+  try {
+    const verifyUrl = new URL(rawUrl);
+    const tokenHash =
+      verifyUrl.searchParams.get("token") || verifyUrl.searchParams.get("token_hash");
+    const redirectTo = verifyUrl.searchParams.get("redirect_to");
+    const type = verifyUrl.searchParams.get("type") || actionType;
+
+    if (!tokenHash || !redirectTo) return rawUrl;
+
+    const dest = new URL(redirectTo);
+    dest.searchParams.set("token_hash", tokenHash);
+    dest.searchParams.set("type", type);
+    return dest.toString();
+  } catch (error) {
+    console.warn("Failed to rewrite recovery confirmation URL; using original", { error });
+    return rawUrl;
+  }
+}
+
 export const Route = createFileRoute("/lovable/email/auth/webhook")({
   server: {
     handlers: {
