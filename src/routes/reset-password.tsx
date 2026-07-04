@@ -77,20 +77,26 @@ function ResetPasswordPage() {
           );
         }
 
-
         // Clean the token out of the URL bar.
         window.history.replaceState(null, "", window.location.pathname);
 
         const { data } = await supabase.auth.getSession();
+        console.info("[reset-password] session after exchange:", {
+          hasSession: Boolean(data.session),
+        });
         if (!cancelled) {
           if (data.session) {
             setReady(true);
             setError(null);
           } else if (!errorDescription) {
+            console.warn(
+              "[reset-password] no session established after exchange — link invalid or expired",
+            );
             setError("This password reset link is invalid or has expired. Please request a new one.");
           }
         }
       } catch (e) {
+        console.error("[reset-password] failed to establish session from reset link:", e);
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Could not verify the reset link.");
         }
@@ -98,6 +104,7 @@ function ResetPasswordPage() {
         if (!cancelled) setChecking(false);
       }
     };
+
 
     // Also react to the recovery event fired when Supabase auto-detects the link.
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
