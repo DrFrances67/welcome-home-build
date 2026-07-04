@@ -175,7 +175,12 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           siteName: SITE_NAME,
           siteUrl: `https://${ROOT_DOMAIN}`,
           recipient: payload.data.email,
-          confirmationUrl: payload.data.url,
+          // Recovery links must land on our own page so scanner prefetch
+          // can't consume the one-time token via Supabase's verify endpoint.
+          confirmationUrl:
+            emailType === "recovery"
+              ? toDirectRecoveryUrl(payload.data.url, emailType)
+              : payload.data.url,
           token: payload.data.token,
           email: payload.data.email,
           oldEmail: payload.data.old_email,
