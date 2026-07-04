@@ -157,4 +157,47 @@ describe("Forgot-password → set new password (E2E)", () => {
     expect(getPasswordInput().disabled).toBe(true);
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
+
+  it("invalid token_hash: surfaces the backend error and blocks any password change", async () => {
+    // A token_hash IS present, but the backend rejects it as invalid/expired.
+    setRecoveryUrl("?token_hash=bad-token&type=recovery");
+    mocks.verifyOtp.mockResolvedValue({ error: new Error("Token has expired or is invalid") });
+    mocks.getSession.mockResolvedValue({ data: { session: null } });
+
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
+
+    // The rejected token is reported with a clear error message.
+    await waitFor(() =>
+      expect(screen.getByText(/token has expired or is invalid/i)).toBeTruthy(),
+    );
+
+    // The input stays disabled and no password update can be attempted.
+    expect(getPasswordInput().disabled).toBe(true);
+
+    // Even if the disabled input is bypassed, submitting does not call updateUser.
+    fireEvent.change(getPasswordInput(), { target: { value: "ShouldNotWork123!" } });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/update password/i));
+    });
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it("invalid PKCE code: surfaces the backend error and blocks any password change", async () => {
+    setRecoveryUrl("?code=bad-code");
+    mocks.exchangeCodeForSession.mockResolvedValue({
+      error: new Error("invalid request: both auth code and code verifier should be non-empty"),
+    });
+    mocks.getSession.mockResolvedValue({ data: { session: null } });
+
+    await act(async () => {
+      render(<ResetPasswordPage />);
+    });
+
+    await waitFor(() => expect(screen.getByText(/invalid request/i)).toBeTruthy());
+    expect(getPasswordInput().disabled).toBe(true);
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
 });
