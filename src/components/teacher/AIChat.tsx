@@ -1,20 +1,61 @@
-/* eslint-disable */
-// @ts-nocheck
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
+import { useState, useRef, useEffect } from "react";
 import { repairAndParse } from "@/lib/repairJson";
-import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
-import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
-import { trackToolUse, setActiveTool as setActiveToolName } from "@/lib/tracking";
 import { callAiRaw, generateImage } from "@/lib/aiFetch";
-import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
+import { SpellInput } from "@/components/SpellCheckField";
+import type { Grade, Band } from "@/data/grades";
+import type { WorksheetElement } from "@/types/worksheet";
 
 import { BANDS, F } from "./shared";
 import { getActiveStateInfo } from "@/data/state-standards";
 
-export function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
-  const [msgs, setMsgs] = useState([
+/** Grade-value object passed to the tools: a grade merged with its band. */
+type GradeValue = Grade & Band;
+
+interface ChatMsg {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface PiiHit {
+  type: string;
+  match: string;
+}
+
+interface AIChatProps {
+  gv: GradeValue;
+  wsTitle: string;
+  elCount: number;
+  refDesc?: string;
+  onInsertElements?: (els: WorksheetElement[]) => void;
+}
+
+const MODEL = "claude-sonnet-4-20250514";
+/** How many worksheet images to generate at once. */
+const IMAGE_CONCURRENCY = 3;
+
+/**
+ * Run an async worker over `items` with a bounded number of concurrent
+ * executions. Preserves ordering-independent side effects (each worker mutates
+ * its own item) and never lets one slow image block the rest.
+ */
+async function runPool<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  let idx = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (idx < items.length) {
+      const current = items[idx++];
+      await worker(current);
+    }
+  });
+  await Promise.all(runners);
+}
+
+export function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }: AIChatProps) {
+  const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: "assistant",
       content: `Hi! 👋 I'm your worksheet assistant!\n\nI can build a complete worksheet for you, or help with parts. Try:\n• "Make a worksheet about the water cycle"\n• "Create a 2nd grade worksheet on adding within 20"\n• "Write 5 true/false questions about the American Revolution"\n• "Give me a word bank about habitats for ${gv.name}"\n• "Simplify this text for ${gv.name}: [paste text]"`,
@@ -22,14 +63,14 @@ export function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [piiHits, setPiiHits] = useState<{ type: string; match: string }[]>([]);
-  const endRef = useRef();
+  const [piiHits, setPiiHits] = useState<PiiHit[]>([]);
+  const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs]);
 
   // Detect "create / build / make / generate / design a worksheet …" intent
-  const looksLikeWorksheetRequest = (txt) => {
+  const looksLikeWorksheetRequest = (txt: string): boolean => {
     const t = (txt || "").toLowerCase();
     if (!t) return false;
     const verbs = /\b(make|create|build|generate|design|produce|put together|draft|whip up)\b/;
@@ -39,10 +80,10 @@ export function AIChat({ gv, wsTitle, elCount, refDesc, onInsertElements }) {
   };
 
   // Build a full worksheet (returns an array of element objects) ──────────
-  const buildWorksheet = async (userPrompt) => {
+  const buildWorksheet = async (userPrompt: string): Promise<WorksheetElement[]> => {
     const raw =
       (await callAiRaw({
-        model: "claude-sonnet-4-20250514",
+        model: MODEL,
         max_tokens: 4000,
         system: `You are an expert curriculum designer. The teacher will describe a worksheet they want. Respond with VALID JSON ONLY — no markdown fences, no preamble — a single JSON array of 12–20 worksheet element objects spanning AT LEAST 2 PAGES (use a 0-based "page" field on every element: 0, 1, and optionally 2).
 
@@ -71,13 +112,11 @@ GROUPING RULE (MANDATORY): Always keep related content together in the array. Wh
 Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with one "instruction" element. Mix activity types. Output ONLY the JSON array.`,
         messages: [{ role: "user", content: userPrompt }],
       })) || "[]";
-    const clean = raw.replace(/```json|```/g, "").trim();
-    const start = clean.indexOf("[");
-    const end = clean.lastIndexOf("]");
-    const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
-    const parsed = JSON.parse(slice);
+    // repairAndParse strips fences, control chars, trailing commas, and repairs
+    // truncated arrays (common when the model hits max_tokens mid-array).
+    const parsed = repairAndParse<unknown>(raw, { container: "array" });
     if (!Array.isArray(parsed)) throw new Error("AI did not return an array");
-    return parsed;
+    return parsed as WorksheetElement[];
   };
 
   const send = async () => {
@@ -89,7 +128,7 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
       return;
     }
     setPiiHits([]);
-    const userMsg = { role: "user", content: userText };
+    const userMsg: ChatMsg = { role: "user", content: userText };
     const next = [...msgs, userMsg];
     setMsgs(next);
     setInput("");
@@ -99,8 +138,8 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
     if (looksLikeWorksheetRequest(userText) && typeof onInsertElements === "function") {
       try {
         const els = await buildWorksheet(userText);
-        // Generate real images for any "image" blocks (in parallel, capped)
-        const imgEls = els.filter((e: any) => e?.type === "image" && !e.url);
+        // Generate real images for any "image" blocks (bounded parallelism).
+        const imgEls = els.filter((e) => e?.type === "image" && !e.url);
         if (imgEls.length) {
           setMsgs((p) => [
             ...p,
@@ -109,15 +148,16 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
               content: `🎨 Generating ${imgEls.length} image${imgEls.length === 1 ? "" : "s"}…`,
             },
           ]);
-          for (const el of imgEls) {
-            const prompt = (el.imagePrompt || el.caption || "").toString().trim();
-            if (!prompt) continue;
+          await runPool(imgEls, IMAGE_CONCURRENCY, async (el) => {
+            const prompt = String(el.imagePrompt || el.caption || "").trim();
+            if (!prompt) return;
             try {
-              const url = await generateImage({ prompt, style: "cartoon" });
+              const url = await generateImage({ prompt, style: "cartoon", retries: 2 });
               if (url) el.url = url;
-            } catch (_) {}
-            await new Promise((r) => setTimeout(r, 350));
-          }
+            } catch {
+              /* keep the block without an image rather than failing the batch */
+            }
+          });
         }
         onInsertElements(els);
         setMsgs((p) => [
@@ -128,11 +168,12 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
           },
         ]);
       } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
         setMsgs((p) => [
           ...p,
           {
             role: "assistant",
-            content: `I tried to build that worksheet but ran into an error: ${e?.message || e}. You can try rewording, or ask me for parts (e.g. "give me 5 multiple choice questions about ___").`,
+            content: `I tried to build that worksheet but ran into an error: ${message}. You can try rewording, or ask me for parts (e.g. "give me 5 multiple choice questions about ___").`,
           },
         ]);
       }
@@ -143,7 +184,7 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
     // ─── Otherwise: normal conversational reply ───
     try {
       const reply = await callAiRaw({
-        model: "claude-sonnet-4-20250514",
+        model: MODEL,
         max_tokens: 1000,
         system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
 
@@ -303,6 +344,7 @@ Grade-level calibration:
           <button
             onClick={send}
             disabled={loading}
+            aria-label="Send message"
             style={{
               padding: "9px 14px",
               borderRadius: 18,
