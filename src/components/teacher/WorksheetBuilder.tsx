@@ -122,6 +122,20 @@ export function WorksheetBuilder() {
       window.localStorage.setItem(LP_HISTORY_KEY, JSON.stringify(lpHistory.slice(0, 25)));
     } catch {}
   }, [lpHistory]);
+
+  // ── Auto-save the live worksheet draft (debounced) so refreshing or
+  //    navigating away never loses in-progress work. Restored on next load. ──
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(WS_DRAFT_KEY, JSON.stringify(ws));
+        setSavedAt(Date.now());
+      } catch {
+        /* quota / private mode — skip silently */
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [ws]);
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
