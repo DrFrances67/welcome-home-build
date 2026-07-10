@@ -5461,15 +5461,22 @@ function ExportModal({ gv, ws, onClose }) {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}>
+            <h2
+              id="export-modal-title"
+              style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}
+            >
               📤 Export Worksheet
             </h2>
-            <p style={{ margin: "5px 0 0", fontSize: 12, color: "#999", fontFamily: F }}>
+            <p
+              id="export-modal-desc"
+              style={{ margin: "5px 0 0", fontSize: 12, color: "#999", fontFamily: F }}
+            >
               Choose how you'd like to save or share this worksheet.
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close export dialog"
             style={{
               background: "white",
               border: "none",
