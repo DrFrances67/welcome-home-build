@@ -1389,9 +1389,24 @@ Output ONLY the JSON array.`,
             🎯 Alignment
           </button>
         )}
+        <span
+          role="status"
+          aria-live="polite"
+          title="Your worksheet is automatically saved in this browser."
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            fontFamily: F,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#6B7280",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {savedAt ? "✓ Saved" : "Saving…"}
+        </span>
         <button
-          onClick={() => setShowExport(true)}
-          aria-label="Export or print worksheet"
           style={{
             padding: "6px 14px",
             borderRadius: 7,
