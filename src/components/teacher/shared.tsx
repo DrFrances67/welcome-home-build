@@ -5430,6 +5430,12 @@ function ExportModal({ gv, ws, onClose }) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+        aria-describedby="export-modal-desc"
+        tabIndex={-1}
         style={{
           background: "white",
           borderRadius: 18,
@@ -5440,6 +5446,7 @@ function ExportModal({ gv, ws, onClose }) {
           flexDirection: "column",
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           animation: "fadeIn 0.25s ease",
+          outline: "none",
         }}
         onClick={(e) => e.stopPropagation()}
       >
