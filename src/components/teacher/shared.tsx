@@ -5111,6 +5111,17 @@ function VersionsModal({ gv, ws, onClose }) {
 
 function ExportModal({ gv, ws, onClose }) {
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef(null);
+
+  // Close on Escape and move focus into the dialog when it opens.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    dialogRef.current?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   // Build plain-text export
   const toText = () => {
@@ -5419,6 +5430,12 @@ function ExportModal({ gv, ws, onClose }) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+        aria-describedby="export-modal-desc"
+        tabIndex={-1}
         style={{
           background: "white",
           borderRadius: 18,
@@ -5429,6 +5446,7 @@ function ExportModal({ gv, ws, onClose }) {
           flexDirection: "column",
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           animation: "fadeIn 0.25s ease",
+          outline: "none",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -5443,15 +5461,22 @@ function ExportModal({ gv, ws, onClose }) {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}>
+            <h2
+              id="export-modal-title"
+              style={{ margin: 0, fontFamily: FF, color: gv.color, fontSize: 22 }}
+            >
               📤 Export Worksheet
             </h2>
-            <p style={{ margin: "5px 0 0", fontSize: 12, color: "#999", fontFamily: F }}>
+            <p
+              id="export-modal-desc"
+              style={{ margin: "5px 0 0", fontSize: 12, color: "#999", fontFamily: F }}
+            >
               Choose how you'd like to save or share this worksheet.
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close export dialog"
             style={{
               background: "white",
               border: "none",

@@ -38,19 +38,37 @@ import {
 import { getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
 
+const WS_DRAFT_KEY = "tts.worksheetDraft.v1";
+const DEFAULT_WS = {
+  title: "My Worksheet",
+  showName: true,
+  showDate: true,
+  showGrade: true,
+  gradeId: "k",
+  elements: [],
+  pageCount: 1,
+  pageHeadersHidden: [],
+  oneLineOnly: false,
+  standards: [],
+};
+
+/** Read a previously auto-saved worksheet draft from localStorage, if any. */
+function readWsDraft() {
+  if (typeof window === "undefined") return DEFAULT_WS;
+  try {
+    const raw = window.localStorage.getItem(WS_DRAFT_KEY);
+    if (!raw) return DEFAULT_WS;
+    const parsed = JSON.parse(raw);
+    // Merge over defaults so newly-added fields are always present.
+    return { ...DEFAULT_WS, ...parsed, elements: parsed.elements || [] };
+  } catch {
+    return DEFAULT_WS;
+  }
+}
+
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState({
-    title: "My Worksheet",
-    showName: true,
-    showDate: true,
-    showGrade: true,
-    gradeId: "k",
-    elements: [],
-    pageCount: 1,
-    pageHeadersHidden: [],
-    oneLineOnly: false,
-    standards: [],
-  });
+  const [ws, setWs] = useState(readWsDraft);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [viewMode, setViewMode] = useState("single"); // "single" | "scroll"
   const [selId, setSelId] = useState(null);
@@ -104,6 +122,20 @@ export function WorksheetBuilder() {
       window.localStorage.setItem(LP_HISTORY_KEY, JSON.stringify(lpHistory.slice(0, 25)));
     } catch {}
   }, [lpHistory]);
+
+  // ── Auto-save the live worksheet draft (debounced) so refreshing or
+  //    navigating away never loses in-progress work. Restored on next load. ──
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(WS_DRAFT_KEY, JSON.stringify(ws));
+        setSavedAt(Date.now());
+      } catch {
+        /* quota / private mode — skip silently */
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [ws]);
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
   const resizeRef = useRef(null);
@@ -1357,9 +1389,24 @@ Output ONLY the JSON array.`,
             🎯 Alignment
           </button>
         )}
+        <span
+          role="status"
+          aria-live="polite"
+          title="Your worksheet is automatically saved in this browser."
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            fontFamily: F,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#6B7280",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {savedAt ? "✓ Saved" : "Saving…"}
+        </span>
         <button
-          onClick={() => setShowExport(true)}
-          aria-label="Export or print worksheet"
           style={{
             padding: "6px 14px",
             borderRadius: 7,
