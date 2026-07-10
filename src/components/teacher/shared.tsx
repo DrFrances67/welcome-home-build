@@ -5111,6 +5111,17 @@ function VersionsModal({ gv, ws, onClose }) {
 
 function ExportModal({ gv, ws, onClose }) {
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef(null);
+
+  // Close on Escape and move focus into the dialog when it opens.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    dialogRef.current?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   // Build plain-text export
   const toText = () => {
