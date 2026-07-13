@@ -89,6 +89,66 @@ export function LessonPlanGenerator({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showStdPicker, setShowStdPicker] = useState(false);
 
+  // ── Saved Lesson Plans (account) ──────────────────────────────────
+  const { user } = useAuth();
+  const saveToAccountFn = useServerFn(saveLessonPlan);
+  const [accountPlanId, setAccountPlanId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.localStorage.getItem(LP_PLAN_ID_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [accountSaving, setAccountSaving] = useState<null | "draft" | "saved">(null);
+  const [accountMsg, setAccountMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const rememberPlanId = (id: string | null) => {
+    setAccountPlanId(id);
+    try {
+      if (id) window.localStorage.setItem(LP_PLAN_ID_KEY, id);
+      else window.localStorage.removeItem(LP_PLAN_ID_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const saveToAccount = async (status: "draft" | "saved") => {
+    setAccountMsg(null);
+    setAccountSaving(status);
+    try {
+      const title =
+        (form.topic && form.topic.trim()) ||
+        (form.subject && form.subject.trim()) ||
+        "Untitled lesson plan";
+      const res = await saveToAccountFn({
+        data: {
+          id: accountPlanId ?? undefined,
+          title,
+          form,
+          result: result ?? undefined,
+          status,
+        },
+      });
+      rememberPlanId(res.id);
+      setAccountMsg({
+        type: "ok",
+        text:
+          status === "saved"
+            ? "Saved to your account."
+            : `Draft v${res.current?.version_no ?? ""} saved to your account.`,
+      });
+    } catch (e) {
+      setAccountMsg({
+        type: "err",
+        text: e instanceof Error ? e.message : "Could not save. Please try again.",
+      });
+    } finally {
+      setAccountSaving(null);
+    }
+  };
+
+
   // AI Idea Helper
   const [aiHelperOpen, setAiHelperOpen] = useState(false);
   const [aiHelperField, setAiHelperField] = useState("objectives"); // which field to fill
