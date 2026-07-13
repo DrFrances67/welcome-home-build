@@ -24,8 +24,8 @@ export interface LessonPlanVersionRow {
   user_id: string;
   version_no: number;
   label: string | null;
-  form: Record<string, unknown>;
-  result: unknown | null;
+  form: Json;
+  result: Json | null;
   created_at: string;
 }
 
