@@ -15,6 +15,35 @@ import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
+const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
+const DEFAULT_LP_FORM = {
+  grade: "k",
+  subject: "",
+  topic: "",
+  duration: "45 minutes",
+  model: "Direct Instruction",
+  objectives: "",
+  materials: "",
+  standard: "",
+  diff: [],
+  notes: "",
+};
+
+/** Read a previously auto-saved lesson-plan form draft from localStorage, if any. */
+function readLpDraft() {
+  if (typeof window === "undefined") return DEFAULT_LP_FORM;
+  try {
+    const raw = window.localStorage.getItem(LP_DRAFT_KEY);
+    if (!raw) return DEFAULT_LP_FORM;
+    const parsed = JSON.parse(raw);
+    // Merge over defaults so newly-added fields are always present.
+    return { ...DEFAULT_LP_FORM, ...parsed, diff: parsed.diff || [] };
+  } catch {
+    return DEFAULT_LP_FORM;
+  }
+}
+
+
 export function LessonPlanGenerator({
   onBuildWorksheets,
 }: {
