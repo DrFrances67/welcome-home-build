@@ -1682,7 +1682,16 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           overflow: "hidden",
         }}
       >
-        <div style={{ background: BRAND, padding: "12px 18px" }}>
+        <div
+          style={{
+            background: BRAND,
+            padding: "12px 18px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
           <span
             style={{
               fontFamily: "'Playfair Display',serif",
@@ -1693,7 +1702,25 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           >
             📋 Lesson Details
           </span>
+          <span
+            role="status"
+            aria-live="polite"
+            title="Your lesson plan is automatically saved in this browser."
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontFamily: "'Playfair Display',serif",
+              fontSize: 11,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.9)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {savedAt ? "✓ Saved" : "Saving…"}
+          </span>
         </div>
+
         <div style={{ padding: "18px 18px 22px" }}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}
