@@ -169,7 +169,10 @@ export const saveLessonPlan = createServerFn({ method: "POST" })
     if (verErr || !version) throw new Error(verErr?.message ?? "Failed to save version");
 
     // 4. Point the plan at the new current version (+ title/status if provided).
-    const patch: Record<string, unknown> = { current_version_id: version.id, status: data.status };
+    const patch: { current_version_id: string; status: LessonPlanStatus; title?: string } = {
+      current_version_id: version.id,
+      status: data.status,
+    };
     if (data.title) patch.title = data.title;
     const { data: plan, error: updErr } = await supabase
       .from("lesson_plans")
