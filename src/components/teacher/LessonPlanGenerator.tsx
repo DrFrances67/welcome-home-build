@@ -13,6 +13,11 @@ import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 import { GRADES, gradeIdToStdBand } from "./shared";
 import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useServerFn } from "@tanstack/react-start";
+import { saveLessonPlan } from "@/lib/lesson-plans.functions";
+
+const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
@@ -83,6 +88,66 @@ export function LessonPlanGenerator({
   const [showGdocsBox, setShowGdocsBox] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showStdPicker, setShowStdPicker] = useState(false);
+
+  // ── Saved Lesson Plans (account) ──────────────────────────────────
+  const { user } = useAuth();
+  const saveToAccountFn = useServerFn(saveLessonPlan);
+  const [accountPlanId, setAccountPlanId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.localStorage.getItem(LP_PLAN_ID_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [accountSaving, setAccountSaving] = useState<null | "draft" | "saved">(null);
+  const [accountMsg, setAccountMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const rememberPlanId = (id: string | null) => {
+    setAccountPlanId(id);
+    try {
+      if (id) window.localStorage.setItem(LP_PLAN_ID_KEY, id);
+      else window.localStorage.removeItem(LP_PLAN_ID_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const saveToAccount = async (status: "draft" | "saved") => {
+    setAccountMsg(null);
+    setAccountSaving(status);
+    try {
+      const title =
+        (form.topic && form.topic.trim()) ||
+        (form.subject && form.subject.trim()) ||
+        "Untitled lesson plan";
+      const res = await saveToAccountFn({
+        data: {
+          id: accountPlanId ?? undefined,
+          title,
+          form,
+          result: result ?? undefined,
+          status,
+        },
+      });
+      rememberPlanId(res.id);
+      setAccountMsg({
+        type: "ok",
+        text:
+          status === "saved"
+            ? "Saved to your account."
+            : `Draft v${res.current?.version_no ?? ""} saved to your account.`,
+      });
+    } catch (e) {
+      setAccountMsg({
+        type: "err",
+        text: e instanceof Error ? e.message : "Could not save. Please try again.",
+      });
+    } finally {
+      setAccountSaving(null);
+    }
+  };
+
 
   // AI Idea Helper
   const [aiHelperOpen, setAiHelperOpen] = useState(false);
@@ -1702,24 +1767,97 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           >
             📋 Lesson Details
           </span>
-          <span
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span
+              role="status"
+              aria-live="polite"
+              title="Your lesson plan is automatically saved in this browser."
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontFamily: "'Playfair Display',serif",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.9)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {savedAt ? "✓ Saved" : "Saving…"}
+            </span>
+            {user && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => saveToAccount("draft")}
+                  disabled={accountSaving !== null}
+                  title="Save the current lesson plan as a new draft version in your account"
+                  style={{
+                    background: "rgba(255,255,255,0.18)",
+                    border: "1px solid rgba(255,255,255,0.55)",
+                    color: "white",
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: accountSaving ? "wait" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {accountSaving === "draft" ? "Saving…" : "Save draft"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveToAccount("saved")}
+                  disabled={accountSaving !== null}
+                  title="Save the current lesson plan to your account"
+                  style={{
+                    background: "white",
+                    border: "1px solid white",
+                    color: BRAND,
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: accountSaving ? "wait" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {accountSaving === "saved" ? "Saving…" : "Save to account"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {accountMsg && (
+          <div
             role="status"
             aria-live="polite"
-            title="Your lesson plan is automatically saved in this browser."
             style={{
+              margin: "10px 18px 0",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 600,
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              gap: 4,
-              fontFamily: "'Playfair Display',serif",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "rgba(255,255,255,0.9)",
-              whiteSpace: "nowrap",
+              gap: 8,
+              background: accountMsg.type === "ok" ? "#ecfdf5" : "#fef2f2",
+              color: accountMsg.type === "ok" ? "#065f46" : "#991b1b",
+              border: `1px solid ${accountMsg.type === "ok" ? "#a7f3d0" : "#fecaca"}`,
             }}
           >
-            {savedAt ? "✓ Saved" : "Saving…"}
-          </span>
-        </div>
+            <span>{accountMsg.text}</span>
+            <a
+              href="/lesson-plans"
+              style={{ color: "inherit", fontWeight: 800, textDecoration: "underline" }}
+            >
+              View saved
+            </a>
+          </div>
+        )}
 
         <div style={{ padding: "18px 18px 22px" }}>
           <div

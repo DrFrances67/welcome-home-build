@@ -181,6 +181,85 @@ export type Database = {
           },
         ]
       }
+      lesson_plan_versions: {
+        Row: {
+          created_at: string
+          form: Json
+          id: string
+          label: string | null
+          lesson_plan_id: string
+          result: Json | null
+          user_id: string
+          version_no: number
+        }
+        Insert: {
+          created_at?: string
+          form: Json
+          id?: string
+          label?: string | null
+          lesson_plan_id: string
+          result?: Json | null
+          user_id: string
+          version_no: number
+        }
+        Update: {
+          created_at?: string
+          form?: Json
+          id?: string
+          label?: string | null
+          lesson_plan_id?: string
+          result?: Json | null
+          user_id?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_plan_versions_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_plans: {
+        Row: {
+          created_at: string
+          current_version_id: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_plans_current_version_fk"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plan_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
