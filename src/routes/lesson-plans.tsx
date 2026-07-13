@@ -9,7 +9,6 @@ import {
   restoreVersion,
   renameLessonPlan,
   deleteLessonPlan,
-  saveLessonPlan,
   type LessonPlanRow,
   type LessonPlanVersionRow,
 } from "@/lib/lesson-plans.functions";
