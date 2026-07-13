@@ -58,18 +58,23 @@ export function LessonPlanGenerator({
   const LIGHT = "#FDF4FF";
   const { hasStandards: stHasStandards, info: stInfo } = useAppState();
 
-  const [form, setForm] = useState({
-    grade: "k",
-    subject: "",
-    topic: "",
-    duration: "45 minutes",
-    model: "Direct Instruction",
-    objectives: "",
-    materials: "",
-    standard: "",
-    diff: [],
-    notes: "",
-  });
+  const [form, setForm] = useState(readLpDraft);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  // ── Auto-save the lesson-plan form draft (debounced) so refreshing or
+  //    navigating away never loses in-progress work. Restored on next load. ──
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(LP_DRAFT_KEY, JSON.stringify(form));
+        setSavedAt(Date.now());
+      } catch {
+        /* quota / private mode — skip silently */
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form]);
+
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
