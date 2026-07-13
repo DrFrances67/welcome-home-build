@@ -13,6 +13,11 @@ import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 import { GRADES, gradeIdToStdBand } from "./shared";
 import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useServerFn } from "@tanstack/react-start";
+import { saveLessonPlan } from "@/lib/lesson-plans.functions";
+
+const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
