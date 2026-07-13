@@ -15,6 +15,35 @@ import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
+const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
+const DEFAULT_LP_FORM = {
+  grade: "k",
+  subject: "",
+  topic: "",
+  duration: "45 minutes",
+  model: "Direct Instruction",
+  objectives: "",
+  materials: "",
+  standard: "",
+  diff: [],
+  notes: "",
+};
+
+/** Read a previously auto-saved lesson-plan form draft from localStorage, if any. */
+function readLpDraft() {
+  if (typeof window === "undefined") return DEFAULT_LP_FORM;
+  try {
+    const raw = window.localStorage.getItem(LP_DRAFT_KEY);
+    if (!raw) return DEFAULT_LP_FORM;
+    const parsed = JSON.parse(raw);
+    // Merge over defaults so newly-added fields are always present.
+    return { ...DEFAULT_LP_FORM, ...parsed, diff: parsed.diff || [] };
+  } catch {
+    return DEFAULT_LP_FORM;
+  }
+}
+
+
 export function LessonPlanGenerator({
   onBuildWorksheets,
 }: {
@@ -29,18 +58,23 @@ export function LessonPlanGenerator({
   const LIGHT = "#FDF4FF";
   const { hasStandards: stHasStandards, info: stInfo } = useAppState();
 
-  const [form, setForm] = useState({
-    grade: "k",
-    subject: "",
-    topic: "",
-    duration: "45 minutes",
-    model: "Direct Instruction",
-    objectives: "",
-    materials: "",
-    standard: "",
-    diff: [],
-    notes: "",
-  });
+  const [form, setForm] = useState(readLpDraft);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  // ── Auto-save the lesson-plan form draft (debounced) so refreshing or
+  //    navigating away never loses in-progress work. Restored on next load. ──
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(LP_DRAFT_KEY, JSON.stringify(form));
+        setSavedAt(Date.now());
+      } catch {
+        /* quota / private mode — skip silently */
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form]);
+
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1648,7 +1682,16 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           overflow: "hidden",
         }}
       >
-        <div style={{ background: BRAND, padding: "12px 18px" }}>
+        <div
+          style={{
+            background: BRAND,
+            padding: "12px 18px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
           <span
             style={{
               fontFamily: "'Playfair Display',serif",
@@ -1659,7 +1702,25 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           >
             📋 Lesson Details
           </span>
+          <span
+            role="status"
+            aria-live="polite"
+            title="Your lesson plan is automatically saved in this browser."
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontFamily: "'Playfair Display',serif",
+              fontSize: 11,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.9)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {savedAt ? "✓ Saved" : "Saving…"}
+          </span>
         </div>
+
         <div style={{ padding: "18px 18px 22px" }}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}
