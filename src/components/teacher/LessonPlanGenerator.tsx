@@ -1767,24 +1767,97 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           >
             📋 Lesson Details
           </span>
-          <span
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span
+              role="status"
+              aria-live="polite"
+              title="Your lesson plan is automatically saved in this browser."
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontFamily: "'Playfair Display',serif",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.9)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {savedAt ? "✓ Saved" : "Saving…"}
+            </span>
+            {user && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => saveToAccount("draft")}
+                  disabled={accountSaving !== null}
+                  title="Save the current lesson plan as a new draft version in your account"
+                  style={{
+                    background: "rgba(255,255,255,0.18)",
+                    border: "1px solid rgba(255,255,255,0.55)",
+                    color: "white",
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: accountSaving ? "wait" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {accountSaving === "draft" ? "Saving…" : "Save draft"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveToAccount("saved")}
+                  disabled={accountSaving !== null}
+                  title="Save the current lesson plan to your account"
+                  style={{
+                    background: "white",
+                    border: "1px solid white",
+                    color: BRAND,
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: accountSaving ? "wait" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {accountSaving === "saved" ? "Saving…" : "Save to account"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {accountMsg && (
+          <div
             role="status"
             aria-live="polite"
-            title="Your lesson plan is automatically saved in this browser."
             style={{
+              margin: "10px 18px 0",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 600,
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              gap: 4,
-              fontFamily: "'Playfair Display',serif",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "rgba(255,255,255,0.9)",
-              whiteSpace: "nowrap",
+              gap: 8,
+              background: accountMsg.type === "ok" ? "#ecfdf5" : "#fef2f2",
+              color: accountMsg.type === "ok" ? "#065f46" : "#991b1b",
+              border: `1px solid ${accountMsg.type === "ok" ? "#a7f3d0" : "#fecaca"}`,
             }}
           >
-            {savedAt ? "✓ Saved" : "Saving…"}
-          </span>
-        </div>
+            <span>{accountMsg.text}</span>
+            <a
+              href="/lesson-plans"
+              style={{ color: "inherit", fontWeight: 800, textDecoration: "underline" }}
+            >
+              View saved
+            </a>
+          </div>
+        )}
 
         <div style={{ padding: "18px 18px 22px" }}>
           <div
