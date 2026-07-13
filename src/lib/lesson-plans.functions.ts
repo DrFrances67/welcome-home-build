@@ -161,8 +161,8 @@ export const saveLessonPlan = createServerFn({ method: "POST" })
         user_id: userId,
         version_no: nextNo,
         label: data.label ?? null,
-        form: data.form,
-        result: data.result ?? null,
+        form: data.form as Json,
+        result: (data.result ?? null) as Json,
       })
       .select("*")
       .single();
