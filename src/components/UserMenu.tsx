@@ -65,6 +65,9 @@ export function UserMenu() {
       >
         {profile?.username ?? user.email}
       </Link>
+      <Link to="/lesson-plans" style={btn}>
+        Lesson plans
+      </Link>
       {isAdmin && (
         <Link to="/admin" style={btn}>
           Admin
