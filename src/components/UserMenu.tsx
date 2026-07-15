@@ -1,21 +1,46 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 export function UserMenu() {
   const { user, profile, isAdmin, signOut, loading } = useAuth();
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<Array<HTMLAnchorElement | HTMLButtonElement | null>>([]);
+  const menuId = useId();
 
+  const itemCount = 2; // My Account, Saved Lesson Plans
+
+  const closeMenu = useCallback((restoreFocus = true) => {
+    setOpen(false);
+    if (restoreFocus) {
+      // Defer to allow menu unmount before restoring focus.
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  }, []);
+
+  // Outside click + Escape while open.
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        setOpen(false); // click-away: don't steal focus
       }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        closeMenu(true);
+      } else if (e.key === "Tab") {
+        // Focus trap: cycle within menu items.
+        e.preventDefault();
+        setActiveIndex((i) => {
+          const next = e.shiftKey ? (i - 1 + itemCount) % itemCount : (i + 1) % itemCount;
+          return next;
+        });
+      }
     };
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
@@ -23,7 +48,44 @@ export function UserMenu() {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, closeMenu]);
+
+  // Move focus to the active menu item when open / activeIndex changes.
+  useEffect(() => {
+    if (!open) return;
+    itemRefs.current[activeIndex]?.focus();
+  }, [open, activeIndex]);
+
+  const openMenu = (startIndex = 0) => {
+    setActiveIndex(startIndex);
+    setOpen(true);
+  };
+
+  const onTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openMenu(0);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      openMenu(itemCount - 1);
+    }
+  };
+
+  const onMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % itemCount);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + itemCount) % itemCount);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setActiveIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActiveIndex(itemCount - 1);
+    }
+  };
 
   if (loading) return null;
 
@@ -81,16 +143,25 @@ export function UserMenu() {
     textAlign: "left",
     cursor: "pointer",
     boxSizing: "border-box",
+    outline: "none",
+  };
+  const menuItemActive: React.CSSProperties = {
+    ...menuItem,
+    background: "#f1f5f9",
   };
 
   return (
     <div style={wrap}>
       <div style={{ position: "relative" }} ref={menuRef}>
         <button
+          ref={triggerRef}
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => (open ? closeMenu(false) : openMenu(0))}
+          onKeyDown={onTriggerKeyDown}
           aria-haspopup="menu"
           aria-expanded={open}
+          aria-controls={menuId}
+          aria-label="Account menu"
           title="Account menu"
           style={{
             ...btn,
@@ -109,7 +180,11 @@ export function UserMenu() {
         </button>
         {open && (
           <div
+            id={menuId}
             role="menu"
+            aria-label="Account"
+            aria-orientation="vertical"
+            onKeyDown={onMenuKeyDown}
             style={{
               position: "absolute",
               top: "calc(100% + 6px)",
@@ -125,16 +200,31 @@ export function UserMenu() {
             <Link
               to="/account"
               role="menuitem"
-              style={menuItem}
-              onClick={() => setOpen(false)}
+              tabIndex={activeIndex === 0 ? 0 : -1}
+              ref={(el) => {
+                itemRefs.current[0] = el;
+              }}
+              style={activeIndex === 0 ? menuItemActive : menuItem}
+              onMouseEnter={() => setActiveIndex(0)}
+              onFocus={() => setActiveIndex(0)}
+              onClick={() => closeMenu(false)}
             >
               My Account
             </Link>
             <Link
               to="/lesson-plans"
               role="menuitem"
-              style={{ ...menuItem, borderTop: "1px solid #f1f5f9" }}
-              onClick={() => setOpen(false)}
+              tabIndex={activeIndex === 1 ? 0 : -1}
+              ref={(el) => {
+                itemRefs.current[1] = el;
+              }}
+              style={{
+                ...(activeIndex === 1 ? menuItemActive : menuItem),
+                borderTop: "1px solid #f1f5f9",
+              }}
+              onMouseEnter={() => setActiveIndex(1)}
+              onFocus={() => setActiveIndex(1)}
+              onClick={() => closeMenu(false)}
             >
               Saved Lesson Plans
             </Link>
