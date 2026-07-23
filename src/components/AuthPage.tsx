@@ -148,7 +148,7 @@ export function AuthPage() {
           /* storage unavailable */
         }
         setInfo("Signed in. Loading your account…");
-        window.location.assign("/");
+        window.location.assign(safeNextPath());
         return;
       }
 
