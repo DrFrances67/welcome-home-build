@@ -73,6 +73,22 @@ const themeCss = `
 .auth-btn-primary:hover:not(:disabled) { background: var(--auth-primary-hover); }
 `;
 
+/**
+ * Return a same-origin relative path from `?next=` in the current URL, or
+ * "/" if the value is missing or unsafe. Prevents open-redirect issues
+ * while letting OAuth consent (and any other flow) resume where it left off.
+ */
+function safeNextPath(): string {
+  try {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (!raw) return "/";
+    if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+    return raw;
+  } catch {
+    return "/";
+  }
+}
+
 export function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [identifier, setIdentifier] = useState("");
