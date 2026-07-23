@@ -39,7 +39,7 @@ const signupSchema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
   password: passwordSchema,
   agreedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the privacy notice" }),
+    message: "You must accept the privacy notice",
   }),
 });
 
@@ -72,6 +72,22 @@ const themeCss = `
 .auth-btn-primary { background: var(--auth-primary); transition: background 0.15s; }
 .auth-btn-primary:hover:not(:disabled) { background: var(--auth-primary-hover); }
 `;
+
+/**
+ * Return a same-origin relative path from `?next=` in the current URL, or
+ * "/" if the value is missing or unsafe. Prevents open-redirect issues
+ * while letting OAuth consent (and any other flow) resume where it left off.
+ */
+function safeNextPath(): string {
+  try {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (!raw) return "/";
+    if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+    return raw;
+  } catch {
+    return "/";
+  }
+}
 
 export function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
@@ -148,7 +164,7 @@ export function AuthPage() {
           /* storage unavailable */
         }
         setInfo("Signed in. Loading your account…");
-        window.location.assign("/");
+        window.location.assign(safeNextPath());
         return;
       }
 
@@ -217,7 +233,7 @@ export function AuthPage() {
       agreedPrivacy: agreed,
     });
     if (!parsed.success) {
-      setError(parsed.error.errors[0].message);
+      setError(parsed.error.issues[0].message);
       return;
     }
     const strength = scorePassword(parsed.data.password);

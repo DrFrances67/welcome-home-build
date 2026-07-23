@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AuthPage } from "@/components/AuthPage";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({ mode: (s.mode as string) ?? "signin" }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    mode: (s.mode as string) ?? "signin",
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign In or Create Account — The Tech Savvy Teacher" },
