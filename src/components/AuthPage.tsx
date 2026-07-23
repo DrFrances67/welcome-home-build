@@ -39,7 +39,7 @@ const signupSchema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
   password: passwordSchema,
   agreedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the privacy notice" }),
+    message: "You must accept the privacy notice",
   }),
 });
 
@@ -217,7 +217,7 @@ export function AuthPage() {
       agreedPrivacy: agreed,
     });
     if (!parsed.success) {
-      setError(parsed.error.errors[0].message);
+      setError(parsed.error.issues[0].message);
       return;
     }
     const strength = scorePassword(parsed.data.password);
