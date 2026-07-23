@@ -30,6 +30,7 @@ import { Route as ApiPublicNotifyAdminSignupRouteImport } from './routes/api/pub
 import { Route as ApiPublicLoginRouteImport } from './routes/api/public/login'
 import { Route as ApiPublicContactMessageRouteImport } from './routes/api/public/contact-message'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -146,6 +147,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/admin/resends': typeof AdminResendsRoute
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/login': typeof ApiPublicLoginRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/admin/resends': typeof AdminResendsRoute
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/login': typeof ApiPublicLoginRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/admin/resends': typeof AdminResendsRoute
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/contact-message': typeof ApiPublicContactMessageRoute
   '/api/public/login': typeof ApiPublicLoginRoute
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/resends'
     | '/admin/users'
     | '/email/unsubscribe'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/contact-message'
     | '/api/public/login'
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin/resends'
     | '/admin/users'
     | '/email/unsubscribe'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/contact-message'
     | '/api/public/login'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/admin/resends'
     | '/admin/users'
     | '/email/unsubscribe'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/contact-message'
     | '/api/public/login'
@@ -361,6 +373,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicContactMessageRoute: typeof ApiPublicContactMessageRoute
   ApiPublicLoginRoute: typeof ApiPublicLoginRoute
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -588,6 +608,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicContactMessageRoute: ApiPublicContactMessageRoute,
   ApiPublicLoginRoute: ApiPublicLoginRoute,
