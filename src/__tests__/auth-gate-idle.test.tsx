@@ -86,8 +86,8 @@ describe("AuthGate idle timeout", () => {
     act(() => {
       vi.advanceTimersByTime(IDLE_TIMEOUT_MS - IDLE_WARNING_MS);
     });
-    expect(screen.getByText(/Still there\?/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Stay signed in/i })).toBeInTheDocument();
+    expect(screen.getByText(/Still there\?/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Stay signed in/i })).toBeTruthy();
 
     // Advance the remaining 60s — sign-out fires and toast is shown.
     act(() => {
