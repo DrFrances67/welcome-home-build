@@ -149,6 +149,50 @@ export function LessonPlanGenerator({
     }
   };
 
+  // ── Cloud auto-draft: when signed in, mirror the local draft to the
+  //    user's account as a lesson_plan_versions snapshot (debounced ~5s).
+  //    Skipped when the form is still the untouched default so we don't
+  //    create empty draft plans just from opening the page. ──
+  const isDefaultForm = (f: typeof form) =>
+    !f.subject?.trim() &&
+    !f.topic?.trim() &&
+    !f.objectives?.trim() &&
+    !f.materials?.trim() &&
+    !f.standard?.trim() &&
+    !f.notes?.trim() &&
+    (!f.diff || f.diff.length === 0);
+
+  useEffect(() => {
+    if (!user) return;
+    if (isDefaultForm(form)) return;
+    const t = setTimeout(async () => {
+      try {
+        const title =
+          (form.topic && form.topic.trim()) ||
+          (form.subject && form.subject.trim()) ||
+          "Untitled lesson plan";
+        const res = await saveToAccountFn({
+          data: {
+            id: accountPlanId ?? undefined,
+            title,
+            form,
+            result: result ?? undefined,
+            status: "draft",
+            label: "Auto-saved draft",
+          },
+        });
+        rememberPlanId(res.id);
+        setCloudSavedAt(Date.now());
+      } catch {
+        /* transient network / auth issues — local draft still holds work */
+      }
+    }, 5000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, user?.id]);
+
+
+
 
   // AI Idea Helper
   const [aiHelperOpen, setAiHelperOpen] = useState(false);
