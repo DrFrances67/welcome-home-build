@@ -15,6 +15,8 @@ export const Route = createFileRoute("/contact")({
         property: "og:description",
         content: "Reach The Tech Savvy Teacher team — we usually reply within a few hours.",
       },
+      { property: "og:url", content: "https://techsavvyteacher.app/contact" },
+      { property: "og:type", content: "website" },
     ],
     links: [{ rel: "canonical", href: "https://techsavvyteacher.app/contact" }],
   }),
