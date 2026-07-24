@@ -11,7 +11,22 @@ import {
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({
-    meta: [{ title: "User Search — Admin" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "User Search — Admin" },
+      {
+        name: "description",
+        content: "Internal admin tool to search users and resend verification emails.",
+      },
+      { property: "og:title", content: "User Search — Admin" },
+      {
+        property: "og:description",
+        content: "Internal admin tool to search users and resend verification emails.",
+      },
+      { property: "og:url", content: "https://techsavvyteacher.app/admin/users" },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/admin/users" }],
   }),
   component: AdminUsersPage,
 });

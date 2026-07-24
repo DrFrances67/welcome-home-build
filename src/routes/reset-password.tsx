@@ -4,7 +4,24 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Reset Password" }] }),
+  head: () => ({
+    meta: [
+      { title: "Reset Password — The Tech Savvy Teacher" },
+      {
+        name: "description",
+        content: "Set a new password for your Tech Savvy Teacher account.",
+      },
+      { property: "og:title", content: "Reset Password — The Tech Savvy Teacher" },
+      {
+        property: "og:description",
+        content: "Set a new password for your Tech Savvy Teacher account.",
+      },
+      { property: "og:url", content: "https://techsavvyteacher.app/reset-password" },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/reset-password" }],
+  }),
   component: ResetPasswordPage,
 });
 

@@ -13,7 +13,24 @@ interface ResendRow {
 }
 
 export const Route = createFileRoute("/admin/resends")({
-  head: () => ({ meta: [{ title: "Verification Resends — Admin" }] }),
+  head: () => ({
+    meta: [
+      { title: "Verification Resends — Admin" },
+      {
+        name: "description",
+        content: "Internal admin view of verification email resend history.",
+      },
+      { property: "og:title", content: "Verification Resends — Admin" },
+      {
+        property: "og:description",
+        content: "Internal admin view of verification email resend history.",
+      },
+      { property: "og:url", content: "https://techsavvyteacher.app/admin/resends" },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/admin/resends" }],
+  }),
   component: ResendsAdminPage,
 });
 

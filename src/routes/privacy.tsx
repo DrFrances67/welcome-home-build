@@ -8,7 +8,15 @@ export const Route = createFileRoute("/privacy")({
         name: "description",
         content: "How The Tech Savvy Teacher collects, uses, and protects your data.",
       },
+      { property: "og:title", content: "Privacy Statement — The Tech Savvy Teacher" },
+      {
+        property: "og:description",
+        content: "How The Tech Savvy Teacher collects, uses, and protects your data.",
+      },
+      { property: "og:url", content: "https://techsavvyteacher.app/privacy" },
+      { property: "og:type", content: "website" },
     ],
+    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/privacy" }],
   }),
   component: PrivacyPage,
 });
