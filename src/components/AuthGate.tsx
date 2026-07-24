@@ -109,8 +109,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <AuthPage />;
+    return (
+      <>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 overflow-hidden opacity-60"
+          style={{ filter: "blur(6px)", transform: "scale(1.02)" }}
+        >
+          {children}
+        </div>
+        <AuthPage />
+      </>
+    );
   }
+
 
   return (
     <>
