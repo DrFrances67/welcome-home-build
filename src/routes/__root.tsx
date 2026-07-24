@@ -121,6 +121,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserMenu } from "@/components/UserMenu";
+import { Toaster } from "@/components/ui/sonner";
 
 import { ContactWidget } from "@/components/ContactWidget";
 
@@ -134,7 +135,9 @@ function RootComponent() {
         <UserMenu />
         <Outlet />
         <ContactWidget />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
 }
+
