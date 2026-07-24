@@ -65,6 +65,7 @@ export function LessonPlanGenerator({
 
   const [form, setForm] = useState(readLpDraft);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [cloudSavedAt, setCloudSavedAt] = useState<number | null>(null);
 
   // ── Auto-save the lesson-plan form draft (debounced) so refreshing or
   //    navigating away never loses in-progress work. Restored on next load. ──
