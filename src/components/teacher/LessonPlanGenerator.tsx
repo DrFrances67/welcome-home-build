@@ -16,6 +16,7 @@ import { useAppState } from "@/contexts/AppStateContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
 import { saveLessonPlan } from "@/lib/lesson-plans.functions";
+import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
 
 const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
