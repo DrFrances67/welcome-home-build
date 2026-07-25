@@ -44,8 +44,40 @@ export const saveInputSchema = z.object({
   result: z.unknown().optional(),
   status: z.enum(["draft", "saved"]).default("draft"),
   label: z.string().trim().max(120).optional(),
+  // Optimistic-concurrency guard. When provided together with `id`, the save
+  // is rejected if the plan's latest version_no on the server no longer
+  // matches this value — i.e. another device saved in the meantime. Use
+  // `null` to assert "no versions exist yet". Omit to skip the check.
+  expectedVersionNo: z.number().int().nonnegative().nullable().optional(),
 });
 export type SaveInput = z.infer<typeof saveInputSchema>;
+
+/**
+ * Thrown when a save loses an optimistic-concurrency race against another
+ * device. Callers should surface a "reload to continue" prompt rather than
+ * silently overwriting the newer version.
+ */
+export class LessonPlanConflictError extends Error {
+  readonly code = "LESSON_PLAN_CONFLICT" as const;
+  constructor(
+    public readonly planId: string,
+    public readonly latestVersionNo: number | null,
+    public readonly expectedVersionNo: number | null | undefined,
+  ) {
+    super(
+      `Lesson plan was updated on another device (latest v${latestVersionNo ?? 0}, expected v${
+        expectedVersionNo ?? 0
+      }).`,
+    );
+    this.name = "LessonPlanConflictError";
+  }
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  return e.code === "23505" || /duplicate key|unique constraint/i.test(e.message ?? "");
+}
 
 export const listInputSchema = z.object({
   status: z.enum(["draft", "saved"]).optional(),
