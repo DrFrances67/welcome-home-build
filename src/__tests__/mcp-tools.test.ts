@@ -58,7 +58,7 @@ describe("MCP tools: auth guard", () => {
     expect(res.isError).toBe(true);
   });
   it("list_lesson_plans returns error when unauthenticated", async () => {
-    const res = await listLessonPlans.handler({ limit: 25 }, ctx(false));
+    const res = await listLessonPlans.handler({ status: undefined, limit: 25 }, ctx(false));
     expect(res.isError).toBe(true);
   });
   it("get_lesson_plan returns error when unauthenticated", async () => {
@@ -99,7 +99,7 @@ describe("list_lesson_plans", () => {
 
   it("surfaces supabase errors", async () => {
     queryResults.push({ data: null, error: { message: "boom" } });
-    const res = await listLessonPlans.handler({ limit: 25 }, ctx());
+    const res = await listLessonPlans.handler({ status: undefined, limit: 25 }, ctx());
     expect(res.isError).toBe(true);
   });
 });
