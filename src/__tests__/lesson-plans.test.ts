@@ -4,6 +4,8 @@ import {
   deleteVersionImpl,
   getInputSchema,
   getLessonPlanImpl,
+  isLessonPlanConflict,
+  LessonPlanConflictError,
   listInputSchema,
   listLessonPlansImpl,
   listVersionsImpl,
