@@ -104,6 +104,14 @@ export function LessonPlanGenerator({
   });
   const [accountSaving, setAccountSaving] = useState<null | "draft" | "saved">(null);
   const [accountMsg, setAccountMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // Optimistic-concurrency baseline: the version_no we last observed on the
+  // server for this plan. Sent with each save so a newer version created on
+  // another device is detected instead of silently overwritten.
+  const [baseVersionNo, setBaseVersionNo] = useState<number | null>(null);
+  // When a conflict is detected we suspend cloud auto-drafting for this plan
+  // until the user reloads or explicitly overrides. Local (browser) draft
+  // keeps working so no in-progress work is lost.
+  const [conflictPaused, setConflictPaused] = useState(false);
 
   const rememberPlanId = (id: string | null) => {
     setAccountPlanId(id);
@@ -115,7 +123,7 @@ export function LessonPlanGenerator({
     }
   };
 
-  const saveToAccount = async (status: "draft" | "saved") => {
+  const saveToAccount = async (status: "draft" | "saved", opts?: { force?: boolean }) => {
     setAccountMsg(null);
     setAccountSaving(status);
     try {
@@ -130,9 +138,16 @@ export function LessonPlanGenerator({
           form,
           result: result ?? undefined,
           status,
+          // Only send the baseline when we have one AND the user hasn't
+          // explicitly asked to overwrite the server copy.
+          ...(accountPlanId && baseVersionNo !== null && !opts?.force
+            ? { expectedVersionNo: baseVersionNo }
+            : {}),
         },
       });
       rememberPlanId(res.id);
+      setBaseVersionNo(res.current?.version_no ?? null);
+      setConflictPaused(false);
       setAccountMsg({
         type: "ok",
         text:
@@ -141,10 +156,22 @@ export function LessonPlanGenerator({
             : `Draft v${res.current?.version_no ?? ""} saved to your account.`,
       });
     } catch (e) {
-      setAccountMsg({
-        type: "err",
-        text: e instanceof Error ? e.message : "Could not save. Please try again.",
-      });
+      if (isLessonPlanConflict(e)) {
+        setConflictPaused(true);
+        setAccountMsg({
+          type: "err",
+          text:
+            "A newer version of this lesson plan was saved on another device. " +
+            "Reload to see it, or click Save again to overwrite it with your changes.",
+        });
+        // Next click on Save should force-overwrite.
+        setBaseVersionNo(null);
+      } else {
+        setAccountMsg({
+          type: "err",
+          text: e instanceof Error ? e.message : "Could not save. Please try again.",
+        });
+      }
     } finally {
       setAccountSaving(null);
     }
@@ -166,6 +193,7 @@ export function LessonPlanGenerator({
   useEffect(() => {
     if (!user) return;
     if (isDefaultForm(form)) return;
+    if (conflictPaused) return; // wait for explicit user resolution
     const t = setTimeout(async () => {
       try {
         const title =
@@ -180,17 +208,31 @@ export function LessonPlanGenerator({
             result: result ?? undefined,
             status: "draft",
             label: "Auto-saved draft",
+            ...(accountPlanId && baseVersionNo !== null
+              ? { expectedVersionNo: baseVersionNo }
+              : {}),
           },
         });
         rememberPlanId(res.id);
+        setBaseVersionNo(res.current?.version_no ?? null);
         setCloudSavedAt(Date.now());
-      } catch {
-        /* transient network / auth issues — local draft still holds work */
+      } catch (e) {
+        if (isLessonPlanConflict(e)) {
+          setConflictPaused(true);
+          setAccountMsg({
+            type: "err",
+            text:
+              "Auto-save paused: a newer version exists on another device. " +
+              "Reload the page to pull it in, or press Save draft to overwrite.",
+          });
+          setBaseVersionNo(null);
+        }
+        /* other transient errors: local draft still holds work */
       }
     }, 5000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, user?.id]);
+  }, [form, user?.id, conflictPaused, baseVersionNo, accountPlanId]);
 
 
 
