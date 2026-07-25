@@ -65,12 +65,20 @@ export class LessonPlanConflictError extends Error {
     public readonly expectedVersionNo: number | null | undefined,
   ) {
     super(
-      `Lesson plan was updated on another device (latest v${latestVersionNo ?? 0}, expected v${
-        expectedVersionNo ?? 0
-      }).`,
+      `LESSON_PLAN_CONFLICT: Lesson plan was updated on another device (latest v${
+        latestVersionNo ?? 0
+      }, expected v${expectedVersionNo ?? 0}).`,
     );
     this.name = "LessonPlanConflictError";
   }
+}
+
+/** True when an error crossed the RPC boundary carrying our conflict marker. */
+export function isLessonPlanConflict(err: unknown): boolean {
+  if (!err) return false;
+  if (err instanceof LessonPlanConflictError) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.startsWith("LESSON_PLAN_CONFLICT");
 }
 
 function isUniqueViolation(err: unknown): boolean {
