@@ -25,7 +25,7 @@ import type { Database } from "../integrations/supabase/types";
 // operations the impls use: select/insert/update/delete + eq/order/limit +
 // single/maybeSingle. Query results are supplied via a FIFO queue.
 // ---------------------------------------------------------------------------
-type QRes = { data: unknown; error: { message: string } | null };
+type QRes = { data: unknown; error: { message: string; code?: string } | null };
 type Op = [string, unknown[]];
 type Recorded = { table: string; ops: Op[] };
 
