@@ -190,7 +190,20 @@ export async function saveLessonPlanImpl(
     .order("version_no", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const nextNo = (((last as { version_no?: number } | null)?.version_no ?? 0) as number) + 1;
+  const latestNo = ((last as { version_no?: number } | null)?.version_no ?? 0) as number;
+
+  // Optimistic-concurrency check. Only enforced when the caller supplied a
+  // baseline (existing plans that were loaded from the server); brand-new
+  // plans and legacy callers skip it. `null` means "I saw zero versions".
+  if (
+    input.id &&
+    input.expectedVersionNo !== undefined &&
+    (input.expectedVersionNo ?? 0) !== latestNo
+  ) {
+    throw new LessonPlanConflictError(planId!, latestNo, input.expectedVersionNo);
+  }
+
+  const nextNo = latestNo + 1;
 
   const { data: version, error: verErr } = await supabase
     .from("lesson_plan_versions")
@@ -204,7 +217,23 @@ export async function saveLessonPlanImpl(
     })
     .select("*")
     .single();
-  if (verErr || !version) throw new Error(verErr?.message ?? "Failed to save version");
+  if (verErr || !version) {
+    // A concurrent save on another device won the version_no race. The unique
+    // constraint (lesson_plan_id, version_no) rejected our insert; re-read
+    // the newest version_no so the caller can reconcile.
+    if (isUniqueViolation(verErr)) {
+      const { data: nowLast } = await supabase
+        .from("lesson_plan_versions")
+        .select("version_no")
+        .eq("lesson_plan_id", planId)
+        .order("version_no", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nowLatest = ((nowLast as { version_no?: number } | null)?.version_no ?? nextNo) as number;
+      throw new LessonPlanConflictError(planId!, nowLatest, input.expectedVersionNo ?? latestNo);
+    }
+    throw new Error(verErr?.message ?? "Failed to save version");
+  }
 
   const patch: { current_version_id: string; status: LessonPlanStatus; title?: string } = {
     current_version_id: (version as { id: string }).id,
