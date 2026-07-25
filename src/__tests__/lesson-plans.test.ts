@@ -4,6 +4,8 @@ import {
   deleteVersionImpl,
   getInputSchema,
   getLessonPlanImpl,
+  isLessonPlanConflict,
+  LessonPlanConflictError,
   listInputSchema,
   listLessonPlansImpl,
   listVersionsImpl,
@@ -23,7 +25,7 @@ import type { Database } from "../integrations/supabase/types";
 // operations the impls use: select/insert/update/delete + eq/order/limit +
 // single/maybeSingle. Query results are supplied via a FIFO queue.
 // ---------------------------------------------------------------------------
-type QRes = { data: unknown; error: { message: string } | null };
+type QRes = { data: unknown; error: { message: string; code?: string } | null };
 type Op = [string, unknown[]];
 type Recorded = { table: string; ops: Op[] };
 
@@ -186,6 +188,74 @@ describe("saveLessonPlanImpl", () => {
     await expect(
       saveLessonPlanImpl(fake.client, "u", { id: UUID_A, form: {}, status: "draft" }),
     ).rejects.toThrow("Lesson plan not found");
+  });
+
+  it("throws LessonPlanConflictError when expectedVersionNo lags server latest", async () => {
+    // existing plan lookup
+    fake.results.push({ data: { id: UUID_A }, error: null });
+    // last version — server is at 7
+    fake.results.push({ data: { version_no: 7 }, error: null });
+    await expect(
+      saveLessonPlanImpl(fake.client, "u", {
+        id: UUID_A,
+        form: {},
+        status: "draft",
+        expectedVersionNo: 5,
+      }),
+    ).rejects.toThrow(LessonPlanConflictError);
+  });
+
+  it("passes when expectedVersionNo matches server latest", async () => {
+    fake.results.push({ data: { id: UUID_A }, error: null });
+    fake.results.push({ data: { version_no: 3 }, error: null });
+    fake.results.push({ data: { id: UUID_B, version_no: 4 }, error: null });
+    fake.results.push({ data: { id: UUID_A, current_version_id: UUID_B }, error: null });
+    const out = await saveLessonPlanImpl(fake.client, "u", {
+      id: UUID_A,
+      form: {},
+      status: "draft",
+      expectedVersionNo: 3,
+    });
+    expect(out.current?.version_no).toBe(4);
+  });
+
+  it("skips concurrency check when expectedVersionNo omitted (legacy callers)", async () => {
+    fake.results.push({ data: { id: UUID_A }, error: null });
+    fake.results.push({ data: { version_no: 9 }, error: null });
+    fake.results.push({ data: { id: UUID_B, version_no: 10 }, error: null });
+    fake.results.push({ data: { id: UUID_A }, error: null });
+    const out = await saveLessonPlanImpl(fake.client, "u", {
+      id: UUID_A,
+      form: {},
+      status: "draft",
+    });
+    expect(out.current?.version_no).toBe(10);
+  });
+
+  it("converts a 23505 unique_violation on version insert into a conflict error", async () => {
+    // existing plan lookup
+    fake.results.push({ data: { id: UUID_A }, error: null });
+    // last version — server appeared to be at 4 when we read
+    fake.results.push({ data: { version_no: 4 }, error: null });
+    // insert version — another device raced us, unique constraint fires
+    fake.results.push({
+      data: null,
+      error: { message: "duplicate key value violates unique constraint", code: "23505" },
+    });
+    // re-read latest so error carries the true newest number
+    fake.results.push({ data: { version_no: 5 }, error: null });
+    await expect(
+      saveLessonPlanImpl(fake.client, "u", { id: UUID_A, form: {}, status: "draft" }),
+    ).rejects.toThrow(LessonPlanConflictError);
+  });
+
+  it("isLessonPlanConflict recognizes marker across the RPC boundary", () => {
+    const err = new Error(
+      "LESSON_PLAN_CONFLICT: Lesson plan was updated on another device (latest v3, expected v2).",
+    );
+    expect(isLessonPlanConflict(err)).toBe(true);
+    expect(isLessonPlanConflict(new Error("boom"))).toBe(false);
+    expect(isLessonPlanConflict(null)).toBe(false);
   });
 });
 

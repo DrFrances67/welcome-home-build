@@ -44,8 +44,48 @@ export const saveInputSchema = z.object({
   result: z.unknown().optional(),
   status: z.enum(["draft", "saved"]).default("draft"),
   label: z.string().trim().max(120).optional(),
+  // Optimistic-concurrency guard. When provided together with `id`, the save
+  // is rejected if the plan's latest version_no on the server no longer
+  // matches this value — i.e. another device saved in the meantime. Use
+  // `null` to assert "no versions exist yet". Omit to skip the check.
+  expectedVersionNo: z.number().int().nonnegative().nullable().optional(),
 });
 export type SaveInput = z.infer<typeof saveInputSchema>;
+
+/**
+ * Thrown when a save loses an optimistic-concurrency race against another
+ * device. Callers should surface a "reload to continue" prompt rather than
+ * silently overwriting the newer version.
+ */
+export class LessonPlanConflictError extends Error {
+  readonly code = "LESSON_PLAN_CONFLICT" as const;
+  constructor(
+    public readonly planId: string,
+    public readonly latestVersionNo: number | null,
+    public readonly expectedVersionNo: number | null | undefined,
+  ) {
+    super(
+      `LESSON_PLAN_CONFLICT: Lesson plan was updated on another device (latest v${
+        latestVersionNo ?? 0
+      }, expected v${expectedVersionNo ?? 0}).`,
+    );
+    this.name = "LessonPlanConflictError";
+  }
+}
+
+/** True when an error crossed the RPC boundary carrying our conflict marker. */
+export function isLessonPlanConflict(err: unknown): boolean {
+  if (!err) return false;
+  if (err instanceof LessonPlanConflictError) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.startsWith("LESSON_PLAN_CONFLICT");
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  return e.code === "23505" || /duplicate key|unique constraint/i.test(e.message ?? "");
+}
 
 export const listInputSchema = z.object({
   status: z.enum(["draft", "saved"]).optional(),
@@ -158,7 +198,20 @@ export async function saveLessonPlanImpl(
     .order("version_no", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const nextNo = (((last as { version_no?: number } | null)?.version_no ?? 0) as number) + 1;
+  const latestNo = ((last as { version_no?: number } | null)?.version_no ?? 0) as number;
+
+  // Optimistic-concurrency check. Only enforced when the caller supplied a
+  // baseline (existing plans that were loaded from the server); brand-new
+  // plans and legacy callers skip it. `null` means "I saw zero versions".
+  if (
+    input.id &&
+    input.expectedVersionNo !== undefined &&
+    (input.expectedVersionNo ?? 0) !== latestNo
+  ) {
+    throw new LessonPlanConflictError(planId!, latestNo, input.expectedVersionNo);
+  }
+
+  const nextNo = latestNo + 1;
 
   const { data: version, error: verErr } = await supabase
     .from("lesson_plan_versions")
@@ -172,7 +225,23 @@ export async function saveLessonPlanImpl(
     })
     .select("*")
     .single();
-  if (verErr || !version) throw new Error(verErr?.message ?? "Failed to save version");
+  if (verErr || !version) {
+    // A concurrent save on another device won the version_no race. The unique
+    // constraint (lesson_plan_id, version_no) rejected our insert; re-read
+    // the newest version_no so the caller can reconcile.
+    if (isUniqueViolation(verErr)) {
+      const { data: nowLast } = await supabase
+        .from("lesson_plan_versions")
+        .select("version_no")
+        .eq("lesson_plan_id", planId)
+        .order("version_no", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nowLatest = ((nowLast as { version_no?: number } | null)?.version_no ?? nextNo) as number;
+      throw new LessonPlanConflictError(planId!, nowLatest, input.expectedVersionNo ?? latestNo);
+    }
+    throw new Error(verErr?.message ?? "Failed to save version");
+  }
 
   const patch: { current_version_id: string; status: LessonPlanStatus; title?: string } = {
     current_version_id: (version as { id: string }).id,
