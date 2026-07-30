@@ -114,12 +114,12 @@ describe("UserMenu — signed in", () => {
     await waitFor(() => expect(document.activeElement).toBe(getItems()[0]));
   });
 
-  it("ArrowUp from the trigger opens focused on the last item", async () => {
+  it("ArrowUp from the trigger does not open the menu (Radix opens on Enter/Space/ArrowDown)", async () => {
     const user = userEvent.setup();
     render(<UserMenu />);
-    await openWith(user, "{ArrowUp}");
-    const items = getItems();
-    await waitFor(() => expect(document.activeElement).toBe(items[items.length - 1]));
+    getTrigger().focus();
+    await user.keyboard("{ArrowUp}");
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 
   it("ArrowDown / ArrowUp move focus between items", async () => {
@@ -172,7 +172,8 @@ describe("UserMenu — signed in", () => {
   });
 
   it("clicking the trigger toggles the menu open and closed", async () => {
-    const user = userEvent.setup();
+    // Radix marks the rest of the document pointer-events:none while open.
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     render(<UserMenu />);
     const trigger = getTrigger();
     await user.click(trigger);
