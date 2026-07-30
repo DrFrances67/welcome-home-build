@@ -35,19 +35,13 @@ export function UserMenu() {
     );
   }
 
-
   const label = profile?.username ?? user.email ?? "Account";
 
   return (
     <div className="fixed right-3 top-3 z-[9999] flex items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label="Account menu"
-            className="gap-1.5"
-          >
+          <Button variant="outline" size="sm" aria-label="Account menu" className="gap-1.5">
             <span className="max-w-[180px] truncate">{label}</span>
             <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden="true" />
           </Button>

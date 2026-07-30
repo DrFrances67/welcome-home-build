@@ -231,7 +231,7 @@ export function LessonPlanGenerator({
       }
     }, 5000);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [form, user?.id, conflictPaused, baseVersionNo, accountPlanId]);
 
 

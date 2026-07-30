@@ -169,9 +169,7 @@ describe("Forgot-password → set new password (E2E)", () => {
     });
 
     // The rejected token is reported with a clear error message.
-    await waitFor(() =>
-      expect(screen.getByText(/token has expired or is invalid/i)).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText(/token has expired or is invalid/i)).toBeTruthy());
 
     // The input stays disabled and no password update can be attempted.
     expect(getPasswordInput().disabled).toBe(true);

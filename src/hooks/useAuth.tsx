@@ -110,4 +110,3 @@ const anonymousAuth: AuthContextValue = {
 export function useAuth() {
   return useContext(AuthContext) ?? anonymousAuth;
 }
-

@@ -123,7 +123,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-
   return (
     <>
       {children}
@@ -150,9 +149,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => {
                 setWarning(false);
-                (
-                  window as unknown as { __idleReset?: () => void }
-                ).__idleReset?.();
+                (window as unknown as { __idleReset?: () => void }).__idleReset?.();
               }}
               className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
