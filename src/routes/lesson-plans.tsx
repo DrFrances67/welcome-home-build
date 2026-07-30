@@ -70,7 +70,9 @@ function LessonPlansPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/auth", search: { mode: "signin" } });
+    if (!authLoading && !user)
+      navigate({ to: "/auth", search: { mode: "signin", next: "/lesson-plans" } });
+
   }, [authLoading, user, navigate]);
 
   const load = useCallback(async () => {
