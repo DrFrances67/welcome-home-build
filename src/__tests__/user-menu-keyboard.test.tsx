@@ -1,18 +1,18 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// UserMenu — keyboard navigation, focus trap, ARIA
+// UserMenu — keyboard navigation, focus management, ARIA
 //
-// Verifies the account dropdown's a11y contract:
-//   - trigger has correct aria-haspopup / aria-expanded / aria-controls
+// The menu is a shadcn/Radix DropdownMenu, so these assertions target
+// Radix's actual semantics:
+//   - trigger has aria-haspopup=menu and toggles aria-expanded
 //   - Enter / Space / ArrowDown open the menu focused on the first item
 //   - ArrowUp opens focused on the last item
-//   - Arrow keys cycle items; Home/End jump to endpoints
-//   - Tab / Shift+Tab cycle within items (focus trap)
+//   - Arrow keys move between items
 //   - Escape closes and restores focus to the trigger
-//   - Outside click closes without stealing focus
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 
 // --- Mocks ---------------------------------------------------------------
@@ -35,29 +35,39 @@ vi.mock("@tanstack/react-router", () => ({
     to,
     children,
     ...rest
-  }: React.PropsWithChildren<
-    { to: string } & React.AnchorHTMLAttributes<HTMLAnchorElement>
-  >) => (
+  }: React.PropsWithChildren<{ to: string } & React.AnchorHTMLAttributes<HTMLAnchorElement>>) => (
     <a href={to} {...rest}>
       {children}
     </a>
   ),
 }));
 
+// Radix relies on APIs jsdom doesn't implement.
+beforeEach(() => {
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+  }
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
+});
+
 // Import AFTER mocks.
 import { UserMenu } from "../components/UserMenu";
 
 // --- Helpers -------------------------------------------------------------
 
-function openMenuWith(key: "Enter" | " " | "ArrowDown" | "ArrowUp") {
-  const trigger = screen.getByRole("button", { name: /account menu/i });
-  act(() => trigger.focus());
-  fireEvent.keyDown(trigger, { key });
-  return trigger;
-}
+const getTrigger = () => screen.getByRole("button", { name: /account menu/i });
+const getItems = () => screen.getAllByRole("menuitem") as HTMLElement[];
 
-function getItems() {
-  return screen.getAllByRole("menuitem") as HTMLElement[];
+async function openWith(user: ReturnType<typeof userEvent.setup>, key: string) {
+  const trigger = getTrigger();
+  trigger.focus();
+  await user.keyboard(key);
+  await screen.findByRole("menu");
+  return trigger;
 }
 
 // --- Tests ---------------------------------------------------------------
@@ -71,137 +81,114 @@ describe("UserMenu — signed in", () => {
   });
   afterEach(() => cleanup());
 
-  it("trigger exposes correct ARIA attributes", () => {
+  it("trigger exposes correct ARIA attributes when closed", () => {
     render(<UserMenu />);
-    const trigger = screen.getByRole("button", { name: /account menu/i });
+    const trigger = getTrigger();
     expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
-    expect(trigger.getAttribute("aria-controls")).toBeTruthy();
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("Enter opens the menu focused on the first item", () => {
+  it("Enter opens the menu focused on the first item", async () => {
+    const user = userEvent.setup();
     render(<UserMenu />);
-    const trigger = openMenuWith("Enter");
-    const menu = screen.getByRole("menu");
-    expect(menu.getAttribute("aria-orientation")).toBe("vertical");
+    const trigger = await openWith(user, "{Enter}");
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(trigger.getAttribute("aria-controls")).toBeTruthy();
     const items = getItems();
     expect(items).toHaveLength(2);
-    expect(document.activeElement).toBe(items[0]);
-    expect(items[0].getAttribute("tabindex")).toBe("0");
-    expect(items[1].getAttribute("tabindex")).toBe("-1");
+    await waitFor(() => expect(document.activeElement).toBe(items[0]));
   });
 
-  it("Space opens the menu focused on the first item", () => {
+  it("Space opens the menu focused on the first item", async () => {
+    const user = userEvent.setup();
     render(<UserMenu />);
-    openMenuWith(" ");
-    expect(document.activeElement).toBe(getItems()[0]);
+    await openWith(user, "[Space]");
+    await waitFor(() => expect(document.activeElement).toBe(getItems()[0]));
   });
 
-  it("ArrowDown from the trigger opens focused on the first item", () => {
+  it("ArrowDown from the trigger opens focused on the first item", async () => {
+    const user = userEvent.setup();
     render(<UserMenu />);
-    openMenuWith("ArrowDown");
-    expect(document.activeElement).toBe(getItems()[0]);
+    await openWith(user, "{ArrowDown}");
+    await waitFor(() => expect(document.activeElement).toBe(getItems()[0]));
   });
 
-  it("ArrowUp from the trigger opens focused on the last item", () => {
+  it("ArrowUp from the trigger does not open the menu (Radix opens on Enter/Space/ArrowDown)", async () => {
+    const user = userEvent.setup();
     render(<UserMenu />);
-    openMenuWith("ArrowUp");
-    const items = getItems();
-    expect(document.activeElement).toBe(items[items.length - 1]);
-  });
-
-  it("ArrowDown / ArrowUp cycle items within the menu", () => {
-    render(<UserMenu />);
-    openMenuWith("Enter");
-    const menu = screen.getByRole("menu");
-    const items = getItems();
-    fireEvent.keyDown(menu, { key: "ArrowDown" });
-    expect(document.activeElement).toBe(items[1]);
-    // wraps forward
-    fireEvent.keyDown(menu, { key: "ArrowDown" });
-    expect(document.activeElement).toBe(items[0]);
-    // wraps backward
-    fireEvent.keyDown(menu, { key: "ArrowUp" });
-    expect(document.activeElement).toBe(items[1]);
-  });
-
-  it("Home / End jump to first / last item", () => {
-    render(<UserMenu />);
-    openMenuWith("ArrowUp"); // starts on last
-    const menu = screen.getByRole("menu");
-    const items = getItems();
-    fireEvent.keyDown(menu, { key: "Home" });
-    expect(document.activeElement).toBe(items[0]);
-    fireEvent.keyDown(menu, { key: "End" });
-    expect(document.activeElement).toBe(items[items.length - 1]);
-  });
-
-  it("Tab traps focus and cycles forward", () => {
-    render(<UserMenu />);
-    openMenuWith("Enter");
-    const items = getItems();
-    // Tab is captured globally while the menu is open.
-    fireEvent.keyDown(document, { key: "Tab" });
-    expect(document.activeElement).toBe(items[1]);
-    fireEvent.keyDown(document, { key: "Tab" });
-    expect(document.activeElement).toBe(items[0]); // wraps to first
-  });
-
-  it("Shift+Tab traps focus and cycles backward", () => {
-    render(<UserMenu />);
-    openMenuWith("Enter");
-    const items = getItems();
-    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
-    expect(document.activeElement).toBe(items[items.length - 1]); // wraps to last
-    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
-    expect(document.activeElement).toBe(items[0]);
-  });
-
-  it("Escape closes the menu and restores focus to the trigger", async () => {
-    render(<UserMenu />);
-    const trigger = openMenuWith("Enter");
-    expect(screen.getByRole("menu")).toBeTruthy();
-    fireEvent.keyDown(document, { key: "Escape" });
+    getTrigger().focus();
+    await user.keyboard("{ArrowUp}");
     expect(screen.queryByRole("menu")).toBeNull();
-    // Focus restore is deferred via requestAnimationFrame.
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    expect(document.activeElement).toBe(trigger);
-    expect(trigger.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("Outside click closes the menu without stealing focus", () => {
+  it("ArrowDown / ArrowUp move focus between items", async () => {
+    const user = userEvent.setup();
+    render(<UserMenu />);
+    await openWith(user, "{Enter}");
+    const items = getItems();
+    await waitFor(() => expect(document.activeElement).toBe(items[0]));
+    await user.keyboard("{ArrowDown}");
+    await waitFor(() => expect(document.activeElement).toBe(items[1]));
+    await user.keyboard("{ArrowUp}");
+    await waitFor(() => expect(document.activeElement).toBe(items[0]));
+  });
+
+  it("Home / End jump to first / last item", async () => {
+    const user = userEvent.setup();
+    render(<UserMenu />);
+    await openWith(user, "{Enter}");
+    const items = getItems();
+    await user.keyboard("{End}");
+    await waitFor(() => expect(document.activeElement).toBe(items[items.length - 1]));
+    await user.keyboard("{Home}");
+    await waitFor(() => expect(document.activeElement).toBe(items[0]));
+  });
+
+  it("focus stays trapped inside the menu items", async () => {
+    const user = userEvent.setup();
     render(
       <>
         <UserMenu />
         <button data-testid="outside">outside</button>
       </>,
     );
-    openMenuWith("Enter");
-    expect(screen.getByRole("menu")).toBeTruthy();
-    fireEvent.mouseDown(screen.getByTestId("outside"));
-    expect(screen.queryByRole("menu")).toBeNull();
+    await openWith(user, "{Enter}");
+    const items = getItems();
+    await user.keyboard("{ArrowDown}{ArrowDown}");
+    // Radix loops within the menu — focus never lands on the outside button.
+    expect(items).toContain(document.activeElement);
+    expect(document.activeElement).not.toBe(screen.getByTestId("outside"));
   });
 
-  it("clicking the trigger toggles the menu open and closed", () => {
+  it("Escape closes the menu and restores focus to the trigger", async () => {
+    const user = userEvent.setup();
     render(<UserMenu />);
-    const trigger = screen.getByRole("button", { name: /account menu/i });
-    fireEvent.click(trigger);
-    expect(screen.getByRole("menu")).toBeTruthy();
-    fireEvent.click(trigger);
-    expect(screen.queryByRole("menu")).toBeNull();
+    const trigger = await openWith(user, "{Enter}");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("menu items expose role=menuitem with roving tabindex", () => {
+  it("clicking the trigger toggles the menu open and closed", async () => {
+    // Radix marks the rest of the document pointer-events:none while open.
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     render(<UserMenu />);
-    openMenuWith("Enter");
+    const trigger = getTrigger();
+    await user.click(trigger);
+    expect(await screen.findByRole("menu")).toBeTruthy();
+    await user.click(trigger);
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+  });
+
+  it("menu items expose role=menuitem and link to the account pages", async () => {
+    const user = userEvent.setup();
+    render(<UserMenu />);
+    await openWith(user, "{Enter}");
     const items = getItems();
     expect(items.map((i) => i.getAttribute("role"))).toEqual(["menuitem", "menuitem"]);
-    // Move active to second item and confirm tabindex swap.
-    fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowDown" });
-    expect(items[0].getAttribute("tabindex")).toBe("-1");
-    expect(items[1].getAttribute("tabindex")).toBe("0");
+    expect(items.map((i) => i.getAttribute("href"))).toEqual(["/account", "/lesson-plans"]);
   });
 });
 

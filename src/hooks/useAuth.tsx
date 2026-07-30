@@ -93,8 +93,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Fallback used when a component renders outside `AuthProvider` (tests, SSR
+ * shells, isolated previews). Signed-out shape — never throws.
+ */
+const anonymousAuth: AuthContextValue = {
+  user: null,
+  session: null,
+  profile: null,
+  isAdmin: false,
+  loading: false,
+  signOut: async () => {},
+  refreshProfile: async () => {},
+};
+
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  return useContext(AuthContext) ?? anonymousAuth;
 }

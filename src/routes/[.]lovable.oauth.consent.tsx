@@ -40,8 +40,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
     }
   },
   loader: async ({ location }) => {
-    const authorizationId =
-      new URLSearchParams(location.search).get("authorization_id") ?? "";
+    const authorizationId = new URLSearchParams(location.search).get("authorization_id") ?? "";
     const { data, error } = await oauth().getAuthorizationDetails(authorizationId);
     if (error) throw new Error(error.message);
     const immediate = data?.redirect_url ?? data?.redirect_to;
@@ -96,17 +95,15 @@ function Consent() {
       <div style={cardStyle}>
         <h1 style={h1Style}>Connect {clientName} to your account</h1>
         <p style={{ color: "#4B5563", marginTop: 8, fontSize: 14 }}>
-          This lets <strong>{clientName}</strong> use The Tech Savvy Teacher as you — reading
-          your saved lesson plans, drafts, and profile through the app's MCP tools.
+          This lets <strong>{clientName}</strong> use The Tech Savvy Teacher as you — reading your
+          saved lesson plans, drafts, and profile through the app's MCP tools.
         </p>
         {redirectUri && (
           <p style={{ color: "#6B7280", marginTop: 12, fontSize: 12, wordBreak: "break-all" }}>
             Redirect: {redirectUri}
           </p>
         )}
-        {scope && (
-          <p style={{ color: "#6B7280", marginTop: 4, fontSize: 12 }}>Scopes: {scope}</p>
-        )}
+        {scope && <p style={{ color: "#6B7280", marginTop: 4, fontSize: 12 }}>Scopes: {scope}</p>}
         <p style={{ color: "#6B7280", marginTop: 12, fontSize: 12 }}>
           This does not bypass this app's permissions or backend policies.
         </p>

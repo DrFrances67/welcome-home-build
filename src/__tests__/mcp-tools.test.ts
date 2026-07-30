@@ -17,8 +17,7 @@ function makeQueryBuilder(table: string) {
       return chain;
     };
   }
-  const resolve = () =>
-    Promise.resolve(queryResults.shift() ?? { data: null, error: null });
+  const resolve = () => Promise.resolve(queryResults.shift() ?? { data: null, error: null });
   chain.maybeSingle = resolve;
   chain.single = resolve;
   chain.then = (onFulfilled: (v: QueryResult) => unknown) => resolve().then(onFulfilled);
@@ -62,7 +61,10 @@ describe("MCP tools: auth guard", () => {
     expect(res.isError).toBe(true);
   });
   it("get_lesson_plan returns error when unauthenticated", async () => {
-    const res = await getLessonPlan.handler({ id: "00000000-0000-0000-0000-000000000000" }, ctx(false));
+    const res = await getLessonPlan.handler(
+      { id: "00000000-0000-0000-0000-000000000000" },
+      ctx(false),
+    );
     expect(res.isError).toBe(true);
   });
   it("list_lesson_plan_versions returns error when unauthenticated", async () => {

@@ -117,10 +117,7 @@ export async function listLessonPlansImpl(
   supabase: SB,
   input: z.infer<typeof listInputSchema>,
 ): Promise<LessonPlanRow[]> {
-  let query = supabase
-    .from("lesson_plans")
-    .select("*")
-    .order("updated_at", { ascending: false });
+  let query = supabase.from("lesson_plans").select("*").order("updated_at", { ascending: false });
   if (input.status) query = query.eq("status", input.status);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -237,7 +234,8 @@ export async function saveLessonPlanImpl(
         .order("version_no", { ascending: false })
         .limit(1)
         .maybeSingle();
-      const nowLatest = ((nowLast as { version_no?: number } | null)?.version_no ?? nextNo) as number;
+      const nowLatest = ((nowLast as { version_no?: number } | null)?.version_no ??
+        nextNo) as number;
       throw new LessonPlanConflictError(planId!, nowLatest, input.expectedVersionNo ?? latestNo);
     }
     throw new Error(verErr?.message ?? "Failed to save version");
@@ -370,10 +368,7 @@ export async function deleteVersionImpl(
       throw new Error("Cannot delete the current version. Restore another version first.");
     }
   }
-  const { error } = await supabase
-    .from("lesson_plan_versions")
-    .delete()
-    .eq("id", input.versionId);
+  const { error } = await supabase.from("lesson_plan_versions").delete().eq("id", input.versionId);
   if (error) throw new Error(error.message);
   return { ok: true };
 }

@@ -70,7 +70,8 @@ function LessonPlansPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/auth", search: { mode: "signin" } });
+    if (!authLoading && !user)
+      navigate({ to: "/auth", search: { mode: "signin", next: "/lesson-plans" } });
   }, [authLoading, user, navigate]);
 
   const load = useCallback(async () => {
@@ -231,7 +232,9 @@ function LessonPlansPage() {
                 }}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15 }}>{plan.title}</div>
+                  <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15 }}>
+                    {plan.title}
+                  </div>
                   <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
                     Updated {timeAgo(plan.updated_at)}
                   </div>
@@ -332,7 +335,15 @@ function DraftList({
       ) : (
         <>
           {/* Restore selector */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              marginBottom: 12,
+              flexWrap: "wrap",
+            }}
+          >
             <label style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
               Restore version:
             </label>

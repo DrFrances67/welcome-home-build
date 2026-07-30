@@ -42,7 +42,7 @@ function AccountPage() {
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth", search: { mode: "signin" } });
+    if (!loading && !user) navigate({ to: "/auth", search: { mode: "signin", next: "/account" } });
   }, [loading, user, navigate]);
 
   useEffect(() => {

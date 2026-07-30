@@ -50,7 +50,9 @@ function ResetPasswordPage() {
         const refreshToken = hash.get("refresh_token");
         const code = url.searchParams.get("code");
         const tokenHash =
-          url.searchParams.get("token_hash") || hash.get("token_hash") || url.searchParams.get("token");
+          url.searchParams.get("token_hash") ||
+          hash.get("token_hash") ||
+          url.searchParams.get("token");
         const type = (url.searchParams.get("type") || hash.get("type") || "recovery") as
           | "recovery"
           | "email";
@@ -109,7 +111,9 @@ function ResetPasswordPage() {
             console.warn(
               "[reset-password] no session established after exchange — link invalid or expired",
             );
-            setError("This password reset link is invalid or has expired. Please request a new one.");
+            setError(
+              "This password reset link is invalid or has expired. Please request a new one.",
+            );
           }
         }
       } catch (e) {
@@ -121,7 +125,6 @@ function ResetPasswordPage() {
         if (!cancelled) setChecking(false);
       }
     };
-
 
     // Also react to the recovery event fired when Supabase auto-detects the link.
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
