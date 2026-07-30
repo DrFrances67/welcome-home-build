@@ -17,21 +17,24 @@ export function UserMenu() {
   if (loading) return null;
 
   if (!user) {
+    const next =
+      typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined;
     return (
       <div className="fixed right-3 top-3 z-[9999] flex items-center gap-2">
         <Button asChild variant="outline" size="sm">
-          <Link to="/auth" search={{ mode: "signin" }}>
+          <Link to="/auth" search={{ mode: "signin", next }}>
             Sign in
           </Link>
         </Button>
         <Button asChild size="sm">
-          <Link to="/auth" search={{ mode: "signup" }}>
+          <Link to="/auth" search={{ mode: "signup", next }}>
             Sign up
           </Link>
         </Button>
       </div>
     );
   }
+
 
   const label = profile?.username ?? user.email ?? "Account";
 
