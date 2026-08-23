@@ -259,7 +259,7 @@ export function LessonPlanGenerator({
   const [exemplarRaw, setExemplarRaw] = useState(""); // full text extracted from file/url/paste
   const [analyzingEx, setAnalyzingEx] = useState(false);
   const [exError, setExError] = useState("");
-  const dropRef = useRef<HTMLDivElement | null>(null);
+  const dropRef = useRef<HTMLLabelElement | null>(null);
   const [draggingOver, setDraggingOver] = useState(false);
 
   // Slide deck generation state
@@ -550,7 +550,7 @@ export function LessonPlanGenerator({
     setExError("");
     setAnalyzingEx(false);
   };
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
     setDraggingOver(false);
     const f = e.dataTransfer.files?.[0];
@@ -1533,7 +1533,7 @@ document.addEventListener('keydown',e=>{
     });
 
     // pptxgenjs returns a Blob when output type is "blob"
-    return await pptx.write({ outputType: "blob" });
+    return (await pptx.write({ outputType: "blob" })) as Blob;
   };
 
   // ── Export: PowerPoint (.pptx) ────────────────────────────────────
@@ -1658,7 +1658,8 @@ document.addEventListener('keydown',e=>{
 
   // Build the same rich HTML used for Print — reused for PDF + Word
   const buildPlanHtml = () => {
-    const safeHtml = (s) =>
+    if (!result) return "";
+    const safeHtml = (s: unknown) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -1725,15 +1726,15 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
   const exportCSV = () => {
     if (!result) return;
     setShowExportMenu(false);
-    const esc = (v) =>
+    const esc = (v: unknown) =>
       `"${String(v || "")
         .replace(/"/g, '""')
         .replace(/\r?\n/g, " ")}"`;
-    const rows = [["Section", "Field", "Value"]];
-    rows.push(["Meta", "Title", result.title]);
-    rows.push(["Meta", "Grade/Subject", result.gradeSubject]);
-    rows.push(["Meta", "Duration", result.duration]);
-    rows.push(["Meta", "Standard", result.standard]);
+    const rows: string[][] = [["Section", "Field", "Value"]];
+    rows.push(["Meta", "Title", result.title || ""]);
+    rows.push(["Meta", "Grade/Subject", result.gradeSubject || ""]);
+    rows.push(["Meta", "Duration", result.duration || ""]);
+    rows.push(["Meta", "Standard", result.standard || ""]);
     (result.objectives || []).forEach((o, i) => rows.push(["Objectives", `#${i + 1}`, o]));
     (result.successCriteria || []).forEach((s, i) =>
       rows.push(["Success Criteria", `#${i + 1}`, s]),
@@ -1741,27 +1742,27 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
     (result.materials || []).forEach((m, i) => rows.push(["Materials", `#${i + 1}`, m]));
     (result.vocabulary || []).forEach((v, i) => rows.push(["Vocabulary", `#${i + 1}`, v]));
     (result.sections || []).forEach((s) => {
-      rows.push([`Section: ${s.name}`, "Duration", s.duration]);
-      rows.push([`Section: ${s.name}`, "Description", s.description]);
-      rows.push([`Section: ${s.name}`, "Teacher Moves", s.teacherMoves]);
-      rows.push([`Section: ${s.name}`, "Student Actions", s.studentActions]);
+      rows.push([`Section: ${s.name}`, "Duration", s.duration || ""]);
+      rows.push([`Section: ${s.name}`, "Description", s.description || ""]);
+      rows.push([`Section: ${s.name}`, "Teacher Moves", s.teacherMoves || ""]);
+      rows.push([`Section: ${s.name}`, "Student Actions", s.studentActions || ""]);
       if (s.udlNotes) rows.push([`Section: ${s.name}`, "UDL", s.udlNotes]);
     });
-    rows.push(["Assessment", "Formative", result.assessment?.formative]);
-    rows.push(["Assessment", "Exit Ticket", result.assessment?.exitTicket]);
-    rows.push(["Assessment", "Summative", result.assessment?.summative]);
+    rows.push(["Assessment", "Formative", result.assessment?.formative || ""]);
+    rows.push(["Assessment", "Exit Ticket", result.assessment?.exitTicket || ""]);
+    rows.push(["Assessment", "Summative", result.assessment?.summative || ""]);
     (result.dokQuestions || []).forEach((lv) =>
       (lv.items || []).forEach((q, i) =>
         rows.push([`DOK ${lv.level} ${lv.label || ""}`, `Q${i + 1}`, q]),
       ),
     );
-    rows.push(["Differentiation", "ELL", result.differentiation?.ell]);
-    rows.push(["Differentiation", "IEP", result.differentiation?.iep]);
-    rows.push(["Differentiation", "Gifted", result.differentiation?.gifted]);
-    rows.push(["Differentiation", "Universal", result.differentiation?.universal]);
-    rows.push(["Homework", "", result.homework]);
-    rows.push(["Extension", "", result.extension]);
-    rows.push(["Teacher Notes", "", result.teacherNotes]);
+    rows.push(["Differentiation", "ELL", result.differentiation?.ell || ""]);
+    rows.push(["Differentiation", "IEP", result.differentiation?.iep || ""]);
+    rows.push(["Differentiation", "Gifted", result.differentiation?.gifted || ""]);
+    rows.push(["Differentiation", "Universal", result.differentiation?.universal || ""]);
+    rows.push(["Homework", "", result.homework || ""]);
+    rows.push(["Extension", "", result.extension || ""]);
+    rows.push(["Teacher Notes", "", result.teacherNotes || ""]);
     const csv = rows.map((r) => r.map(esc).join(",")).join("\r\n");
     downloadBlob(
       new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
@@ -1777,12 +1778,12 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
       typeof window !== "undefined"
         ? window.location.href
         : "https://thetechsavvyteacher.lovable.app";
-    const shareUrl = `https://classroom.google.com/share?url=${encodeURIComponent(url)}&title=${encodeURIComponent(result.title)}&body=${encodeURIComponent(buildPlanText().slice(0, 1500))}`;
+    const shareUrl = `https://classroom.google.com/share?url=${encodeURIComponent(url)}&title=${encodeURIComponent(result.title || "")}&body=${encodeURIComponent(buildPlanText().slice(0, 1500))}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
   };
 
   // Canvas / Edmodo / other LMS — instruct to import the .doc or copy text
-  const exportLMSGuidance = (lms) => {
+  const exportLMSGuidance = (lms: string) => {
     setShowExportMenu(false);
     exportWord();
     setTimeout(
@@ -1806,7 +1807,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
       s.desc.toLowerCase().includes(stdSearch.toLowerCase()),
   );
 
-  const lbl = {
+  const lbl: CSSProperties = {
     fontSize: 10,
     fontWeight: 700,
     textTransform: "uppercase",
@@ -1815,7 +1816,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
     display: "block",
     marginBottom: 5,
   };
-  const inp = {
+  const inp: CSSProperties = {
     width: "100%",
     padding: "9px 11px",
     borderRadius: 7,
@@ -2526,7 +2527,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                   type="file"
                   accept="image/*,.pdf,.doc,.docx,.txt,.md,.rtf"
                   aria-label="Upload exemplar lesson plan"
-                  onChange={(e) => e.target.files[0] && handleExemplarFile(e.target.files[0])}
+                  onChange={(e) => e.target.files?.[0] && handleExemplarFile(e.target.files[0])}
                   style={{ display: "none" }}
                 />
               </label>
@@ -3044,7 +3045,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             <textarea
               readOnly
               value={buildPlanText()}
-              onClick={(e) => e.target.select()}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               style={{
                 width: "100%",
                 height: 160,
@@ -3125,7 +3126,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             <textarea
               readOnly
               value={buildPlanText()}
-              onClick={(e) => e.target.select()}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               style={{
                 width: "100%",
                 height: 160,
