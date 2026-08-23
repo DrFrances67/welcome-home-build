@@ -38,6 +38,7 @@ export interface WorksheetShape {
   width?: number | string;
   height?: number | string;
   lines?: number;
+  caption?: string;
 }
 
 export interface WorksheetElement {

@@ -11,7 +11,7 @@ import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { BANDS, GRADES, gInfo } from "@/data/grades";
-import { NY_STANDARDS } from "@/data/ny-standards";
+import { NY_STANDARDS, type Standard } from "@/data/ny-standards";
 import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import {
   IMG_STYLES,
@@ -22,7 +22,7 @@ import {
   VERSION_LABELS,
 } from "@/data/worksheet-options";
 import { F, FF, PRINT_CSS } from "@/lib/worksheet-styles";
-import type { DokLevel, WorksheetShape } from "@/types/worksheet";
+import type { DokLevel, WorksheetShape, WorksheetElement } from "@/types/worksheet";
 import {
   uid,
   COLS,
@@ -839,16 +839,16 @@ function ElView({
         }
       : {};
     const resizedInlineImage = userSized && !floated;
-    const containerStyle = floated
+    const containerStyle: CSSProperties = floated
       ? { ...wrap, overflow: "hidden" }
       : {
           ...wrap,
-          textAlign: el.align || "center",
+          textAlign: (el.align as CSSProperties["textAlign"]) || "center",
           ...(resizedInlineImage
             ? { display: "flex", flexDirection: "column", alignItems: "stretch" }
             : {}),
         };
-    const imageFrameStyle = resizedInlineImage
+    const imageFrameStyle: CSSProperties | undefined = resizedInlineImage
       ? {
           width: "100%",
           flex: el.heightOverride ? "1 1 auto" : "0 0 auto",
@@ -864,7 +864,7 @@ function ElView({
     // (when a heightOverride exists) + object-fit:contain guarantees the image
     // always fits inside the resized box, preserves aspect ratio, and shrinks
     // when the box shrinks — no clipping, no letterbox-pinned pixel height.
-    const fillImgStyle = resizedInlineImage
+    const fillImgStyle: CSSProperties = resizedInlineImage
       ? {
           width: "100%",
           height: el.heightOverride ? "100%" : "auto",
@@ -1107,7 +1107,7 @@ function ElView({
             alignItems: "center",
           }}
         >
-          {(el.left || []).map((item, i) => (
+          {(el.left || []).map((item: string, i: number) => (
             <span key={i} style={{ display: "contents" }}>
               <div
                 style={{
@@ -1400,7 +1400,7 @@ function ElView({
             maxWidth: "100%",
           }}
         >
-          {(el.text || "").split("______").map((part, i, arr) => (
+          {(el.text || "").split("______").map((part: string, i: number, arr: string[]) => (
             <span key={i}>
               {renderInlineMarkdown(part)}
               {i < arr.length - 1 && (
@@ -1633,7 +1633,7 @@ function ElView({
     const dokTextScale = fsLocked ? 1 : dokS;
     const levelGap = 10;
     const itemGap = 6;
-    const dokLineStyle = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
+    const dokLineStyle: CSSProperties = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
     return (
       <div
         className="ws-element"
@@ -1699,7 +1699,7 @@ function ElView({
               minHeight: 0,
             }}
           >
-            {(el.levels || []).map((lv, li) => {
+            {(el.levels || []).map((lv: DokLevel, li: number) => {
               const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
               return (
                 <div
@@ -1901,7 +1901,7 @@ function ElView({
   if (el.type === "customShape") {
     const shapes = el.shapes || [];
     const colMap = { "1-col": 1, "2-col": 2, "3-col": 3, "4-col": 4, "2x2": 2 };
-    const requestedCols = colMap[el.layout] || 2;
+    const requestedCols = colMap[el.layout as keyof typeof colMap] || 2;
     const orientation = el.orientation || "horizontal"; // "horizontal" | "vertical"
     // Vertical = stack in a single column (one shape per row).
     const cols = orientation === "vertical" ? 1 : requestedCols;
@@ -2397,10 +2397,10 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
             accept="image/*"
             aria-label="Upload image file"
             onChange={(e) => {
-              const f = e.target.files[0];
+              const f = e.target.files?.[0];
               if (f) {
                 const r = new FileReader();
-                r.onload = (ev) => onChange({ url: ev.target.result });
+                r.onload = (ev) => onChange({ url: ev.target?.result });
                 r.readAsDataURL(f);
               }
             }}
@@ -2898,15 +2898,15 @@ No markdown, no preamble, no commentary.`;
     }
   };
 
-  const updateLevelItems = (li, text) => {
+  const updateLevelItems = (li: number, text: string) => {
     const next = (el.levels || []).map((lv, i) =>
       i === li
         ? {
             ...lv,
             items: text
               .split("\n")
-              .map((s) => s.trimStart())
-              .filter((s) => s.trim().length),
+              .map((s: string) => s.trimStart())
+              .filter((s: string) => s.trim().length),
           }
         : lv,
     );
@@ -3162,7 +3162,7 @@ function ChecklistEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (
       if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return a list");
       onChange({ items: parsed.map((x) => String(x).trim()).filter(Boolean), mode: "ai" });
     } catch (e) {
-      setErr(e?.message || "Could not generate. Try again.");
+      setErr(e instanceof Error ? e.message : "Could not generate. Try again.");
     } finally {
       setBusy(false);
     }
@@ -3644,13 +3644,13 @@ function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange:
     },
   ];
 
-  const applyPreset = (preset) => {
+  const applyPreset = (preset: { title?: string; layout?: string; shapes: unknown[] }) => {
     onChange({ title: preset.title, layout: preset.layout, shapes: preset.shapes });
     setActiveIdx(0);
     setEditorTab("custom");
   };
 
-  const updShape = (idx, updates) => {
+  const updShape = (idx: number, updates: Record<string, unknown>) => {
     const next = shapes.map((s, i) => (i === idx ? { ...s, ...updates } : s));
     onChange({ shapes: next });
   };
@@ -3671,13 +3671,13 @@ function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange:
     setActiveIdx(shapes.length);
   };
 
-  const removeShape = (idx) => {
+  const removeShape = (idx: number) => {
     const next = shapes.filter((_, i) => i !== idx);
     onChange({ shapes: next });
     setActiveIdx(Math.min(activeIdx, next.length - 1));
   };
 
-  const duplicateShape = (idx) => {
+  const duplicateShape = (idx: number) => {
     const copy = { ...shapes[idx] };
     const next = [...shapes.slice(0, idx + 1), copy, ...shapes.slice(idx + 1)];
     onChange({ shapes: next });
@@ -3787,7 +3787,7 @@ function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange:
               </div>
             </button>
           ))}
-          {el.shapes?.length > 0 && (
+          {(el.shapes?.length ?? 0) > 0 && (
             <p
               style={{
                 fontFamily: F,
@@ -4283,7 +4283,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: Gl
     gradeId ? gradeIdToStdBand(gradeId, subjects[0] || "ELA") || "Kindergarten" : "Kindergarten",
   );
   const [search, setSearch] = useState("");
-  const [picked, setPicked] = useState(null);
+  const [picked, setPicked] = useState<Standard | null>(null);
   const [showHeader, setShowHeader] = useState(true);
   const [matchGrade, setMatchGrade] = useState(!!gradeId);
 
@@ -4291,18 +4291,18 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: Gl
   const stds = STD[subj]?.[band] || [];
   const filtered = search.trim()
     ? stds.filter(
-        (s) =>
+        (s: Standard) =>
           s.code.toLowerCase().includes(search.toLowerCase()) ||
           s.desc.toLowerCase().includes(search.toLowerCase()),
       )
     : stds;
 
-  const handlePick = (s) => {
+  const handlePick = (s: Standard) => {
     setPicked(s);
   };
 
   // Auto-update band when subject changes if matchGrade is on
-  const onSubjChange = (s) => {
+  const onSubjChange = (s: string) => {
     setSubj(s);
     if (matchGrade && gradeId) setBand(gradeIdToStdBand(gradeId, s));
     else setBand(s === "ELA" ? "Kindergarten" : Object.keys(STD[s] || {})[0] || "");
@@ -4493,7 +4493,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: Gl
               No standards match your search.
             </p>
           )}
-          {filtered.map((s, i) => {
+          {filtered.map((s: Standard, i: number) => {
             const isSelected = picked?.code === s.code;
             return (
               <div
@@ -4758,32 +4758,32 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
   const [previewVer, setPreviewVer] = useState(null); // null = config, 0-3 = preview index
 
   // Build a version's element order
-  const buildVersion = (label) => {
-    const fixed = keepFixed ? ws.elements.filter((el) => !isQuestion(el)) : [];
-    const questions = ws.elements.filter((el) => isQuestion(el));
+  const buildVersion = (label: string) => {
+    const fixed = keepFixed ? ws.elements.filter((el: WorksheetElement) => !isQuestion(el)) : [];
+    const questions = ws.elements.filter((el: WorksheetElement) => isQuestion(el));
     const orderedQs = randomize ? shuffle(questions) : questions;
     if (!keepFixed) return randomize ? shuffle([...ws.elements]) : [...ws.elements];
     // Re-interleave: put questions back in their (shuffled) positions
     let qi = 0;
-    return ws.elements.map((el) => (isQuestion(el) ? orderedQs[qi++] : el));
+    return ws.elements.map((el: WorksheetElement) => (isQuestion(el) ? orderedQs[qi++] : el));
   };
 
   const versions = VERSION_LABELS.slice(0, numVersions).map(buildVersion);
 
   const printVersions = () => {
     const gv2 = gInfo(ws.gradeId);
-    const renderEl = (el) => {
+    const renderEl = (el: WorksheetElement) => {
       if (!el) return "";
       const fs = gv2.fontSize;
-      const mb = (s) => inlineMarkdownToHtml(s || "");
+      const mb = (s?: string) => inlineMarkdownToHtml(s || "");
       if (el.type === "instruction")
         return `<div style="background:#FFFACD;padding:10px 16px;border-radius:10px;border-left:6px solid ${gv2.color};margin-bottom:16px;font-size:${Math.max(fs - 7, 13)}px;font-weight:700;line-height:1.55">${mb(el.text)}</div>`;
       if (el.type === "text")
         return `<p style="font-size:${fs}px;font-weight:600;margin:0 0 16px;line-height:1.7">${mb(el.text)}</p>`;
       if (el.type === "multipleChoice")
-        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c: string) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
       if (el.type === "truefalse")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s: string) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
       if (el.type === "shortAnswer")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.question)}</p>${Array.from(
           { length: el.lines || 4 },
@@ -4798,7 +4798,7 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
           el.text || ""
         )
           .split("______")
-          .map((p, i, a) =>
+          .map((p: string, i: number, a: string[]) =>
             i < a.length - 1
               ? `${mb(p)}<span style="display:inline-block;width:90px;border-bottom:2.5px solid ${gv2.color};vertical-align:bottom;margin:0 3px"></span>`
               : mb(p),
@@ -4814,9 +4814,9 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
           )
           .join("")}</div>`;
       if (el.type === "matching")
-        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%"><tbody>${(el.left || []).map((item, i) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%"><tbody>${(el.left || []).map((item: string, i: number) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
       if (el.type === "wordBank")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w: string) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
       if (el.type === "essay")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.prompt)}</p>${Array.from(
           { length: el.lines || 14 },
@@ -4831,16 +4831,16 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
       if (el.type === "successCriteria" || el.type === "exitTicket") {
         const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
         const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
-        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item: string) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
       }
       if (el.type === "dokQuestions") {
         const LC = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
         return `<div style="margin-bottom:18px;background:#FFFFFF;border:2px solid ${gv2.color}45;border-left:6px solid ${gv2.color};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}${(
           el.levels || []
         )
-          .map((lv, li) => {
+          .map((lv: DokLevel, li: number) => {
             const c = LC[(lv.level || li + 1) - 1] || gv2.color;
-            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
+            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q: string) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
           })
           .join("")}</div>`;
       }
@@ -4864,6 +4864,7 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title} — Quiz Versions</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{.page{page-break-after:always}}</style></head><body>${pages}</body></html>`;
     const w = window.open("", "_blank");
+    if (!w) return;
     w.document.write(html);
     w.document.close();
     setTimeout(() => w.print(), 600);
@@ -5312,9 +5313,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
       if (el.type === "image" && el.url)
         return `<div style="text-align:${el.align || "center"};margin-bottom:16px"><img src="${el.url}" style="max-width:${el.size === "small" ? "35%" : el.size === "large" ? "95%" : "65%"};border-radius:10px;border:2px solid #EEE">${el.caption ? `<p style="font-size:12px;color:#777;text-align:center;margin:6px 0 0">${el.caption}</p>` : ""}</div>`;
       if (el.type === "multipleChoice")
-        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c: string) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
       if (el.type === "truefalse")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s: string) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
       if (el.type === "shortAnswer")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.question)}</p>${Array.from(
           { length: el.lines || 4 },
@@ -5329,7 +5330,7 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
           el.text || ""
         )
           .split("______")
-          .map((p, i, a) =>
+          .map((p: string, i: number, a: string[]) =>
             i < a.length - 1
               ? `${mb(p)}<span style="display:inline-block;width:90px;border-bottom:2.5px solid ${gv2.color};vertical-align:bottom;margin:0 3px"></span>`
               : mb(p),
@@ -5345,9 +5346,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
           )
           .join("")}</div>`;
       if (el.type === "wordBank")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w: string) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
       if (el.type === "matching")
-        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse"><tbody>${(el.left || []).map((item, i) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse"><tbody>${(el.left || []).map((item: string, i: number) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
       if (el.type === "essay")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.prompt)}</p>${Array.from(
           { length: el.lines || 14 },
@@ -5364,16 +5365,16 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
       if (el.type === "successCriteria" || el.type === "exitTicket") {
         const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
         const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
-        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item: string) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
       }
       if (el.type === "dokQuestions") {
         const LC = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
         return `<div style="margin-bottom:18px;background:#FFFFFF;border:2px solid ${gv2.color}45;border-left:6px solid ${gv2.color};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}${(
           el.levels || []
         )
-          .map((lv, li) => {
+          .map((lv: DokLevel, li: number) => {
             const c = LC[(lv.level || li + 1) - 1] || gv2.color;
-            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
+            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q: string) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
           })
           .join("")}</div>`;
       }
