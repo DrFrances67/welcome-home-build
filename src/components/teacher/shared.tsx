@@ -459,7 +459,7 @@ function ElView({
   // (Success Criteria, Exit Ticket, DOK Questions). When oneLineOnly is on,
   // each item stays on a single line and clips with ellipsis — encouraging
   // the user to widen the box. When off, items wrap naturally.
-  const lineStyle = oneLineOnly
+  const lineStyle: CSSProperties = oneLineOnly
     ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
     : { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
 
@@ -758,7 +758,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Instructions element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -796,7 +796,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Text block — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -894,7 +894,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Image element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.url && resizedInlineImage ? (
           <div style={imageFrameStyle}>
@@ -977,7 +977,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Write lines element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.label && (
           <p
@@ -1019,7 +1019,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Word bank element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1084,7 +1084,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Matching activity — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.title && (
           <p
@@ -1162,7 +1162,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Multiple choice question — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1230,7 +1230,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="True or false activity — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1323,7 +1323,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Short answer question — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1370,7 +1370,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Fill in the blank activity — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.note && (
           <p
@@ -1445,7 +1445,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Essay prompt — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -1527,7 +1527,7 @@ function ElView({
         role="group"
         tabIndex={0}
         aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`}
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -1643,7 +1643,7 @@ function ElView({
         role="group"
         tabIndex={0}
         aria-label="DOK Questions — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -1792,7 +1792,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Table element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.title && (
           <p
@@ -1874,7 +1874,7 @@ function ElView({
         role="separator"
         tabIndex={0}
         aria-label="Section divider"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
           <div
@@ -1918,7 +1918,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Custom shapes element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.title && (
           <p
@@ -4686,7 +4686,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: Gl
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 <button
                   onClick={() => {
-                    onInsert(picked, showHeader);
+                    onInsert?.(picked, showHeader);
                     onClose();
                   }}
                   style={{
@@ -4712,7 +4712,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: Gl
                 </button>
                 <button
                   onClick={() => {
-                    onGenerate(picked, showHeader);
+                    onGenerate?.(picked, showHeader);
                     onClose();
                   }}
                   style={{
@@ -5918,7 +5918,7 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws:
                               const next = on
                                 ? mapped.filter((c) => c !== s.code)
                                 : [...mapped, s.code];
-                              onSetMapping(el.id, next);
+                              onSetMapping?.(el.id, next);
                             }}
                             style={{
                               padding: "3px 9px",
