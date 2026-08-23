@@ -11,22 +11,34 @@ import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { F, FF, LBL } from "./shared";
 
-export function AIImageGen({ gv, onAddImage }) {
+interface Slot {
+  url: string | null;
+  loading: boolean;
+  error: boolean;
+  errMsg: string;
+}
+
+interface AIImageGenProps {
+  gv: { color: string; light: string };
+  onAddImage: (url: string) => void;
+}
+
+export function AIImageGen({ gv, onAddImage }: AIImageGenProps) {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("cartoon");
   // 2 slots: null | { url, loading, error, errMsg }
-  const [slots, setSlots] = useState([null, null]);
-  const [selected, setSelected] = useState(null);
-  const [suggestions, setSuggestions] = useState([]);
+  const [slots, setSlots] = useState<(Slot | null)[]>([null, null]);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSugg, setLoadingSugg] = useState(false);
-  const suggTimerRef = useRef(null);
+  const suggTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const anyLoading = slots.some((s) => s?.loading);
   const hasResults = slots.some((s) => s?.url || s?.error);
   const selSlot = selected !== null ? slots[selected] : null;
 
   // ── Fetch one image from Lovable AI Gateway (Nano Banana) ──────────
-  const fetchImage = async (promptText, styleKey, variationIdx) => {
+  const fetchImage = async (promptText: string, styleKey: string, variationIdx: number) => {
     // Add a tiny variation hint so the two slots differ
     const variationHints = [
       "centered front-facing composition",
@@ -39,7 +51,7 @@ export function AIImageGen({ gv, onAddImage }) {
   };
 
   // ── Generate one slot (marks loading, calls API, updates slot) ───────
-  const runSlot = async (slotIdx, promptText, styleKey) => {
+  const runSlot = async (slotIdx: number, promptText: string, styleKey: string) => {
     setSlots((prev) => {
       const next = [...prev];
       next[slotIdx] = { url: null, loading: true, error: false, errMsg: "" };
@@ -59,7 +71,7 @@ export function AIImageGen({ gv, onAddImage }) {
           url: null,
           loading: false,
           error: true,
-          errMsg: e.message || "Unknown error",
+          errMsg: e instanceof Error ? e.message : "Unknown error",
         };
         return next;
       });
@@ -79,7 +91,7 @@ export function AIImageGen({ gv, onAddImage }) {
   };
 
   // ── Regenerate one slot independently ────────────────────────────────
-  const regenSlot = (i) => {
+  const regenSlot = (i: number) => {
     if (anyLoading) return;
     if (selected === i) setSelected(null);
     runSlot(i, prompt.trim(), style);
@@ -219,7 +231,7 @@ export function AIImageGen({ gv, onAddImage }) {
                 💡 Suggesting ideas…
               </div>
             )}
-            {suggestions.map((s, i) => (
+            {suggestions.map((s: string, i: number) => (
               <button
                 key={i}
                 onClick={() => {
