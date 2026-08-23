@@ -1997,7 +1997,7 @@ function ElView({
 // ELEMENT EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }) {
+function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }: { el: WsElement; gv: GlobalView; onChange: (...a: any[]) => void; onDelete?: (...a: any[]) => void; onMoveUp?: (...a: any[]) => void; onMoveDown?: (...a: any[]) => void; onDuplicate?: (...a: any[]) => void }) {
   const inp = { ...INP(), marginTop: 4 };
   if (!el)
     return (
@@ -2780,7 +2780,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 // DOK QUESTIONS EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function DokEditor({ el, onChange, gv, inp }) {
+function DokEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
   const mode = el.mode || "manual";
   const [topic, setTopic] = useState(el.topic || "");
   const [busy, setBusy] = useState(false);
@@ -3121,7 +3121,7 @@ No markdown, no preamble, no commentary.`;
 // CHECKLIST EDITOR (Success Criteria & Exit Ticket)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ChecklistEditor({ el, onChange, gv, inp }) {
+function ChecklistEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
   const isSuccess = el.type === "successCriteria";
   const accent = isSuccess ? gv.color : "#0369A1";
   const mode = el.mode || "manual";
@@ -3299,7 +3299,7 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
   );
 }
 
-function CustomShapeEditor({ el, onChange, gv, inp }) {
+function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
   const shapes = el.shapes || [];
   const [activeIdx, setActiveIdx] = useState(0);
   const [editorTab, setEditorTab] = useState("presets"); // "presets" | "custom"
@@ -4263,7 +4263,7 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
   );
 }
 
-function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
+function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: GlobalView; onClose: (...a: any[]) => void; onInsert?: (...a: any[]) => void; onGenerate?: (...a: any[]) => void; gradeId?: any }) {
   const STD = getActiveStandards();
   const stateInfo = getActiveStateInfo();
   const subjects = Object.keys(STD);
@@ -4740,7 +4740,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
 // QUIZ VERSIONS MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function VersionsModal({ gv, ws, onClose }) {
+function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
   const [numVersions, setNumVersions] = useState(2);
   const [randomize, setRandomize] = useState(true);
   const [keepFixed, setKeepFixed] = useState(true); // keep non-question elements (instructions, passages) in place
@@ -5172,7 +5172,7 @@ function VersionsModal({ gv, ws, onClose }) {
 // EXPORT MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ExportModal({ gv, ws, onClose }) {
+function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
   const [copied, setCopied] = useState(false);
   const dialogRef = useRef(null);
 
@@ -5623,7 +5623,7 @@ function ExportModal({ gv, ws, onClose }) {
 // HELP MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function HelpModal({ onClose, gv }) {
+function HelpModal({ onClose, gv }: { onClose: (...a: any[]) => void; gv: GlobalView }) {
   const secs = [
     {
       icon: "🎯",
@@ -5753,7 +5753,7 @@ function HelpModal({ onClose, gv }) {
 // ALIGNMENT MODAL — shows which standard each question/activity maps to
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
+function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void; onSetMapping?: (...a: any[]) => void }) {
   const stateInfo = getActiveStateInfo();
   const standards = ws.standards || [];
   const items = (ws.elements || []).filter((e) => !["divider"].includes(e.type));
