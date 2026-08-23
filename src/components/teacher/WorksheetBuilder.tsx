@@ -445,7 +445,7 @@ export function WorksheetBuilder() {
   const dragRef = useRef<any>(null);
   const handleDragStart = (e: React.PointerEvent, elId: string) => {
     // Don't start drag from interactive children (resize handles, delete btn, inputs)
-    const tgt = e.target;
+    const tgt = e.target as HTMLElement;
     if (
       tgt.closest &&
       (tgt.closest("[data-resize-handle]") ||
