@@ -337,9 +337,9 @@ function ShapeSVG({
 // transform: scale(sx, sy) with top-left origin. The outer wrapper keeps
 // absolute positioning so resize handles stay anchored to its edges.
 
-function ScaledContent({ el, children }) {
-  const outerRef = useRef(null);
-  const innerRef = useRef(null);
+function ScaledContent({ el, children }: { el: WsElement; children: ReactNode }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ outerW: 0, naturalH: 0 });
 
   // Measure the outer wrapper width (which reflects widthOverride %) and the
@@ -403,6 +403,18 @@ function ScaledContent({ el, children }) {
   );
 }
 
+interface ElViewProps {
+  el: WsElement;
+  gv: GlobalView;
+  selected?: boolean;
+  onClick?: (...args: any[]) => void;
+  onResize?: (...args: any[]) => void;
+  onDelete?: (...args: any[]) => void;
+  onDragStart?: (...args: any[]) => void;
+  onReset?: (...args: any[]) => void;
+  oneLineOnly?: boolean;
+}
+
 function ElView({
   el,
   gv,
@@ -413,7 +425,7 @@ function ElView({
   onDragStart,
   onReset,
   oneLineOnly = true,
-}) {
+}: ElViewProps) {
   // Per-element typography overrides
   const fs = el.fontSizeOverride || gv.fontSize;
   const elFamily =
@@ -430,7 +442,7 @@ function ElView({
   // chosen size. When no override is set, text scales with the box like
   // before (auto mode).
   const fsLocked = !!el.fontSizeOverride;
-  const tScale = (sc) => (fsLocked ? 1 : sc.s);
+  const tScale = (sc: any) => (fsLocked ? 1 : sc.s);
 
   // Helper: per-item single-line vs wrap styling. Used by list-style elements
   // (Success Criteria, Exit Ticket, DOK Questions). When oneLineOnly is on,
@@ -444,7 +456,7 @@ function ElView({
   // table (headers, rows, cells) actually fits inside the resizable box.
   const isTable = el.type === "table";
 
-  const wrap = {
+  const wrap: CSSProperties = {
     position: "absolute",
     left: `${el.x ?? 0}%`,
     top: el.y ?? 0,
@@ -468,7 +480,7 @@ function ElView({
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.PointerEvent | React.MouseEvent) => {
     onDragStart && onDragStart(e, el.id);
   };
 

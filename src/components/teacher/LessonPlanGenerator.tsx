@@ -16,12 +16,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
 import { saveLessonPlan } from "@/lib/lesson-plans.functions";
 import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
+import type { CSSProperties } from "react";
+import type {
+  LessonPlanResult,
+  DeckData,
+  LessonPlanForm,
+  ExemplarFileInfo,
+} from "./lesson-plan-types";
 
 const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
+// mammoth ships without types for its browser build
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare module "mammoth/mammoth.browser.js" {
+  const mammoth: { extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> };
+  export = mammoth;
+}
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
-const DEFAULT_LP_FORM = {
+const DEFAULT_LP_FORM: LessonPlanForm = {
   grade: "k",
   subject: "",
   topic: "",
@@ -30,12 +43,12 @@ const DEFAULT_LP_FORM = {
   objectives: "",
   materials: "",
   standard: "",
-  diff: [],
+  diff: [] as string[],
   notes: "",
 };
 
 /** Read a previously auto-saved lesson-plan form draft from localStorage, if any. */
-function readLpDraft() {
+function readLpDraft(): LessonPlanForm {
   if (typeof window === "undefined") return DEFAULT_LP_FORM;
   try {
     const raw = window.localStorage.getItem(LP_DRAFT_KEY);
@@ -63,7 +76,7 @@ export function LessonPlanGenerator({
   const LIGHT = "#FDF4FF";
   const { hasStandards: stHasStandards, info: stInfo } = useAppState();
 
-  const [form, setForm] = useState(readLpDraft);
+  const [form, setForm] = useState<LessonPlanForm>(readLpDraft);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [cloudSavedAt, setCloudSavedAt] = useState<number | null>(null);
 
@@ -81,9 +94,9 @@ export function LessonPlanGenerator({
     return () => clearTimeout(t);
   }, [form]);
 
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<LessonPlanResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showCopyBox, setShowCopyBox] = useState(false);
   const [showGdocsBox, setShowGdocsBox] = useState(false);
@@ -244,20 +257,20 @@ export function LessonPlanGenerator({
 
   // Exemplar
   const [exMode, setExMode] = useState("file");
-  const [exemplarFile, setExemplarFile] = useState(null);
+  const [exemplarFile, setExemplarFile] = useState<ExemplarFileInfo | null>(null);
   const [exemplarUrl, setExemplarUrl] = useState("");
   const [exemplarText, setExemplarText] = useState("");
   const [exemplarDesc, setExemplarDesc] = useState("");
   const [exemplarRaw, setExemplarRaw] = useState(""); // full text extracted from file/url/paste
   const [analyzingEx, setAnalyzingEx] = useState(false);
   const [exError, setExError] = useState("");
-  const dropRef = useRef(null);
+  const dropRef = useRef<HTMLDivElement | null>(null);
   const [draggingOver, setDraggingOver] = useState(false);
 
   // Slide deck generation state
   const [slidesLoading, setSlidesLoading] = useState(false);
   const [slidesError, setSlidesError] = useState("");
-  const [deckData, setDeckData] = useState(null); // cached AI-generated deck
+  const [deckData, setDeckData] = useState<DeckData | null>(null); // cached AI-generated deck
   const [exportingFmt, setExportingFmt] = useState(""); // which format is being exported
 
   const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));

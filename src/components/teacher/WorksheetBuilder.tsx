@@ -36,9 +36,28 @@ import {
 } from "./shared";
 import { getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
+import type { WorksheetElement } from "@/types/worksheet";
+
+type WsStandard = { code: string; desc: string };
+
+type WsData = {
+  title: string;
+  showName: boolean;
+  showDate: boolean;
+  showGrade: boolean;
+  gradeId: string;
+  elements: WorksheetElement[];
+  pageCount: number;
+  pageHeadersHidden: number[];
+  oneLineOnly: boolean;
+  standards: WsStandard[];
+  [key: string]: unknown;
+};
+
+type WsFile = { name: string; raw: string; pageImages?: string[] };
 
 const WS_DRAFT_KEY = "tts.worksheetDraft.v1";
-const DEFAULT_WS = {
+const DEFAULT_WS: WsData = {
   title: "My Worksheet",
   showName: true,
   showDate: true,
@@ -52,7 +71,7 @@ const DEFAULT_WS = {
 };
 
 /** Read a previously auto-saved worksheet draft from localStorage, if any. */
-function readWsDraft() {
+function readWsDraft(): WsData {
   if (typeof window === "undefined") return DEFAULT_WS;
   try {
     const raw = window.localStorage.getItem(WS_DRAFT_KEY);
