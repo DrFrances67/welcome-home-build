@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, type CSSProperties } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
@@ -243,7 +243,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
   // shared style tokens
   const BRAND = "#6D28D9";
   const LIGHT = "#F5F3FF";
-  const card = {
+  const card: CSSProperties = {
     background: "white",
     borderRadius: 10,
     border: "1px solid #E5E7EB",
@@ -262,7 +262,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     fontSize: 15,
     fontWeight: 700,
   };
-  const lbl = {
+  const lbl: CSSProperties = {
     fontSize: 10,
     fontWeight: 700,
     textTransform: "uppercase",
@@ -271,7 +271,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     display: "block",
     marginBottom: 6,
   };
-  const inp = {
+  const inp: CSSProperties = {
     width: "100%",
     padding: "9px 11px",
     borderRadius: 7,

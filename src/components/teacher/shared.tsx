@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
@@ -40,6 +41,23 @@ import {
   gradeIdToStdBand,
   elSummary,
 } from "@/lib/worksheet-utils";
+
+// Element/global-view records are highly dynamic (many worksheet element
+// "types" share one loosely-shaped object). Index signatures keep the file
+// behavior-identical while satisfying noImplicitAny.
+interface WsElement {
+  id: string;
+  type: string;
+  [key: string]: any;
+}
+
+interface GlobalView {
+  color: string;
+  light: string;
+  lineH: number;
+  fontSize: number;
+  [key: string]: any;
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SHARED UI
