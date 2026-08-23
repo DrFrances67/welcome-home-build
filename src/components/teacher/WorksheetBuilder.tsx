@@ -293,7 +293,7 @@ export function WorksheetBuilder() {
   const insertAiElements = (parsed: any[]) => {
     if (!Array.isArray(parsed) || !parsed.length) return;
     const onPage = ws.elements.filter((e) => (e.page || 0) === currentPage).length;
-    const newEls = parsed.map((el, i) => {
+    const newEls = (parsed as Array<Record<string, unknown>>).map((el, i: number) => {
       const slot = nextSlot(onPage + i);
       return {
         ...mkEl(el.type, slot),
@@ -581,7 +581,7 @@ Include a variety of activity types. Make the content directly address the stand
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const startIdx = showHeader ? 1 : 0;
-      const newEls = parsed.map((el, i) => {
+      const newEls = (parsed as Array<Record<string, unknown>>).map((el, i: number) => {
         const slot = nextSlot(startIdx + i);
         return {
           ...mkEl(el.type, slot),
@@ -898,8 +898,8 @@ Output ONLY the JSON array.`,
       return r.text;
     }
     if (isDocx) {
-      const mod: any = await import("mammoth/mammoth.browser");
-      const mammoth: any = mod?.default || mod;
+      const mod = await import("mammoth/mammoth.browser.js");
+      const mammoth = mod?.default || mod;
       if (!mammoth || typeof mammoth.extractRawText !== "function") {
         throw new Error("DOCX reader failed to load. Try TXT or PDF.");
       }
@@ -1329,7 +1329,7 @@ Output ONLY the JSON array.`,
             >
               <input
                 type="checkbox"
-                checked={ws[k]}
+                checked={Boolean(ws[k])}
                 onChange={(e) => setF(k, e.target.checked)}
                 aria-label={`Show ${l} on worksheet`}
                 style={{ accentColor: gv.color, width: 14, height: 14 }}
@@ -2137,7 +2137,7 @@ Output ONLY the JSON array.`,
                   type="file"
                   accept=".pdf,.csv,.txt,.md,text/csv,text/plain,application/pdf"
                   aria-label="Upload worksheet file to recreate"
-                  onChange={(e) => e.target.files[0] && handleWsFileUpload(e.target.files[0])}
+                  onChange={(e) => e.target.files?.[0] && handleWsFileUpload(e.target.files[0])}
                   style={{ display: "none" }}
                 />
               </label>
@@ -2324,7 +2324,7 @@ Output ONLY the JSON array.`,
               announce(`Overflowing content moved to page ${fromPage + 2}`);
             };
 
-            const renderPage = (pIdx) => {
+            const renderPage = (pIdx: number) => {
               const els = ws.elements.filter((e) => pageOf(e) === pIdx);
               const hideHeader = isPageHeaderHidden(pIdx);
               const maxBottom = els.length
@@ -2825,7 +2825,7 @@ Output ONLY the JSON array.`,
           >
             {rightTab === "edit" && (
               <ElEditor
-                el={selEl}
+                el={selEl as WorksheetElement}
                 gv={gv}
                 onChange={(u) => selEl && updEl(selEl.id, u)}
                 onDelete={() => selEl && delEl(selEl.id)}

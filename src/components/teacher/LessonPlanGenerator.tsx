@@ -20,6 +20,7 @@ import type { CSSProperties } from "react";
 import type {
   LessonPlanResult,
   DeckData,
+  DeckSlide,
   LessonPlanForm,
   ExemplarFileInfo,
 } from "./lesson-plan-types";
@@ -388,17 +389,17 @@ export function LessonPlanGenerator({
   };
 
   // ── Exemplar handlers ──────────────────────────────────────────────
-  const readFileAsB64 = (f) =>
+  const readFileAsB64 = (f: File): Promise<string> =>
     new Promise((res, rej) => {
       const r = new FileReader();
-      r.onload = (e) => res(e.target.result);
+      r.onload = (e) => res((e.target?.result as string) ?? "");
       r.onerror = rej;
       r.readAsDataURL(f);
     });
-  const readFileAsText = (f) =>
+  const readFileAsText = (f: File): Promise<string> =>
     new Promise((res, rej) => {
       const r = new FileReader();
-      r.onload = (e) => res(e.target.result);
+      r.onload = (e) => res((e.target?.result as string) ?? "");
       r.onerror = rej;
       r.readAsText(f);
     });
@@ -406,7 +407,7 @@ export function LessonPlanGenerator({
   const ANALYZE_Q =
     "Analyze this exemplar lesson plan. In 3 sentences describe: (1) sections and their order, (2) level of detail, (3) formatting style (bullets/tables/numbered steps). This will guide format replication.";
 
-  const extractPdfText = async (file) => {
+  const extractPdfText = async (file: File) => {
     // Lazy-load pdfjs only when needed; configure the worker from the same package.
     const pdfjs = await import("pdfjs-dist");
     const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
@@ -423,7 +424,7 @@ export function LessonPlanGenerator({
     return text.trim();
   };
 
-  const extractDocxText = async (file) => {
+  const extractDocxText = async (file: File) => {
     const mammoth: { extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> } =
       (await import("mammoth/mammoth.browser.js")) as unknown as {
         extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
@@ -433,7 +434,7 @@ export function LessonPlanGenerator({
     return (result.value || "").trim();
   };
 
-  const handleExemplarFile = async (file) => {
+  const handleExemplarFile = async (file: File | null | undefined) => {
     if (!file) return;
     setExError("");
     setExemplarDesc("");
@@ -549,7 +550,7 @@ export function LessonPlanGenerator({
     setExError("");
     setAnalyzingEx(false);
   };
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDraggingOver(false);
     const f = e.dataTransfer.files?.[0];
@@ -769,7 +770,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
       }
 
       // Scrub "N/A"-style answers from homework/extension and ask AI to retry just those if needed
-      const isEmpty = (v) =>
+      const isEmpty = (v: unknown) =>
         !v || /^(n\/?a|none|not applicable|tbd|n\.a\.?)\.?$/i.test(String(v).trim());
       if (isEmpty(parsed.homework) || isEmpty(parsed.extension)) {
         try {
@@ -794,7 +795,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       if (!Array.isArray(parsed.successCriteria) || parsed.successCriteria.length === 0) {
         const objs = Array.isArray(parsed.objectives) ? parsed.objectives : [];
         if (objs.length > 0) {
-          parsed.successCriteria = objs.map((o) => {
+          parsed.successCriteria = objs.map((o: unknown) => {
             const t = String(o)
               .replace(/^(students will be able to|swbat|tlw|the learner will)\s*/i, "")
               .trim();
@@ -1090,7 +1091,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
   // Print: write into a hidden iframe to avoid popup blockers and blob: CSP issues
   const printPlan = () => {
     if (!result) return;
-    const safeHtml = (s) =>
+    const safeHtml = (s: unknown) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -1151,21 +1152,22 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
 </body></html>`;
 
     // Use hidden iframe — avoids popup blockers AND blob: CSP restrictions
-    let iframe = document.getElementById("__lp_print_frame__");
+    let iframe = document.getElementById("__lp_print_frame__") as HTMLIFrameElement | null;
     if (!iframe) {
       iframe = document.createElement("iframe");
       iframe.id = "__lp_print_frame__";
       iframe.style.cssText = "position:fixed;width:0;height:0;opacity:0;border:none;top:0;left:0";
       document.body.appendChild(iframe);
     }
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
     doc.open();
     doc.write(html);
     doc.close();
     setTimeout(() => {
       try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
       } catch (e: unknown) {
         alert("Print blocked by browser. Please use Ctrl+P / Cmd+P to print.");
       }
@@ -1224,14 +1226,14 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
   };
 
   // Build the standalone HTML deck string (used for HTML and PDF exports)
-  const buildDeckHtml = (deck) => {
-    const safe = (v) =>
+  const buildDeckHtml = (deck: DeckData) => {
+    const safe = (v: unknown) =>
       String(v ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
     const slidesHtml = deck.slides
-      .map((sl, i) => {
+      .map((sl: DeckSlide, i: number) => {
         const isTitle = sl.kind === "title" || i === 0;
         const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
         const imgTag = sl.imageUrl
@@ -1242,7 +1244,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
           ${
             isTitle
               ? `<div class="title-block">${imgTag}<h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle ? `<p class="subtitle">${safe(deck.subtitle)}</p>` : ""}</div>`
-              : `<h2>${safe(sl.title)}</h2><div class="slide-body">${imgTag ? `<div class="slide-text"><ul>${bullets.map((b) => `<li>${safe(b)}</li>`).join("")}</ul></div>${imgTag}` : `<ul>${bullets.map((b) => `<li>${safe(b)}</li>`).join("")}</ul>`}</div>`
+              : `<h2>${safe(sl.title)}</h2><div class="slide-body">${imgTag ? `<div class="slide-text"><ul>${bullets.map((b: string) => `<li>${safe(b)}</li>`).join("")}</ul></div>${imgTag}` : `<ul>${bullets.map((b: string) => `<li>${safe(b)}</li>`).join("")}</ul>`}</div>`
           }
           <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
         </div>
@@ -1250,7 +1252,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
       })
       .join("");
 
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result.title)} — Slide Deck</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result?.title)} — Slide Deck</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0F0A1A;font-family:'Inter','Segoe UI',sans-serif;color:#1F2937;overflow:hidden}
@@ -1308,12 +1310,12 @@ document.addEventListener('keydown',e=>{
 <\/script></body></html>`;
   };
 
-  const deckBaseName = (deck) =>
+  const deckBaseName = (deck: DeckData | null | undefined) =>
     (deck?.title || result?.title || "lesson")
       .replace(/[^a-z0-9]+/gi, "_")
       .replace(/^_+|_+$/g, "") || "lesson";
 
-  const triggerDownload = (blob, filename) => {
+  const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1363,10 +1365,10 @@ document.addEventListener('keydown',e=>{
       lines.push(deck.title || result.title);
       if (deck.subtitle) lines.push(deck.subtitle);
       lines.push("=".repeat(60), "");
-      deck.slides.forEach((sl, i) => {
+      deck.slides.forEach((sl: DeckSlide, i: number) => {
         lines.push(`SLIDE ${i + 1}: ${sl.title || ""}`);
         lines.push("-".repeat(40));
-        (sl.bullets || []).forEach((b) => lines.push(`  • ${b}`));
+        (sl.bullets || []).forEach((b: string) => lines.push(`  • ${b}`));
         lines.push("");
       });
       triggerDownload(
@@ -1415,11 +1417,11 @@ document.addEventListener('keydown',e=>{
   };
 
   // Build a .pptx Blob from a deck (shared by PPTX + Google Slides exports)
-  const buildPptxBlob = async (deck) => {
+  const buildPptxBlob = async (deck: DeckData) => {
     const PptxGenJS = (await import("pptxgenjs")).default;
     const pptx = new PptxGenJS();
     pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inch
-    pptx.title = deck.title || result.title || "Lesson Slides";
+    pptx.title = deck.title || result?.title || "Lesson Slides";
     pptx.author = "The Tech Savvy Teacher";
 
     const PPTX_BRAND = "8B0AB0";
@@ -1427,7 +1429,7 @@ document.addEventListener('keydown',e=>{
     const PPTX_DARK = "1F2937";
     const PPTX_MUTED = "9CA3AF";
 
-    deck.slides.forEach((sl, i) => {
+    deck.slides.forEach((sl: DeckSlide, i: number) => {
       const isTitle = sl.kind === "title" || i === 0;
       const slide = pptx.addSlide();
 
@@ -1478,7 +1480,7 @@ document.addEventListener('keydown',e=>{
           fill: { color: PPTX_ACCENT },
           line: { color: PPTX_ACCENT },
         });
-        const bullets = (sl.bullets || []).map((b) => ({
+        const bullets = (sl.bullets || []).map((b: string) => ({
           text: String(b),
           options: { bullet: { code: "25CF" }, color: PPTX_DARK, fontSize: 20 },
         }));
@@ -1635,7 +1637,7 @@ document.addEventListener('keydown',e=>{
   };
 
   // Helper: trigger download of a Blob
-  const downloadBlob = (blob, filename) => {
+  const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
