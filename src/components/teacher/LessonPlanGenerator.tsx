@@ -327,21 +327,21 @@ export function LessonPlanGenerator({
   ];
   const DOK_LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
 
-  const dokOk = (arr) =>
+  const dokOk = (arr: unknown) =>
     Array.isArray(arr) &&
     arr.length >= 4 &&
     DOK_DEFS.every((d) => {
-      const lv = arr.find((x) => Number(x?.level) === d.level);
+      const lv = (arr as Array<Record<string, unknown>>).find((x) => Number((x as any)?.level) === d.level);
       return (
-        lv && Array.isArray(lv.items) && lv.items.filter((s) => s && String(s).trim()).length >= 1
+        lv && Array.isArray((lv as any).items) && (lv as any).items.filter((s: unknown) => s && String(s).trim()).length >= 1
       );
     });
 
-  const normalizeDok = (arr) =>
+  const normalizeDok = (arr: unknown) =>
     DOK_DEFS.map((d) => {
-      const found = (Array.isArray(arr) ? arr : []).find((x) => Number(x?.level) === d.level) || {};
+      const found: Record<string, any> = (Array.isArray(arr) ? arr : []).find((x: any) => Number(x?.level) === d.level) || {};
       const items = (Array.isArray(found.items) ? found.items : [])
-        .map((s) => String(s || "").trim())
+        .map((s: unknown) => String(s || "").trim())
         .filter(Boolean);
       return {
         level: d.level,
@@ -353,11 +353,11 @@ export function LessonPlanGenerator({
   // Generate a fresh DOK question set aligned to the lesson's objectives.
   // Mirrors the worksheet builder DOK generator: 2–3 student-facing questions
   // per level, every level required, never "N/A".
-  const generateDokFromObjectives = async (objectives, lessonTitle) => {
+  const generateDokFromObjectives = async (objectives: string[], lessonTitle?: string) => {
     const objsBlock =
       (objectives || [])
         .filter(Boolean)
-        .map((o, i) => `${i + 1}. ${o}`)
+        .map((o: string, i: number) => `${i + 1}. ${o}`)
         .join("\n") || "(no objectives provided)";
     const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty. Output ONLY a valid JSON array — no markdown, no fences. Start with [ and end with ].\n\nDOK levels:\n• DOK 1 — Recall & Reproduction (recall facts, define, identify, list)\n• DOK 2 — Skills & Concepts (summarize, compare, classify, explain relationships)\n• DOK 3 — Strategic Thinking (justify, cite evidence, draw conclusions, hypothesize)\n• DOK 4 — Extended Thinking (synthesize across sources, design, critique, transfer to new context)\n\nRules: EVERY level (1, 2, 3, 4) MUST have 2–3 non-empty student-facing questions. Use grade-appropriate language for ${form.grade}. Tie every question directly to the lesson objectives. NEVER write "N/A".`;
     const user = `Lesson: ${lessonTitle || form.topic || form.subject}\nGrade: ${form.grade} | Subject: ${form.subject}\n\nLearning objectives:\n${objsBlock}\n\nReturn this JSON shape ONLY:\n[\n  {"level":1,"label":"Recall & Reproduction","items":["...","..."]},\n  {"level":2,"label":"Skills & Concepts","items":["...","..."]},\n  {"level":3,"label":"Strategic Thinking","items":["...","..."]},\n  {"level":4,"label":"Extended Thinking","items":["...","..."]}\n]`;
@@ -1345,7 +1345,7 @@ document.addEventListener('keydown',e=>{
         );
       }
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1374,7 +1374,7 @@ document.addEventListener('keydown',e=>{
         `${deckBaseName(deck)}_slides.txt`,
       );
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1408,7 +1408,7 @@ document.addEventListener('keydown',e=>{
         setSlidesError("Popup blocked — downloaded as HTML. Open it and use Print → Save as PDF.");
       }
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1545,7 +1545,7 @@ document.addEventListener('keydown',e=>{
       const blob = await buildPptxBlob(deck);
       triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1569,7 +1569,7 @@ document.addEventListener('keydown',e=>{
         "✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.",
       );
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
