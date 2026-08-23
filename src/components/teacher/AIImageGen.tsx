@@ -132,7 +132,9 @@ export function AIImageGen({ gv, onAddImage }: AIImageGenProps) {
       }
       setLoadingSugg(false);
     }, 750);
-    return () => clearTimeout(suggTimerRef.current);
+    return () => {
+      if (suggTimerRef.current) clearTimeout(suggTimerRef.current);
+    };
   }, [prompt]);
 
   return (

@@ -47,3 +47,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
+
+// Temporary re-export for existing importers; prefer "@/contexts/app-state-context".
+export { useAppState } from "./app-state-context";
