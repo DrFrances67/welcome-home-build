@@ -491,7 +491,7 @@ export function AIImageGen({ gv, onAddImage }: AIImageGenProps) {
       {/* Full preview for selected */}
       {selSlot?.url && (
         <div style={{ animation: "fadeIn 0.2s ease" }}>
-          <label style={{ ...LBL, marginTop: 2 }}>Preview — Image {selected + 1}</label>
+          <label style={{ ...LBL, marginTop: 2 }}>Preview — Image {(selected ?? 0) + 1}</label>
           <div
             style={{
               borderRadius: 12,
@@ -504,13 +504,13 @@ export function AIImageGen({ gv, onAddImage }: AIImageGenProps) {
           >
             <img
               src={selSlot.url}
-              alt={`Selected variation ${selected + 1}`}
+              alt={`Selected variation ${(selected ?? 0) + 1}`}
               style={{ width: "100%", height: "auto", display: "block" }}
             />
           </div>
           <button
             onClick={() => {
-              onAddImage(selSlot.url);
+              if (selSlot.url) onAddImage(selSlot.url);
               setSelected(null);
             }}
             style={{
@@ -526,7 +526,7 @@ export function AIImageGen({ gv, onAddImage }: AIImageGenProps) {
               boxShadow: "0 3px 10px #0FAB8C44",
             }}
           >
-            ➕ Add Image {selected + 1} to Worksheet
+            ➕ Add Image {(selected ?? 0) + 1} to Worksheet
           </button>
         </div>
       )}
