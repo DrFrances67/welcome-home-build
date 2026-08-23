@@ -115,6 +115,8 @@ serve(async (req) => {
       }
     }
 
+    const wantsStream = body?.stream === true;
+
     const upstream = await fetch(GATEWAY_URL, {
       method: "POST",
       headers: {
@@ -125,8 +127,10 @@ serve(async (req) => {
         model: mappedModel,
         messages: oaiMessages,
         max_tokens: typeof max_tokens === "number" ? max_tokens : undefined,
+        ...(wantsStream ? { stream: true } : {}),
       }),
     });
+
 
     if (!upstream.ok) {
       const text = await upstream.text();
@@ -150,6 +154,46 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // ── Streaming: pass the OpenAI-style SSE through untouched so the client
+    // can render tokens as they arrive. Usage is estimated once the stream
+    // completes (the gateway does not always send a usage frame on streams).
+    if (wantsStream && upstream.body) {
+      let streamed = "";
+      const decoder = new TextDecoder();
+      const tap = new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+          streamed += decoder.decode(chunk, { stream: true });
+          controller.enqueue(chunk);
+        },
+        flush() {
+          // Rough estimate: ~4 chars per token.
+          const outTok = Math.ceil(streamed.length / 8);
+          const inTok = Math.ceil(JSON.stringify(oaiMessages).length / 4);
+          void logAiUsage({
+            userId,
+            sessionId,
+            toolName,
+            model: mappedModel,
+            inputTokens: inTok,
+            outputTokens: outTok,
+            costUsd: computeTextCost(mappedModel, inTok, outTok),
+            endpoint: "anthropic-proxy",
+          });
+        },
+      });
+      return new Response(upstream.body.pipeThrough(tap), {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+
 
     const data = await upstream.json();
     const text: string = data?.choices?.[0]?.message?.content ?? "";

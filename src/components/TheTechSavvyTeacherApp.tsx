@@ -1,6 +1,5 @@
 /* eslint-disable */
-// @ts-nocheck
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, type CSSProperties } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
@@ -33,7 +32,7 @@ function EmailAssistant() {
   const [tone, setTone] = useState("warm-professional");
   const [situations, setSituations] = useState(["Responding to a complaint"]);
   const [situationCapNotice, setSituationCapNotice] = useState("");
-  const toggleSituation = (s) =>
+  const toggleSituation = (s: string) =>
     setSituations((prev) => {
       if (prev.includes(s)) {
         // Removing — always allowed unless it's the last one
@@ -57,14 +56,14 @@ function EmailAssistant() {
   const [gradeLevel, setGradeLevel] = useState("3-5");
   const [complexity, setComplexity] = useState("medium");
   const [draft, setDraft] = useState("");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<{ subject: string; email: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(null);
-  const [concise, setConcise] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [concise, setConcise] = useState<{ subject: string; email: string } | null>(null);
   const [concising, setConcising] = useState(false);
   const [conciseCopied, setConciseCopied] = useState(false);
-  const [conciseError, setConciseError] = useState(null);
+  const [conciseError, setConciseError] = useState<string | null>(null);
 
   const polish = async () => {
     if (!draft.trim()) return;
@@ -229,6 +228,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
   };
 
   const copyEmail = () => {
+    if (!result) return;
     navigator.clipboard.writeText(`Subject: ${result.subject}\n\n${result.email}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -244,7 +244,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
   // shared style tokens
   const BRAND = "#6D28D9";
   const LIGHT = "#F5F3FF";
-  const card = {
+  const card: CSSProperties = {
     background: "white",
     borderRadius: 10,
     border: "1px solid #E5E7EB",
@@ -263,7 +263,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     fontSize: 15,
     fontWeight: 700,
   };
-  const lbl = {
+  const lbl: CSSProperties = {
     fontSize: 10,
     fontWeight: 700,
     textTransform: "uppercase",
@@ -272,7 +272,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
     display: "block",
     marginBottom: 6,
   };
-  const inp = {
+  const inp: CSSProperties = {
     width: "100%",
     padding: "9px 11px",
     borderRadius: 7,
@@ -1135,23 +1135,35 @@ function DanielsonReview() {
   const BRAND = "#CF27F5";
   const LIGHT = "#FDF4FF";
 
-  const [file, setFile] = useState(null);
+  interface DanielsonScore {
+    id: string;
+    score: number;
+    rating?: string;
+    evidence?: string;
+    quotes?: string[];
+    suggestions?: string;
+  }
+  interface DanielsonResult {
+    summary: string;
+    scores: DanielsonScore[];
+  }
+  const [file, setFile] = useState<{ name: string; size: number } | null>(null);
   const [extractedText, setExtractedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null); // { scores: [{id,score,evidence,suggestions}], summary }
+  const [result, setResult] = useState<DanielsonResult | null>(null); // { scores: [{id,score,evidence,suggestions}], summary }
   const [draggingOver, setDraggingOver] = useState(false);
 
-  const readFileAsText = (f) =>
-    new Promise((res, rej) => {
+  const readFileAsText = (f: File) =>
+    new Promise<string>((res, rej) => {
       const r = new FileReader();
-      r.onload = (e) => res(e.target.result);
+      r.onload = (e) => res((e.target?.result as string) ?? "");
       r.onerror = rej;
       r.readAsText(f);
     });
 
-  const extractPdfText = async (f) => {
+  const extractPdfText = async (f: File) => {
     const pdfjsMod: any = await import("pdfjs-dist");
     const pdfjs = pdfjsMod.default ?? pdfjsMod;
     const workerMod: any = await import("pdfjs-dist/build/pdf.worker.mjs?url");
@@ -1171,7 +1183,7 @@ function DanielsonReview() {
     return text.trim();
   };
 
-  const extractDocxText = async (f) => {
+  const extractDocxText = async (f: File) => {
     const mammothMod: any = await import("mammoth/mammoth.browser.js");
     const mammoth = mammothMod.default ?? mammothMod;
     const buf = await f.arrayBuffer();
@@ -1183,7 +1195,7 @@ function DanielsonReview() {
     return (result?.value || "").trim();
   };
 
-  const handleFile = async (f) => {
+  const handleFile = async (f: File | null) => {
     if (!f) return;
     setError("");
     setResult(null);
@@ -1217,7 +1229,7 @@ function DanielsonReview() {
     setLoading(false);
   };
 
-  const callClaude = (system, userContent, maxTokens = 3000) =>
+  const callClaude = (system: string, userContent: string, maxTokens = 3000) =>
     callAiRaw({
       model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
@@ -1248,7 +1260,7 @@ function DanielsonReview() {
       }
       setResult(parsed);
     } catch (e) {
-      setError(e.message || "Analysis failed.");
+      setError(e instanceof Error ? e.message : "Analysis failed.");
     }
     setAnalyzing(false);
   };
@@ -1260,19 +1272,19 @@ function DanielsonReview() {
     setError("");
   };
 
-  const ratingColor = (s) =>
+  const ratingColor = (s: number) =>
     s === 4 ? "#16A34A" : s === 3 ? "#2563EB" : s === 2 ? "#D97706" : "#DC2626";
-  const ratingLabel = (s) =>
+  const ratingLabel = (s: number) =>
     s === 4 ? "Highly Effective" : s === 3 ? "Effective" : s === 2 ? "Developing" : "Ineffective";
 
   // Verify if a quote actually appears in the source lesson — tolerant of whitespace/punctuation differences
-  const normalize = (str) =>
+  const normalize = (str: string) =>
     (str || "")
       .toLowerCase()
       .replace(/\s+/g, " ")
       .replace(/[\u2018\u2019\u201C\u201D]/g, "'")
       .trim();
-  const quoteFoundInText = (quote, source) => {
+  const quoteFoundInText = (quote: string, source: string) => {
     if (!quote || !source) return false;
     const nq = normalize(quote);
     const ns = normalize(source);
@@ -1523,7 +1535,7 @@ function DanielsonReview() {
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 800, color: BRAND, lineHeight: 1 }}>
                   {(
-                    result.scores.reduce((s, x) => s + (x.score || 0), 0) / result.scores.length
+                    result.scores.reduce((s: number, x) => s + (x.score || 0), 0) / result.scores.length
                   ).toFixed(2)}
                 </div>
                 <div style={{ fontSize: 10, color: "#6B7280", marginTop: 4 }}>of 4.00</div>
@@ -1707,7 +1719,7 @@ function DanielsonReview() {
                     </div>
                     {Array.isArray(s.quotes) && s.quotes.length > 0 ? (
                       <div style={{ display: "grid", gap: 6 }}>
-                        {s.quotes.map((q, qi) => {
+                        {s.quotes.map((q: string, qi: number) => {
                           const verified = quoteFoundInText(q, extractedText);
                           return (
                             <div
@@ -1939,7 +1951,7 @@ function TheTechSavvyTeacherAppRoot() {
       worksheet: "Worksheet Builder",
       email: "Professional Communication",
     } as const;
-    setActiveToolName(map[activeTool] ?? null);
+    setActiveToolName(map[activeTool as keyof typeof map] ?? null);
   }, [activeTool]);
 
   // Track scroll within the worksheet canvas (and the page itself when stacked

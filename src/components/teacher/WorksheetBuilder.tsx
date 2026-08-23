@@ -1,5 +1,4 @@
 /* eslint-disable */
-// @ts-nocheck
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
@@ -37,9 +36,28 @@ import {
 } from "./shared";
 import { getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
+import type { WorksheetElement } from "@/types/worksheet";
+
+type WsStandard = { code: string; desc: string };
+
+type WsData = {
+  title: string;
+  showName: boolean;
+  showDate: boolean;
+  showGrade: boolean;
+  gradeId: string;
+  elements: WorksheetElement[];
+  pageCount: number;
+  pageHeadersHidden: number[];
+  oneLineOnly: boolean;
+  standards: WsStandard[];
+  [key: string]: unknown;
+};
+
+type WsFile = { name: string; raw: string; pageImages?: string[] };
 
 const WS_DRAFT_KEY = "tts.worksheetDraft.v1";
-const DEFAULT_WS = {
+const DEFAULT_WS: WsData = {
   title: "My Worksheet",
   showName: true,
   showDate: true,
@@ -53,7 +71,7 @@ const DEFAULT_WS = {
 };
 
 /** Read a previously auto-saved worksheet draft from localStorage, if any. */
-function readWsDraft() {
+function readWsDraft(): WsData {
   if (typeof window === "undefined") return DEFAULT_WS;
   try {
     const raw = window.localStorage.getItem(WS_DRAFT_KEY);
@@ -67,23 +85,23 @@ function readWsDraft() {
 }
 
 export function WorksheetBuilder() {
-  const [ws, setWs] = useState(readWsDraft);
+  const [ws, setWs] = useState<WsData>(readWsDraft);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [viewMode, setViewMode] = useState("single"); // "single" | "scroll"
-  const [selId, setSelId] = useState(null);
+  const [selId, setSelId] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState("edit");
   const [showHelp, setShowHelp] = useState(false);
   const [showStds, setShowStds] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showAlignment, setShowAlignment] = useState(false);
-  const [refImg, setRefImg] = useState(null);
+  const [refImg, setRefImg] = useState<string | null>(null);
   const [refDesc, setRefDesc] = useState("");
   const { hasStandards: stHasStandards, info: stInfo } = useAppState();
   const [analyzing, setAnalyzing] = useState(false);
   // Worksheet-file uploader (PDF/CSV) state
-  const [wsFile, setWsFile] = useState(null); // { name, raw }
+  const [wsFile, setWsFile] = useState<WsFile | null>(null);
   const [wsFileBusy, setWsFileBusy] = useState(false);
   const [wsFileMsg, setWsFileMsg] = useState("");
   // Lesson Plan uploader → AI generates a worksheet
@@ -138,21 +156,21 @@ export function WorksheetBuilder() {
   }, [ws]);
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
   // Resize state
-  const resizeRef = useRef(null);
+  const resizeRef = useRef<any>(null);
 
   const gv = gInfo(ws.gradeId);
   const pageCount = Math.max(1, ws.pageCount || 1);
-  const pageOf = (el) => Math.min(pageCount - 1, el.page || 0);
+  const pageOf = (el: WorksheetElement) => Math.min(pageCount - 1, el.page || 0);
   const pageElements = ws.elements.filter((e) => pageOf(e) === currentPage);
   const selEl = ws.elements.find((e) => e.id === selId) || null;
 
-  const announce = (msg) => {
+  const announce = (msg: string) => {
     setStatusMsg(msg);
     setTimeout(() => setStatusMsg(""), 3000);
   };
 
-  const setF = (k, v) => setWs((p) => ({ ...p, [k]: v }));
-  const addEl = (type) => {
+  const setF = (k: string, v: unknown) => setWs((p) => ({ ...p, [k]: v }));
+  const addEl = (type: string) => {
     const onPage = ws.elements.filter((e) => (e.page || 0) === currentPage).length;
     const el = { ...mkEl(type, nextSlot(onPage)), page: currentPage };
     setWs((p) => ({ ...p, elements: [...p.elements, el] }));
@@ -160,9 +178,9 @@ export function WorksheetBuilder() {
     setRightTab("edit");
     announce(`${PALETTE.find((p) => p.type === type)?.label || type} element added`);
   };
-  const updEl = (id, u) =>
+  const updEl = (id: string, u: Partial<WorksheetElement>) =>
     setWs((p) => ({ ...p, elements: p.elements.map((e) => (e.id === id ? { ...e, ...u } : e)) }));
-  const delEl = (id) => {
+  const delEl = (id: string) => {
     setWs((p) => ({ ...p, elements: p.elements.filter((e) => e.id !== id) }));
     setSelId(null);
     announce("Element deleted");
@@ -172,14 +190,18 @@ export function WorksheetBuilder() {
   // Clipboard holds a deep copy of the source element's data (sans id/page/x/y).
   // Lives in a ref so React re-renders don't reset it; survives selection changes.
   const clipboardRef = useRef<any>(null);
-  const stripPositional = (el) => {
+  const stripPositional = (el: WorksheetElement | null) => {
     if (!el) return null;
     // Drop fields that must be unique or page/position-specific on paste.
     const { id, page, x, y, ...rest } = el;
     return JSON.parse(JSON.stringify(rest));
   };
   /** Place a clone of `data` on the current page, slightly offset from source. */
-  const cloneOnto = (data, sourceEl, opts: { offset?: boolean } = { offset: true }) => {
+  const cloneOnto = (
+    data: any,
+    sourceEl: WorksheetElement | null,
+    opts: { offset?: boolean } = { offset: true },
+  ) => {
     if (!data) return null;
     const onPage = ws.elements.filter((e) => (e.page || 0) === currentPage).length;
     const slot = nextSlot(onPage);
@@ -207,7 +229,7 @@ export function WorksheetBuilder() {
     setRightTab("edit");
     return newEl;
   };
-  const copyEl = (id) => {
+  const copyEl = (id: string) => {
     const src = ws.elements.find((e) => e.id === id);
     if (!src) return;
     clipboardRef.current = stripPositional(src);
@@ -224,7 +246,7 @@ export function WorksheetBuilder() {
     cloneOnto(data, null, { offset: false });
     announce("Element pasted");
   };
-  const dupEl = (id) => {
+  const dupEl = (id: string) => {
     const src = ws.elements.find((e) => e.id === id);
     if (!src) return;
     const data = stripPositional(src);
@@ -238,7 +260,7 @@ export function WorksheetBuilder() {
     setSelId(null);
     announce(`Page ${pageCount + 1} added`);
   };
-  const removePage = (idx) => {
+  const removePage = (idx: number) => {
     if (pageCount <= 1) return;
     if (!confirm(`Delete page ${idx + 1} and all its elements?`)) return;
     setWs((p) => {
@@ -258,8 +280,8 @@ export function WorksheetBuilder() {
     setCurrentPage((c) => Math.max(0, Math.min(c, pageCount - 2)));
     setSelId(null);
   };
-  const isPageHeaderHidden = (idx) => (ws.pageHeadersHidden || []).includes(idx);
-  const togglePageHeader = (idx) =>
+  const isPageHeaderHidden = (idx: number) => (ws.pageHeadersHidden || []).includes(idx);
+  const togglePageHeader = (idx: number) =>
     setWs((p) => {
       const cur = p.pageHeadersHidden || [];
       return {
@@ -268,10 +290,10 @@ export function WorksheetBuilder() {
       };
     });
   // Insert AI-generated worksheet elements onto the current page
-  const insertAiElements = (parsed) => {
+  const insertAiElements = (parsed: any[]) => {
     if (!Array.isArray(parsed) || !parsed.length) return;
     const onPage = ws.elements.filter((e) => (e.page || 0) === currentPage).length;
-    const newEls = parsed.map((el, i) => {
+    const newEls = (parsed as Array<Record<string, unknown>>).map((el, i: number) => {
       const slot = nextSlot(onPage + i);
       return {
         ...mkEl(el.type, slot),
@@ -287,7 +309,7 @@ export function WorksheetBuilder() {
     setRightTab("edit");
     announce(`${newEls.length} elements added to page ${currentPage + 1}`);
   };
-  const movEl = (id, d) =>
+  const movEl = (id: string, d: "up" | "down") =>
     setWs((p) => {
       const els = [...p.elements],
         i = els.findIndex((e) => e.id === id);
@@ -301,7 +323,7 @@ export function WorksheetBuilder() {
   // flag. Useful as an "undo my last resize" escape hatch when something
   // looks off after dragging — exposed via the ↻ button on the top-left of
   // every selected element.
-  const handleResetElement = (elId) => {
+  const handleResetElement = (elId: string) => {
     updEl(elId, {
       widthOverride: BASELINE_WIDTH_PCT,
       heightOverride: undefined,
@@ -311,7 +333,11 @@ export function WorksheetBuilder() {
   };
 
   // ── 4-sided drag-to-resize ─────────────────────────────────────────
-  const handleResizeStart = (e, elId, direction) => {
+  const handleResizeStart = (
+    e: React.PointerEvent,
+    elId: string,
+    direction: "top" | "bottom" | "left" | "right" | "corner",
+  ) => {
     e.preventDefault();
     const startX = e.clientX;
     const startY = e.clientY;
@@ -341,7 +367,7 @@ export function WorksheetBuilder() {
     // frame. Without this, multiple updEl calls per frame cause the
     // ResizeObserver inside ScaledContent to re-measure mid-frame and the
     // box visibly jumps during the drag.
-    let pendingMv = null;
+    let pendingMv: PointerEvent | null = null;
     let rafId = 0;
     const flush = () => {
       rafId = 0;
@@ -394,7 +420,7 @@ export function WorksheetBuilder() {
         });
       }
     };
-    const onMove = (mv) => {
+    const onMove = (mv: PointerEvent) => {
       if (!resizeRef.current) return;
       pendingMv = mv;
       if (!rafId) rafId = requestAnimationFrame(flush);
@@ -416,10 +442,10 @@ export function WorksheetBuilder() {
   };
 
   // ── Free-position drag — move element anywhere on the page (mouse + touch) ─
-  const dragRef = useRef(null);
-  const handleDragStart = (e, elId) => {
+  const dragRef = useRef<any>(null);
+  const handleDragStart = (e: React.PointerEvent, elId: string) => {
     // Don't start drag from interactive children (resize handles, delete btn, inputs)
-    const tgt = e.target;
+    const tgt = e.target as HTMLElement;
     if (
       tgt.closest &&
       (tgt.closest("[data-resize-handle]") ||
@@ -442,7 +468,7 @@ export function WorksheetBuilder() {
     setSelId(elId);
     // rAF-throttle to one position update per frame for smooth movement
     // without layout jumps from queued state updates.
-    let pendingMv = null;
+    let pendingMv: PointerEvent | null = null;
     let rafId = 0;
     const flush = () => {
       rafId = 0;
@@ -456,7 +482,7 @@ export function WorksheetBuilder() {
       const newY = Math.max(0, startElY + dyPx);
       updEl(elId, { x: newX, y: newY });
     };
-    const onMove = (mv) => {
+    const onMove = (mv: PointerEvent) => {
       if (!dragRef.current) return;
       pendingMv = mv;
       if (!rafId) rafId = requestAnimationFrame(flush);
@@ -479,7 +505,7 @@ export function WorksheetBuilder() {
 
   const [generating, setGenerating] = useState(false);
 
-  const insertStandard = (std, showHeader = true) => {
+  const insertStandard = (std: WsStandard, showHeader = true) => {
     setWs((p) => {
       const exists = (p.standards || []).some((s) => s.code === std.code);
       const standards = exists
@@ -503,7 +529,7 @@ export function WorksheetBuilder() {
     });
   };
 
-  const handleGenerateFromStd = async (std, showHeader) => {
+  const handleGenerateFromStd = async (std: WsStandard, showHeader: boolean) => {
     void trackToolUse("Worksheet Builder");
     setGenerating(true);
     if (showHeader) {
@@ -555,7 +581,7 @@ Include a variety of activity types. Make the content directly address the stand
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       const startIdx = showHeader ? 1 : 0;
-      const newEls = parsed.map((el, i) => {
+      const newEls = (parsed as Array<Record<string, unknown>>).map((el, i: number) => {
         const slot = nextSlot(startIdx + i);
         return {
           ...mkEl(el.type, slot),
@@ -581,7 +607,7 @@ Include a variety of activity types. Make the content directly address the stand
     setGenerating(false);
   };
 
-  const addGeneratedImage = (url) => {
+  const addGeneratedImage = (url: string) => {
     const slot = nextSlot(ws.elements.length);
     const el = mkEl("image", slot);
     el.url = url;
@@ -593,15 +619,15 @@ Include a variety of activity types. Make the content directly address the stand
     setRightTab("edit");
   };
 
-  const handleRefUpload = async (file) => {
+  const handleRefUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setRefDesc("PDF uploaded — describe it in AI Help to get suggestions!");
       setRefImg(URL.createObjectURL(file));
       return;
     }
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const b64 = ev.target.result;
+    reader.onload = async (ev: ProgressEvent<FileReader>) => {
+      const b64 = (ev.target?.result || "") as string;
       setRefImg(b64);
       setAnalyzing(true);
       try {
@@ -636,7 +662,7 @@ Include a variety of activity types. Make the content directly address the stand
   // ── Worksheet file (PDF/CSV/TXT) → AI re-creates as editable blocks ──
   // Returns { text, pageImages: [dataUrl, ...] } so the AI can both READ the
   // text AND SEE images / layout from the original PDF pages.
-  const extractPdfTextLocal = async (file) => {
+  const extractPdfTextLocal = async (file: File) => {
     const pdfjs: any = await import("pdfjs-dist");
     const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
     pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
@@ -872,8 +898,8 @@ Output ONLY the JSON array.`,
       return r.text;
     }
     if (isDocx) {
-      const mod: any = await import("mammoth/mammoth.browser");
-      const mammoth: any = mod?.default || mod;
+      const mod = await import("mammoth/mammoth.browser.js");
+      const mammoth = mod?.default || mod;
       if (!mammoth || typeof mammoth.extractRawText !== "function") {
         throw new Error("DOCX reader failed to load. Try TXT or PDF.");
       }
@@ -1303,7 +1329,7 @@ Output ONLY the JSON array.`,
             >
               <input
                 type="checkbox"
-                checked={ws[k]}
+                checked={Boolean(ws[k])}
                 onChange={(e) => setF(k, e.target.checked)}
                 aria-label={`Show ${l} on worksheet`}
                 style={{ accentColor: gv.color, width: 14, height: 14 }}
@@ -2111,7 +2137,7 @@ Output ONLY the JSON array.`,
                   type="file"
                   accept=".pdf,.csv,.txt,.md,text/csv,text/plain,application/pdf"
                   aria-label="Upload worksheet file to recreate"
-                  onChange={(e) => e.target.files[0] && handleWsFileUpload(e.target.files[0])}
+                  onChange={(e) => e.target.files?.[0] && handleWsFileUpload(e.target.files[0])}
                   style={{ display: "none" }}
                 />
               </label>
@@ -2298,7 +2324,7 @@ Output ONLY the JSON array.`,
               announce(`Overflowing content moved to page ${fromPage + 2}`);
             };
 
-            const renderPage = (pIdx) => {
+            const renderPage = (pIdx: number) => {
               const els = ws.elements.filter((e) => pageOf(e) === pIdx);
               const hideHeader = isPageHeaderHidden(pIdx);
               const maxBottom = els.length
@@ -2799,7 +2825,7 @@ Output ONLY the JSON array.`,
           >
             {rightTab === "edit" && (
               <ElEditor
-                el={selEl}
+                el={selEl as WorksheetElement}
                 gv={gv}
                 onChange={(u) => selEl && updEl(selEl.id, u)}
                 onDelete={() => selEl && delEl(selEl.id)}

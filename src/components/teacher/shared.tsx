@@ -1,6 +1,6 @@
 /* eslint-disable */
-// @ts-nocheck
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
 import { renderInlineMarkdown, inlineMarkdownToHtml } from "@/lib/inlineMarkdown";
@@ -11,7 +11,7 @@ import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { BANDS, GRADES, gInfo } from "@/data/grades";
-import { NY_STANDARDS } from "@/data/ny-standards";
+import { NY_STANDARDS, type Standard } from "@/data/ny-standards";
 import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import {
   IMG_STYLES,
@@ -22,6 +22,7 @@ import {
   VERSION_LABELS,
 } from "@/data/worksheet-options";
 import { F, FF, PRINT_CSS } from "@/lib/worksheet-styles";
+import type { DokLevel, WorksheetShape, WorksheetElement } from "@/types/worksheet";
 import {
   uid,
   COLS,
@@ -42,9 +43,48 @@ import {
   elSummary,
 } from "@/lib/worksheet-utils";
 
+// Element/global-view records are highly dynamic (many worksheet element
+// "types" share one loosely-shaped object). Index signatures keep the file
+// behavior-identical while satisfying noImplicitAny.
+interface WsElement {
+  id: string;
+  type: string;
+  words?: string[];
+  left?: string[];
+  right?: string[];
+  choices?: string[];
+  statements?: string[];
+  items?: string[];
+  headers?: string[];
+  rows?: string[][];
+  levels?: DokLevel[];
+  shapes?: WorksheetShape[];
+  [key: string]: any;
+}
+
+interface GlobalView {
+  color: string;
+  light: string;
+  lineH: number;
+  fontSize: number;
+  [key: string]: any;
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SHARED UI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface BtnProps {
+  children?: ReactNode;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  bg?: string;
+  color?: string;
+  disabled?: boolean;
+  full?: boolean;
+  sm?: boolean;
+  style?: CSSProperties;
+  ariaLabel?: string;
+}
 
 function Btn({
   children,
@@ -56,7 +96,7 @@ function Btn({
   sm,
   style: xs = {},
   ariaLabel,
-}) {
+}: BtnProps) {
   return (
     <button
       onClick={onClick}
@@ -85,7 +125,7 @@ function Btn({
   );
 }
 
-const LBL = {
+const LBL: CSSProperties = {
   fontSize: 10,
   fontWeight: 700,
   color: "#6B7280",
@@ -96,7 +136,7 @@ const LBL = {
   marginBottom: 4,
   fontFamily: F,
 };
-const INP = () => ({
+const INP = (): CSSProperties => ({
   width: "100%",
   padding: "8px 11px",
   borderRadius: 7,
@@ -116,7 +156,29 @@ const INP = () => ({
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // Returns SVG <path> or shape element string for a given id, rendered into a W×H viewBox
-function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, lines, fontSize }) {
+interface ShapeSVGProps {
+  shape: string;
+  fill?: string;
+  border?: string;
+  borderWidth?: number;
+  width?: number | string;
+  height?: number | string;
+  label?: string;
+  lines?: number;
+  fontSize?: number;
+}
+
+function ShapeSVG({
+  shape,
+  fill,
+  border,
+  borderWidth,
+  width,
+  height,
+  label,
+  lines,
+  fontSize,
+}: ShapeSVGProps) {
   const sw = borderWidth || 2;
   // Allow width="100%" or "auto" — use a numeric basis for the viewBox math
   // and let CSS scale the SVG to fit its container.
@@ -286,9 +348,9 @@ function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, line
 // transform: scale(sx, sy) with top-left origin. The outer wrapper keeps
 // absolute positioning so resize handles stay anchored to its edges.
 
-function ScaledContent({ el, children }) {
-  const outerRef = useRef(null);
-  const innerRef = useRef(null);
+function ScaledContent({ el, children }: { el: WsElement; children: ReactNode }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ outerW: 0, naturalH: 0 });
 
   // Measure the outer wrapper width (which reflects widthOverride %) and the
@@ -352,6 +414,18 @@ function ScaledContent({ el, children }) {
   );
 }
 
+interface ElViewProps {
+  el: WsElement;
+  gv: GlobalView;
+  selected?: boolean;
+  onClick?: (...args: any[]) => void;
+  onResize?: (...args: any[]) => void;
+  onDelete?: (...args: any[]) => void;
+  onDragStart?: (...args: any[]) => void;
+  onReset?: (...args: any[]) => void;
+  oneLineOnly?: boolean;
+}
+
 function ElView({
   el,
   gv,
@@ -362,7 +436,7 @@ function ElView({
   onDragStart,
   onReset,
   oneLineOnly = true,
-}) {
+}: ElViewProps) {
   // Per-element typography overrides
   const fs = el.fontSizeOverride || gv.fontSize;
   const elFamily =
@@ -379,13 +453,13 @@ function ElView({
   // chosen size. When no override is set, text scales with the box like
   // before (auto mode).
   const fsLocked = !!el.fontSizeOverride;
-  const tScale = (sc) => (fsLocked ? 1 : sc.s);
+  const tScale = (sc: any) => (fsLocked ? 1 : sc.s);
 
   // Helper: per-item single-line vs wrap styling. Used by list-style elements
   // (Success Criteria, Exit Ticket, DOK Questions). When oneLineOnly is on,
   // each item stays on a single line and clips with ellipsis — encouraging
   // the user to widen the box. When off, items wrap naturally.
-  const lineStyle = oneLineOnly
+  const lineStyle: CSSProperties = oneLineOnly
     ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
     : { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
 
@@ -393,7 +467,7 @@ function ElView({
   // table (headers, rows, cells) actually fits inside the resizable box.
   const isTable = el.type === "table";
 
-  const wrap = {
+  const wrap: CSSProperties = {
     position: "absolute",
     left: `${el.x ?? 0}%`,
     top: el.y ?? 0,
@@ -417,7 +491,7 @@ function ElView({
     touchAction: "none", // allow pointer-drag on touch devices (iPad/phone)
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.PointerEvent | React.MouseEvent) => {
     onDragStart && onDragStart(e, el.id);
   };
 
@@ -684,7 +758,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Instructions element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -722,7 +796,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Text block — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -765,16 +839,16 @@ function ElView({
         }
       : {};
     const resizedInlineImage = userSized && !floated;
-    const containerStyle = floated
+    const containerStyle: CSSProperties = floated
       ? { ...wrap, overflow: "hidden" }
       : {
           ...wrap,
-          textAlign: el.align || "center",
+          textAlign: (el.align as CSSProperties["textAlign"]) || "center",
           ...(resizedInlineImage
             ? { display: "flex", flexDirection: "column", alignItems: "stretch" }
             : {}),
         };
-    const imageFrameStyle = resizedInlineImage
+    const imageFrameStyle: CSSProperties | undefined = resizedInlineImage
       ? {
           width: "100%",
           flex: el.heightOverride ? "1 1 auto" : "0 0 auto",
@@ -790,7 +864,7 @@ function ElView({
     // (when a heightOverride exists) + object-fit:contain guarantees the image
     // always fits inside the resized box, preserves aspect ratio, and shrinks
     // when the box shrinks — no clipping, no letterbox-pinned pixel height.
-    const fillImgStyle = resizedInlineImage
+    const fillImgStyle: CSSProperties = resizedInlineImage
       ? {
           width: "100%",
           height: el.heightOverride ? "100%" : "auto",
@@ -820,7 +894,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Image element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.url && resizedInlineImage ? (
           <div style={imageFrameStyle}>
@@ -903,7 +977,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Write lines element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.label && (
           <p
@@ -945,7 +1019,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Word bank element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1010,7 +1084,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Matching activity — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.title && (
           <p
@@ -1033,7 +1107,7 @@ function ElView({
             alignItems: "center",
           }}
         >
-          {(el.left || []).map((item, i) => (
+          {(el.left || []).map((item: string, i: number) => (
             <span key={i} style={{ display: "contents" }}>
               <div
                 style={{
@@ -1088,7 +1162,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Multiple choice question — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1156,7 +1230,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="True or false activity — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1249,7 +1323,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Short answer question — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <p
           style={{
@@ -1296,7 +1370,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Fill in the blank activity — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.note && (
           <p
@@ -1326,7 +1400,7 @@ function ElView({
             maxWidth: "100%",
           }}
         >
-          {(el.text || "").split("______").map((part, i, arr) => (
+          {(el.text || "").split("______").map((part: string, i: number, arr: string[]) => (
             <span key={i}>
               {renderInlineMarkdown(part)}
               {i < arr.length - 1 && (
@@ -1371,7 +1445,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Essay prompt — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -1453,7 +1527,7 @@ function ElView({
         role="group"
         tabIndex={0}
         aria-label={`${el.type === "successCriteria" ? "Success criteria" : "Exit ticket"} — click to edit`}
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -1559,7 +1633,7 @@ function ElView({
     const dokTextScale = fsLocked ? 1 : dokS;
     const levelGap = 10;
     const itemGap = 6;
-    const dokLineStyle = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
+    const dokLineStyle: CSSProperties = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
     return (
       <div
         className="ws-element"
@@ -1569,7 +1643,7 @@ function ElView({
         role="group"
         tabIndex={0}
         aria-label="DOK Questions — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div
           style={{
@@ -1625,7 +1699,7 @@ function ElView({
               minHeight: 0,
             }}
           >
-            {(el.levels || []).map((lv, li) => {
+            {(el.levels || []).map((lv: DokLevel, li: number) => {
               const c = LEVEL_COLORS[(lv.level || li + 1) - 1] || gv.color;
               return (
                 <div
@@ -1718,7 +1792,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Table element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.title && (
           <p
@@ -1800,7 +1874,7 @@ function ElView({
         role="separator"
         tabIndex={0}
         aria-label="Section divider"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
           <div
@@ -1827,7 +1901,7 @@ function ElView({
   if (el.type === "customShape") {
     const shapes = el.shapes || [];
     const colMap = { "1-col": 1, "2-col": 2, "3-col": 3, "4-col": 4, "2x2": 2 };
-    const requestedCols = colMap[el.layout] || 2;
+    const requestedCols = colMap[el.layout as keyof typeof colMap] || 2;
     const orientation = el.orientation || "horizontal"; // "horizontal" | "vertical"
     // Vertical = stack in a single column (one shape per row).
     const cols = orientation === "vertical" ? 1 : requestedCols;
@@ -1844,7 +1918,7 @@ function ElView({
         role="button"
         tabIndex={0}
         aria-label="Custom shapes element — click to edit"
-        onKeyDown={(e) => e.key === "Enter" && onClick()}
+        onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       >
         {el.title && (
           <p
@@ -1934,7 +2008,7 @@ function ElView({
 // ELEMENT EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }) {
+function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }: { el: WsElement; gv: GlobalView; onChange: (...a: any[]) => void; onDelete?: (...a: any[]) => void; onMoveUp?: (...a: any[]) => void; onMoveDown?: (...a: any[]) => void; onDuplicate?: (...a: any[]) => void }) {
   const inp = { ...INP(), marginTop: 4 };
   if (!el)
     return (
@@ -2323,10 +2397,10 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
             accept="image/*"
             aria-label="Upload image file"
             onChange={(e) => {
-              const f = e.target.files[0];
+              const f = e.target.files?.[0];
               if (f) {
                 const r = new FileReader();
-                r.onload = (ev) => onChange({ url: ev.target.result });
+                r.onload = (ev) => onChange({ url: ev.target?.result });
                 r.readAsDataURL(f);
               }
             }}
@@ -2717,7 +2791,7 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 // DOK QUESTIONS EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function DokEditor({ el, onChange, gv, inp }) {
+function DokEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
   const mode = el.mode || "manual";
   const [topic, setTopic] = useState(el.topic || "");
   const [busy, setBusy] = useState(false);
@@ -2824,15 +2898,15 @@ No markdown, no preamble, no commentary.`;
     }
   };
 
-  const updateLevelItems = (li, text) => {
+  const updateLevelItems = (li: number, text: string) => {
     const next = (el.levels || []).map((lv, i) =>
       i === li
         ? {
             ...lv,
             items: text
               .split("\n")
-              .map((s) => s.trimStart())
-              .filter((s) => s.trim().length),
+              .map((s: string) => s.trimStart())
+              .filter((s: string) => s.trim().length),
           }
         : lv,
     );
@@ -3058,7 +3132,7 @@ No markdown, no preamble, no commentary.`;
 // CHECKLIST EDITOR (Success Criteria & Exit Ticket)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ChecklistEditor({ el, onChange, gv, inp }) {
+function ChecklistEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
   const isSuccess = el.type === "successCriteria";
   const accent = isSuccess ? gv.color : "#0369A1";
   const mode = el.mode || "manual";
@@ -3088,7 +3162,7 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
       if (!Array.isArray(parsed) || !parsed.length) throw new Error("AI did not return a list");
       onChange({ items: parsed.map((x) => String(x).trim()).filter(Boolean), mode: "ai" });
     } catch (e) {
-      setErr(e?.message || "Could not generate. Try again.");
+      setErr(e instanceof Error ? e.message : "Could not generate. Try again.");
     } finally {
       setBusy(false);
     }
@@ -3236,7 +3310,7 @@ function ChecklistEditor({ el, onChange, gv, inp }) {
   );
 }
 
-function CustomShapeEditor({ el, onChange, gv, inp }) {
+function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
   const shapes = el.shapes || [];
   const [activeIdx, setActiveIdx] = useState(0);
   const [editorTab, setEditorTab] = useState("presets"); // "presets" | "custom"
@@ -3570,13 +3644,13 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
     },
   ];
 
-  const applyPreset = (preset) => {
+  const applyPreset = (preset: { title?: string; layout?: string; shapes: unknown[] }) => {
     onChange({ title: preset.title, layout: preset.layout, shapes: preset.shapes });
     setActiveIdx(0);
     setEditorTab("custom");
   };
 
-  const updShape = (idx, updates) => {
+  const updShape = (idx: number, updates: Record<string, unknown>) => {
     const next = shapes.map((s, i) => (i === idx ? { ...s, ...updates } : s));
     onChange({ shapes: next });
   };
@@ -3597,13 +3671,13 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
     setActiveIdx(shapes.length);
   };
 
-  const removeShape = (idx) => {
+  const removeShape = (idx: number) => {
     const next = shapes.filter((_, i) => i !== idx);
     onChange({ shapes: next });
     setActiveIdx(Math.min(activeIdx, next.length - 1));
   };
 
-  const duplicateShape = (idx) => {
+  const duplicateShape = (idx: number) => {
     const copy = { ...shapes[idx] };
     const next = [...shapes.slice(0, idx + 1), copy, ...shapes.slice(idx + 1)];
     onChange({ shapes: next });
@@ -3713,7 +3787,7 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
               </div>
             </button>
           ))}
-          {el.shapes?.length > 0 && (
+          {(el.shapes?.length ?? 0) > 0 && (
             <p
               style={{
                 fontFamily: F,
@@ -4200,7 +4274,7 @@ function CustomShapeEditor({ el, onChange, gv, inp }) {
   );
 }
 
-function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
+function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: GlobalView; onClose: (...a: any[]) => void; onInsert?: (...a: any[]) => void; onGenerate?: (...a: any[]) => void; gradeId?: any }) {
   const STD = getActiveStandards();
   const stateInfo = getActiveStateInfo();
   const subjects = Object.keys(STD);
@@ -4209,7 +4283,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
     gradeId ? gradeIdToStdBand(gradeId, subjects[0] || "ELA") || "Kindergarten" : "Kindergarten",
   );
   const [search, setSearch] = useState("");
-  const [picked, setPicked] = useState(null);
+  const [picked, setPicked] = useState<Standard | null>(null);
   const [showHeader, setShowHeader] = useState(true);
   const [matchGrade, setMatchGrade] = useState(!!gradeId);
 
@@ -4217,18 +4291,18 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
   const stds = STD[subj]?.[band] || [];
   const filtered = search.trim()
     ? stds.filter(
-        (s) =>
+        (s: Standard) =>
           s.code.toLowerCase().includes(search.toLowerCase()) ||
           s.desc.toLowerCase().includes(search.toLowerCase()),
       )
     : stds;
 
-  const handlePick = (s) => {
+  const handlePick = (s: Standard) => {
     setPicked(s);
   };
 
   // Auto-update band when subject changes if matchGrade is on
-  const onSubjChange = (s) => {
+  const onSubjChange = (s: string) => {
     setSubj(s);
     if (matchGrade && gradeId) setBand(gradeIdToStdBand(gradeId, s));
     else setBand(s === "ELA" ? "Kindergarten" : Object.keys(STD[s] || {})[0] || "");
@@ -4419,7 +4493,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
               No standards match your search.
             </p>
           )}
-          {filtered.map((s, i) => {
+          {filtered.map((s: Standard, i: number) => {
             const isSelected = picked?.code === s.code;
             return (
               <div
@@ -4612,7 +4686,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 <button
                   onClick={() => {
-                    onInsert(picked, showHeader);
+                    onInsert?.(picked, showHeader);
                     onClose();
                   }}
                   style={{
@@ -4638,7 +4712,7 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
                 </button>
                 <button
                   onClick={() => {
-                    onGenerate(picked, showHeader);
+                    onGenerate?.(picked, showHeader);
                     onClose();
                   }}
                   style={{
@@ -4677,39 +4751,39 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }) {
 // QUIZ VERSIONS MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function VersionsModal({ gv, ws, onClose }) {
+function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
   const [numVersions, setNumVersions] = useState(2);
   const [randomize, setRandomize] = useState(true);
   const [keepFixed, setKeepFixed] = useState(true); // keep non-question elements (instructions, passages) in place
-  const [previewVer, setPreviewVer] = useState(null); // null = config, 0-3 = preview index
+  const [previewVer, setPreviewVer] = useState<number | null>(null); // null = config, 0-3 = preview index
 
   // Build a version's element order
-  const buildVersion = (label) => {
-    const fixed = keepFixed ? ws.elements.filter((el) => !isQuestion(el)) : [];
-    const questions = ws.elements.filter((el) => isQuestion(el));
+  const buildVersion = (label: string) => {
+    const fixed = keepFixed ? ws.elements.filter((el: WorksheetElement) => !isQuestion(el)) : [];
+    const questions = ws.elements.filter((el: WorksheetElement) => isQuestion(el));
     const orderedQs = randomize ? shuffle(questions) : questions;
     if (!keepFixed) return randomize ? shuffle([...ws.elements]) : [...ws.elements];
     // Re-interleave: put questions back in their (shuffled) positions
     let qi = 0;
-    return ws.elements.map((el) => (isQuestion(el) ? orderedQs[qi++] : el));
+    return ws.elements.map((el: WorksheetElement) => (isQuestion(el) ? orderedQs[qi++] : el));
   };
 
   const versions = VERSION_LABELS.slice(0, numVersions).map(buildVersion);
 
   const printVersions = () => {
     const gv2 = gInfo(ws.gradeId);
-    const renderEl = (el) => {
+    const renderEl = (el: WorksheetElement) => {
       if (!el) return "";
       const fs = gv2.fontSize;
-      const mb = (s) => inlineMarkdownToHtml(s || "");
+      const mb = (s?: string) => inlineMarkdownToHtml(s || "");
       if (el.type === "instruction")
         return `<div style="background:#FFFACD;padding:10px 16px;border-radius:10px;border-left:6px solid ${gv2.color};margin-bottom:16px;font-size:${Math.max(fs - 7, 13)}px;font-weight:700;line-height:1.55">${mb(el.text)}</div>`;
       if (el.type === "text")
         return `<p style="font-size:${fs}px;font-weight:600;margin:0 0 16px;line-height:1.7">${mb(el.text)}</p>`;
       if (el.type === "multipleChoice")
-        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c: string) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
       if (el.type === "truefalse")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s: string) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
       if (el.type === "shortAnswer")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.question)}</p>${Array.from(
           { length: el.lines || 4 },
@@ -4724,7 +4798,7 @@ function VersionsModal({ gv, ws, onClose }) {
           el.text || ""
         )
           .split("______")
-          .map((p, i, a) =>
+          .map((p: string, i: number, a: string[]) =>
             i < a.length - 1
               ? `${mb(p)}<span style="display:inline-block;width:90px;border-bottom:2.5px solid ${gv2.color};vertical-align:bottom;margin:0 3px"></span>`
               : mb(p),
@@ -4740,9 +4814,9 @@ function VersionsModal({ gv, ws, onClose }) {
           )
           .join("")}</div>`;
       if (el.type === "matching")
-        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%"><tbody>${(el.left || []).map((item, i) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%"><tbody>${(el.left || []).map((item: string, i: number) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
       if (el.type === "wordBank")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w: string) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
       if (el.type === "essay")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.prompt)}</p>${Array.from(
           { length: el.lines || 14 },
@@ -4757,16 +4831,16 @@ function VersionsModal({ gv, ws, onClose }) {
       if (el.type === "successCriteria" || el.type === "exitTicket") {
         const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
         const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
-        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item: string) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
       }
       if (el.type === "dokQuestions") {
         const LC = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
         return `<div style="margin-bottom:18px;background:#FFFFFF;border:2px solid ${gv2.color}45;border-left:6px solid ${gv2.color};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}${(
           el.levels || []
         )
-          .map((lv, li) => {
+          .map((lv: DokLevel, li: number) => {
             const c = LC[(lv.level || li + 1) - 1] || gv2.color;
-            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
+            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q: string) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
           })
           .join("")}</div>`;
       }
@@ -4790,6 +4864,7 @@ function VersionsModal({ gv, ws, onClose }) {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${ws.title} — Quiz Versions</title><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"><style>*{box-sizing:border-box}body{margin:0;font-family:'Nunito',sans-serif}@media print{.page{page-break-after:always}}</style></head><body>${pages}</body></html>`;
     const w = window.open("", "_blank");
+    if (!w) return;
     w.document.write(html);
     w.document.close();
     setTimeout(() => w.print(), 600);
@@ -4896,16 +4971,18 @@ function VersionsModal({ gv, ws, onClose }) {
             <div>
               <label style={{ ...LBL, marginTop: 0 }}>Options</label>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
-                {[
-                  [randomize, setRandomize, "Randomize question order"],
-                  [keepFixed, setKeepFixed, "Keep instructions & passages fixed"],
-                ].map(([val, set, lbl], i) => (
+                {(
+                  [
+                    [randomize, setRandomize, "Randomize question order"],
+                    [keepFixed, setKeepFixed, "Keep instructions & passages fixed"],
+                  ] as [boolean, React.Dispatch<React.SetStateAction<boolean>>, string][]
+                ).map(([val, set, lbl], i) => (
                   <label
                     key={i}
                     style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
                   >
                     <div
-                      onClick={() => set((v) => !v)}
+                      onClick={() => set((v: boolean) => !v)}
                       style={{
                         width: 36,
                         height: 20,
@@ -4957,11 +5034,13 @@ function VersionsModal({ gv, ws, onClose }) {
               gap: 24,
             }}
           >
-            {[
-              ["Total elements", ws.elements.length],
-              ["Questions (randomized)", ws.elements.filter(isQuestion).length],
-              ["Fixed elements", ws.elements.filter((e) => !isQuestion(e)).length],
-            ].map(([lbl, val]) => (
+            {(
+              [
+                ["Total elements", ws.elements.length],
+                ["Questions (randomized)", ws.elements.filter(isQuestion).length],
+                ["Fixed elements", ws.elements.filter((e: WorksheetElement) => !isQuestion(e)).length],
+              ] as [string, number][]
+            ).map(([lbl, val]) => (
               <div key={lbl} style={{ textAlign: "center" }}>
                 <div style={{ fontFamily: FF, fontSize: 22, color: gv.color }}>{val}</div>
                 <div style={{ fontFamily: F, fontSize: 11, color: "#999", fontWeight: 700 }}>
@@ -5019,7 +5098,7 @@ function VersionsModal({ gv, ws, onClose }) {
               >
                 Version {VERSION_LABELS[previewVer]} — Question Order
               </p>
-              {versions[previewVer].filter(isQuestion).map((el, i) => (
+              {versions[previewVer].filter(isQuestion).map((el: WorksheetElement, i: number) => (
                 <div
                   key={el.id}
                   style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 7 }}
@@ -5080,7 +5159,7 @@ function VersionsModal({ gv, ws, onClose }) {
             justifyContent: "flex-end",
           }}
         >
-          <Btn onClick={onClose} bg="#F2F2F2" xs={{ color: "#666" }}>
+          <Btn onClick={onClose} bg="#F2F2F2" style={{ color: "#666" }}>
             Cancel
           </Btn>
           <button
@@ -5109,13 +5188,13 @@ function VersionsModal({ gv, ws, onClose }) {
 // EXPORT MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ExportModal({ gv, ws, onClose }) {
+function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
   const [copied, setCopied] = useState(false);
-  const dialogRef = useRef(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   // Close on Escape and move focus into the dialog when it opens.
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
@@ -5130,7 +5209,7 @@ function ExportModal({ gv, ws, onClose }) {
     if (ws.showName) lines.push("Name: _______________________________   ");
     if (ws.showDate) lines.push("Date: _______________________________");
     lines.push("");
-    const renderEl = (el, i) => {
+    const renderEl = (el: WorksheetElement, i: number) => {
       if (el.type === "instruction") {
         lines.push(`[Instructions]`);
         lines.push(el.text || "");
@@ -5140,11 +5219,11 @@ function ExportModal({ gv, ws, onClose }) {
         lines.push("");
       } else if (el.type === "multipleChoice") {
         lines.push(`${i + 1}. ${el.question}`);
-        (el.choices || []).forEach((c) => lines.push(`   ○ ${c}`));
+        (el.choices || []).forEach((c: string) => lines.push(`   ○ ${c}`));
         lines.push("");
       } else if (el.type === "truefalse") {
         lines.push("True or False? Circle your answer.");
-        (el.statements || []).forEach((s, j) => lines.push(`${j + 1}. ${s}    TRUE / FALSE`));
+        (el.statements || []).forEach((s: string, j: number) => lines.push(`${j + 1}. ${s}    TRUE / FALSE`));
         lines.push("");
       } else if (el.type === "shortAnswer") {
         lines.push(el.question || "");
@@ -5167,21 +5246,21 @@ function ExportModal({ gv, ws, onClose }) {
         lines.push("");
       } else if (el.type === "matching") {
         lines.push(el.title || "Match the following:");
-        (el.left || []).forEach((item, j) =>
+        (el.left || []).forEach((item: string, j: number) =>
           lines.push(`${item}  ──  ${(el.right || [])[j] || "______"}`),
         );
         lines.push("");
       } else if (el.type === "successCriteria" || el.type === "exitTicket") {
         if (el.title) lines.push(el.title);
         if (el.intro) lines.push(el.intro);
-        (el.items || []).forEach((item) => lines.push(`[ ] ${item}`));
+        (el.items || []).forEach((item: string) => lines.push(`[ ] ${item}`));
         lines.push("");
       } else if (el.type === "dokQuestions") {
         if (el.title) lines.push(el.title);
         if (el.intro) lines.push(el.intro);
-        (el.levels || []).forEach((lv) => {
+        (el.levels || []).forEach((lv: DokLevel) => {
           lines.push(`-- DOK ${lv.level} · ${lv.label} --`);
-          (lv.items || []).forEach((q) => lines.push(`[ ] ${q}`));
+          (lv.items || []).forEach((q: string) => lines.push(`[ ] ${q}`));
         });
         lines.push("");
       } else if (el.type === "divider") {
@@ -5194,8 +5273,8 @@ function ExportModal({ gv, ws, onClose }) {
         lines.push(`──── Page ${p + 1} ────`);
         lines.push("");
       }
-      const pageEls = ws.elements.filter((e) => Math.min(totalPages - 1, e.page || 0) === p);
-      pageEls.forEach((el, i) => renderEl(el, i));
+      const pageEls = ws.elements.filter((e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === p);
+      pageEls.forEach((el: WorksheetElement, i: number) => renderEl(el, i));
       if (p < totalPages - 1) {
         lines.push("\f");
         lines.push("");
@@ -5210,14 +5289,14 @@ function ExportModal({ gv, ws, onClose }) {
       lines.push("═══════════════════════════════════════");
       lines.push(`Aligned to the ${getActiveStateInfo().standardsName}.`);
       lines.push("");
-      stds.forEach((s) => {
+      stds.forEach((s: { code: string; desc: string }) => {
         lines.push(`• ${s.code}: ${s.desc}`);
         // Show items aligned to this standard
         const aligned = (ws.elements || [])
-          .map((el, i) => ({ el, i }))
-          .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+          .map((el: WorksheetElement, i: number) => ({ el, i }))
+          .filter(({ el }: { el: WorksheetElement }) => ((el.stdCodes as string[]) || []).includes(s.code));
         if (aligned.length) {
-          aligned.forEach(({ el, i }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
+          aligned.forEach(({ el, i }: { el: WorksheetElement; i: number }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
         }
         lines.push("");
       });
@@ -5228,9 +5307,9 @@ function ExportModal({ gv, ws, onClose }) {
   // Build full HTML export
   const toHTML = () => {
     const gv2 = gInfo(ws.gradeId);
-    const renderEl = (el) => {
+    const renderEl = (el: WorksheetElement) => {
       const fs = gv2.fontSize;
-      const mb = (s) => inlineMarkdownToHtml(s || "");
+      const mb = (s?: string) => inlineMarkdownToHtml(s || "");
       if (el.type === "instruction")
         return `<div style="background:#FFFACD;padding:10px 16px;border-radius:10px;border-left:6px solid ${gv2.color};margin-bottom:16px;font-size:${Math.max(fs - 7, 13)}px;font-weight:700;line-height:1.55">${mb(el.text)}</div>`;
       if (el.type === "text")
@@ -5238,9 +5317,9 @@ function ExportModal({ gv, ws, onClose }) {
       if (el.type === "image" && el.url)
         return `<div style="text-align:${el.align || "center"};margin-bottom:16px"><img src="${el.url}" style="max-width:${el.size === "small" ? "35%" : el.size === "large" ? "95%" : "65%"};border-radius:10px;border:2px solid #EEE">${el.caption ? `<p style="font-size:12px;color:#777;text-align:center;margin:6px 0 0">${el.caption}</p>` : ""}</div>`;
       if (el.type === "multipleChoice")
-        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 10px">${mb(el.question)}</p>${(el.choices || []).map((c: string) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;border:2.5px solid ${gv2.color};flex-shrink:0"></div><span style="font-size:${fs}px">${mb(c)}</span></div>`).join("")}</div>`;
       if (el.type === "truefalse")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 5, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">True or False? Circle your answer.</p>${(el.statements || []).map((s: string) => `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:${gv2.light};border-radius:8px"><span style="font-size:${fs}px">${mb(s)}</span><span style="font-size:12px;font-weight:900;color:${gv2.color};margin-left:20px;white-space:nowrap">TRUE &nbsp;&nbsp; FALSE</span></div>`).join("")}</div>`;
       if (el.type === "shortAnswer")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.question)}</p>${Array.from(
           { length: el.lines || 4 },
@@ -5255,7 +5334,7 @@ function ExportModal({ gv, ws, onClose }) {
           el.text || ""
         )
           .split("______")
-          .map((p, i, a) =>
+          .map((p: string, i: number, a: string[]) =>
             i < a.length - 1
               ? `${mb(p)}<span style="display:inline-block;width:90px;border-bottom:2.5px solid ${gv2.color};vertical-align:bottom;margin:0 3px"></span>`
               : mb(p),
@@ -5271,9 +5350,9 @@ function ExportModal({ gv, ws, onClose }) {
           )
           .join("")}</div>`;
       if (el.type === "wordBank")
-        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
+        return `<div style="margin-bottom:18px"><p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 10px">${el.title || "Word Bank"}</p><div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:${gv2.light};border-radius:10px">${(el.words || []).map((w: string) => `<span style="font-size:${fs}px;padding:4px 12px;border:2px solid ${gv2.color};border-radius:50px;background:white">${mb(w)}</span>`).join("")}</div></div>`;
       if (el.type === "matching")
-        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse"><tbody>${(el.left || []).map((item, i) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
+        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 12px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse"><tbody>${(el.left || []).map((item: string, i: number) => `<tr><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb(item)}</td><td style="text-align:center;padding:0 8px">—</td><td style="padding:6px 10px;border:2px solid ${gv2.color};border-radius:8px;width:40%;text-align:center;font-size:${fs}px">${mb((el.right || [])[i] || "")}</td></tr>`).join("")}</tbody></table></div>`;
       if (el.type === "essay")
         return `<div style="margin-bottom:18px"><p style="font-size:${fs}px;font-weight:800;margin:0 0 12px">${mb(el.prompt)}</p>${Array.from(
           { length: el.lines || 14 },
@@ -5286,20 +5365,20 @@ function ExportModal({ gv, ws, onClose }) {
       if (el.type === "divider")
         return `<div style="margin:8px 0;text-align:center;color:${gv2.color};font-size:16px">✦</div>`;
       if (el.type === "table")
-        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 10px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse;font-size:${Math.max(fs - 4, 12)}px"><thead><tr>${(el.headers || []).map((h) => `<th style="padding:8px 12px;border:2px solid ${gv2.color};background:${gv2.color};color:white;font-weight:900;text-align:center">${mb(h)}</th>`).join("")}</tr></thead><tbody>${(el.rows || []).map((row) => `<tr>${(row || []).map((cell) => `<td style="padding:6px 10px;border:1.5px solid #DDD;height:${gv2.lineH}px;vertical-align:top">${mb(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 10px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse;font-size:${Math.max(fs - 4, 12)}px"><thead><tr>${(el.headers || []).map((h: string) => `<th style="padding:8px 12px;border:2px solid ${gv2.color};background:${gv2.color};color:white;font-weight:900;text-align:center">${mb(h)}</th>`).join("")}</tr></thead><tbody>${(el.rows || []).map((row: string[]) => `<tr>${(row || []).map((cell: string) => `<td style="padding:6px 10px;border:1.5px solid #DDD;height:${gv2.lineH}px;vertical-align:top">${mb(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
       if (el.type === "successCriteria" || el.type === "exitTicket") {
         const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
         const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
-        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
+        return `<div style="margin-bottom:18px;background:${bg2};border:2px solid ${a}45;border-left:6px solid ${a};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${a};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}<ul style="list-style:none;padding:0;margin:0">${(el.items || []).map((item: string) => `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px"><span style="flex-shrink:0;display:inline-block;width:18px;height:18px;margin-top:2px;border:2px solid ${a};border-radius:4px;background:white"></span><span style="font-size:${fs}px;font-weight:600;color:#111827;line-height:1.45">${mb(item)}</span></li>`).join("")}</ul></div>`;
       }
       if (el.type === "dokQuestions") {
         const LC = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
         return `<div style="margin-bottom:18px;background:#FFFFFF;border:2px solid ${gv2.color}45;border-left:6px solid ${gv2.color};border-radius:10px;padding:12px 16px">${el.title ? `<p style="font-size:${Math.max(fs - 2, 13)}px;font-weight:900;color:${gv2.color};margin:0 0 6px">${el.title}</p>` : ""}${el.intro ? `<p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:600;color:#374151;margin:0 0 10px;line-height:1.5">${mb(el.intro)}</p>` : ""}${(
           el.levels || []
         )
-          .map((lv, li) => {
+          .map((lv: DokLevel, li: number) => {
             const c = LC[(lv.level || li + 1) - 1] || gv2.color;
-            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
+            return `<div style="background:${c}10;border:1.5px solid ${c}55;border-radius:8px;padding:8px 10px;margin-bottom:8px"><p style="font-size:${Math.max(fs - 4, 11)}px;font-weight:900;color:${c};margin:0 0 6px">DOK ${lv.level} · ${lv.label}</p><ul style="list-style:none;padding:0;margin:0">${(lv.items || []).map((q: string) => `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><span style="flex-shrink:0;display:inline-block;width:16px;height:16px;margin-top:2px;border:2px solid ${c};border-radius:3px;background:white"></span><span style="font-size:${Math.max(fs - 1, 12)}px;font-weight:600;color:#111827;line-height:1.45">${mb(q)}</span></li>`).join("")}</ul></div>`;
           })
           .join("")}</div>`;
       }
@@ -5309,7 +5388,7 @@ function ExportModal({ gv, ws, onClose }) {
     const hidden = new Set(ws.pageHeadersHidden || []);
     const pagesHtml = Array.from({ length: totalPages })
       .map((_, pIdx) => {
-        const pageEls = ws.elements.filter((e) => Math.min(totalPages - 1, e.page || 0) === pIdx);
+        const pageEls = ws.elements.filter((e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === pIdx);
         const isLast = pIdx === totalPages - 1;
         const hideHeader = hidden.has(pIdx);
         const headerHtml = hideHeader
@@ -5320,7 +5399,7 @@ function ExportModal({ gv, ws, onClose }) {
       .join("");
 
     // Standards Citations page
-    const safe = (s) =>
+    const safe = (s?: string) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -5329,12 +5408,12 @@ function ExportModal({ gv, ws, onClose }) {
     let citationsHtml = "";
     if (stds.length > 0) {
       const items = stds
-        .map((s) => {
+        .map((s: { code: string; desc: string }) => {
           const aligned = (ws.elements || [])
-            .map((el, i) => ({ el, i }))
-            .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+            .map((el: WorksheetElement, i: number) => ({ el, i }))
+            .filter(({ el }: { el: WorksheetElement }) => ((el.stdCodes as string[]) || []).includes(s.code));
           const alignedHtml = aligned.length
-            ? `<div style="margin-top:6px;padding-left:14px;font-size:12px;color:#555">Aligned items: ${aligned.map(({ i }) => `#${i + 1}`).join(", ")}</div>`
+            ? `<div style="margin-top:6px;padding-left:14px;font-size:12px;color:#555">Aligned items: ${aligned.map(({ i }: { i: number }) => `#${i + 1}`).join(", ")}</div>`
             : "";
           return `<li style="margin-bottom:14px;line-height:1.55"><strong style="color:${gv2.color}">${safe(s.code)}</strong> — ${safe(s.desc)}${alignedHtml}</li>`;
         })
@@ -5376,6 +5455,7 @@ function ExportModal({ gv, ws, onClose }) {
 
   const openPrintPreview = () => {
     const w = window.open("", "_blank");
+    if (!w) return;
     w.document.write(toHTML());
     w.document.close();
     setTimeout(() => w.print(), 500);
@@ -5560,7 +5640,7 @@ function ExportModal({ gv, ws, onClose }) {
 // HELP MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function HelpModal({ onClose, gv }) {
+function HelpModal({ onClose, gv }: { onClose: (...a: any[]) => void; gv: GlobalView }) {
   const secs = [
     {
       icon: "🎯",
@@ -5690,10 +5770,10 @@ function HelpModal({ onClose, gv }) {
 // ALIGNMENT MODAL — shows which standard each question/activity maps to
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
+function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void; onSetMapping?: (...a: any[]) => void }) {
   const stateInfo = getActiveStateInfo();
   const standards = ws.standards || [];
-  const items = (ws.elements || []).filter((e) => !["divider"].includes(e.type));
+  const items = (ws.elements || []).filter((e: WorksheetElement) => !["divider"].includes(e.type));
 
   return (
     <div
@@ -5788,7 +5868,7 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
               <div style={{ marginBottom: 16 }}>
                 <p style={{ ...LBL, marginTop: 0 }}>Cited Standards ({standards.length})</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {standards.map((s) => (
+                  {standards.map((s: { code: string; desc: string }) => (
                     <span
                       key={s.code}
                       title={s.desc}
@@ -5810,8 +5890,8 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
               </div>
 
               <p style={{ ...LBL, marginTop: 0 }}>Item-by-Item Mapping</p>
-              {items.map((el, i) => {
-                const mapped = el.stdCodes || [];
+              {items.map((el: WorksheetElement, i: number) => {
+                const mapped = (el.stdCodes as string[]) || [];
                 return (
                   <div
                     key={el.id}
@@ -5835,16 +5915,16 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }) {
                       {elSummary(el, i)}
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                      {standards.map((s) => {
+                      {standards.map((s: { code: string; desc: string }) => {
                         const on = mapped.includes(s.code);
                         return (
                           <button
                             key={s.code}
                             onClick={() => {
                               const next = on
-                                ? mapped.filter((c) => c !== s.code)
+                                ? mapped.filter((c: string) => c !== s.code)
                                 : [...mapped, s.code];
-                              onSetMapping(el.id, next);
+                              onSetMapping?.(el.id, next);
                             }}
                             style={{
                               padding: "3px 9px",

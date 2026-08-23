@@ -1,5 +1,4 @@
 /* eslint-disable */
-// @ts-nocheck
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
@@ -17,12 +16,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
 import { saveLessonPlan } from "@/lib/lesson-plans.functions";
 import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
+import type { CSSProperties } from "react";
+import type {
+  LessonPlanResult,
+  DeckData,
+  DeckSlide,
+  LessonPlanForm,
+  ExemplarFileInfo,
+} from "./lesson-plan-types";
 
 const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
-const DEFAULT_LP_FORM = {
+const DEFAULT_LP_FORM: LessonPlanForm = {
   grade: "k",
   subject: "",
   topic: "",
@@ -31,12 +38,12 @@ const DEFAULT_LP_FORM = {
   objectives: "",
   materials: "",
   standard: "",
-  diff: [],
+  diff: [] as string[],
   notes: "",
 };
 
 /** Read a previously auto-saved lesson-plan form draft from localStorage, if any. */
-function readLpDraft() {
+function readLpDraft(): LessonPlanForm {
   if (typeof window === "undefined") return DEFAULT_LP_FORM;
   try {
     const raw = window.localStorage.getItem(LP_DRAFT_KEY);
@@ -64,7 +71,7 @@ export function LessonPlanGenerator({
   const LIGHT = "#FDF4FF";
   const { hasStandards: stHasStandards, info: stInfo } = useAppState();
 
-  const [form, setForm] = useState(readLpDraft);
+  const [form, setForm] = useState<LessonPlanForm>(readLpDraft);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [cloudSavedAt, setCloudSavedAt] = useState<number | null>(null);
 
@@ -82,9 +89,9 @@ export function LessonPlanGenerator({
     return () => clearTimeout(t);
   }, [form]);
 
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<LessonPlanResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showCopyBox, setShowCopyBox] = useState(false);
   const [showGdocsBox, setShowGdocsBox] = useState(false);
@@ -155,7 +162,7 @@ export function LessonPlanGenerator({
             ? "Saved to your account."
             : `Draft v${res.current?.version_no ?? ""} saved to your account.`,
       });
-    } catch (e) {
+    } catch (e: unknown) {
       if (isLessonPlanConflict(e)) {
         setConflictPaused(true);
         setAccountMsg({
@@ -216,7 +223,7 @@ export function LessonPlanGenerator({
         rememberPlanId(res.id);
         setBaseVersionNo(res.current?.version_no ?? null);
         setCloudSavedAt(Date.now());
-      } catch (e) {
+      } catch (e: unknown) {
         if (isLessonPlanConflict(e)) {
           setConflictPaused(true);
           setAccountMsg({
@@ -245,30 +252,34 @@ export function LessonPlanGenerator({
 
   // Exemplar
   const [exMode, setExMode] = useState("file");
-  const [exemplarFile, setExemplarFile] = useState(null);
+  const [exemplarFile, setExemplarFile] = useState<ExemplarFileInfo | null>(null);
   const [exemplarUrl, setExemplarUrl] = useState("");
   const [exemplarText, setExemplarText] = useState("");
   const [exemplarDesc, setExemplarDesc] = useState("");
   const [exemplarRaw, setExemplarRaw] = useState(""); // full text extracted from file/url/paste
   const [analyzingEx, setAnalyzingEx] = useState(false);
   const [exError, setExError] = useState("");
-  const dropRef = useRef(null);
+  const dropRef = useRef<HTMLLabelElement | null>(null);
   const [draggingOver, setDraggingOver] = useState(false);
 
   // Slide deck generation state
   const [slidesLoading, setSlidesLoading] = useState(false);
   const [slidesError, setSlidesError] = useState("");
-  const [deckData, setDeckData] = useState(null); // cached AI-generated deck
+  const [deckData, setDeckData] = useState<DeckData | null>(null); // cached AI-generated deck
   const [exportingFmt, setExportingFmt] = useState(""); // which format is being exported
 
-  const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-  const toggleDiff = (d) =>
+  const setF = (k: keyof LessonPlanForm, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
+  const toggleDiff = (d: string) =>
     setF("diff", form.diff.includes(d) ? form.diff.filter((x) => x !== d) : [...form.diff, d]);
 
   // ── Shared Claude call ─────────────────────────────────────────────
   // Network-resilient: retries once on transient "Failed to fetch" / abort,
   // uses an AbortController with a generous timeout, and surfaces clear errors.
-  const callClaude = (system, userContent, maxTokens = 600) =>
+  const callClaude = (
+    system: string,
+    userContent: string | Array<Record<string, unknown>>,
+    maxTokens = 600,
+  ) =>
     callAiRaw({
       model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
@@ -284,7 +295,7 @@ export function LessonPlanGenerator({
     }
     setAiHelperLoading(true);
     setAiHelperResult("");
-    const fieldLabels = {
+    const fieldLabels: Record<string, string> = {
       objectives: "3 specific SWBAT learning objectives",
       materials: "a list of materials and resources needed",
       notes: "teacher preparation notes, tips, and things to watch out for",
@@ -296,8 +307,8 @@ export function LessonPlanGenerator({
         500,
       );
       setAiHelperResult(text);
-    } catch (e) {
-      setAiHelperResult(`Error: ${e.message}`);
+    } catch (e: unknown) {
+      setAiHelperResult(`Error: ${e instanceof Error ? e.message : String(e)}`);
     }
     setAiHelperLoading(false);
   };
@@ -317,21 +328,21 @@ export function LessonPlanGenerator({
   ];
   const DOK_LEVEL_COLORS = ["#10B981", "#0EA5E9", "#8B5CF6", "#F59E0B"];
 
-  const dokOk = (arr) =>
+  const dokOk = (arr: unknown) =>
     Array.isArray(arr) &&
     arr.length >= 4 &&
     DOK_DEFS.every((d) => {
-      const lv = arr.find((x) => Number(x?.level) === d.level);
+      const lv = (arr as Array<Record<string, unknown>>).find((x) => Number((x as any)?.level) === d.level);
       return (
-        lv && Array.isArray(lv.items) && lv.items.filter((s) => s && String(s).trim()).length >= 1
+        lv && Array.isArray((lv as any).items) && (lv as any).items.filter((s: unknown) => s && String(s).trim()).length >= 1
       );
     });
 
-  const normalizeDok = (arr) =>
+  const normalizeDok = (arr: unknown) =>
     DOK_DEFS.map((d) => {
-      const found = (Array.isArray(arr) ? arr : []).find((x) => Number(x?.level) === d.level) || {};
+      const found: Record<string, any> = (Array.isArray(arr) ? arr : []).find((x: any) => Number(x?.level) === d.level) || {};
       const items = (Array.isArray(found.items) ? found.items : [])
-        .map((s) => String(s || "").trim())
+        .map((s: unknown) => String(s || "").trim())
         .filter(Boolean);
       return {
         level: d.level,
@@ -343,11 +354,11 @@ export function LessonPlanGenerator({
   // Generate a fresh DOK question set aligned to the lesson's objectives.
   // Mirrors the worksheet builder DOK generator: 2–3 student-facing questions
   // per level, every level required, never "N/A".
-  const generateDokFromObjectives = async (objectives, lessonTitle) => {
+  const generateDokFromObjectives = async (objectives: string[], lessonTitle?: string) => {
     const objsBlock =
       (objectives || [])
         .filter(Boolean)
-        .map((o, i) => `${i + 1}. ${o}`)
+        .map((o: string, i: number) => `${i + 1}. ${o}`)
         .join("\n") || "(no objectives provided)";
     const sys = `You design Depth of Knowledge (DOK) question sets for K–12 lessons based on Norman Webb's framework. DOK measures the depth of cognitive complexity, NOT difficulty. Output ONLY a valid JSON array — no markdown, no fences. Start with [ and end with ].\n\nDOK levels:\n• DOK 1 — Recall & Reproduction (recall facts, define, identify, list)\n• DOK 2 — Skills & Concepts (summarize, compare, classify, explain relationships)\n• DOK 3 — Strategic Thinking (justify, cite evidence, draw conclusions, hypothesize)\n• DOK 4 — Extended Thinking (synthesize across sources, design, critique, transfer to new context)\n\nRules: EVERY level (1, 2, 3, 4) MUST have 2–3 non-empty student-facing questions. Use grade-appropriate language for ${form.grade}. Tie every question directly to the lesson objectives. NEVER write "N/A".`;
     const user = `Lesson: ${lessonTitle || form.topic || form.subject}\nGrade: ${form.grade} | Subject: ${form.subject}\n\nLearning objectives:\n${objsBlock}\n\nReturn this JSON shape ONLY:\n[\n  {"level":1,"label":"Recall & Reproduction","items":["...","..."]},\n  {"level":2,"label":"Skills & Concepts","items":["...","..."]},\n  {"level":3,"label":"Strategic Thinking","items":["...","..."]},\n  {"level":4,"label":"Extended Thinking","items":["...","..."]}\n]`;
@@ -371,24 +382,24 @@ export function LessonPlanGenerator({
     try {
       const dok = await generateDokFromObjectives(result.objectives || [], result.title);
       setResult((prev) => (prev ? { ...prev, dokQuestions: normalizeDok(dok) } : prev));
-    } catch (e) {
-      setError(`DOK regeneration failed: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`DOK regeneration failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     setRegeneratingDok(false);
   };
 
   // ── Exemplar handlers ──────────────────────────────────────────────
-  const readFileAsB64 = (f) =>
+  const readFileAsB64 = (f: File): Promise<string> =>
     new Promise((res, rej) => {
       const r = new FileReader();
-      r.onload = (e) => res(e.target.result);
+      r.onload = (e) => res((e.target?.result as string) ?? "");
       r.onerror = rej;
       r.readAsDataURL(f);
     });
-  const readFileAsText = (f) =>
+  const readFileAsText = (f: File): Promise<string> =>
     new Promise((res, rej) => {
       const r = new FileReader();
-      r.onload = (e) => res(e.target.result);
+      r.onload = (e) => res((e.target?.result as string) ?? "");
       r.onerror = rej;
       r.readAsText(f);
     });
@@ -396,7 +407,7 @@ export function LessonPlanGenerator({
   const ANALYZE_Q =
     "Analyze this exemplar lesson plan. In 3 sentences describe: (1) sections and their order, (2) level of detail, (3) formatting style (bullets/tables/numbered steps). This will guide format replication.";
 
-  const extractPdfText = async (file) => {
+  const extractPdfText = async (file: File) => {
     // Lazy-load pdfjs only when needed; configure the worker from the same package.
     const pdfjs = await import("pdfjs-dist");
     const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
@@ -413,14 +424,17 @@ export function LessonPlanGenerator({
     return text.trim();
   };
 
-  const extractDocxText = async (file) => {
-    const mammoth = await import("mammoth/mammoth.browser.js");
+  const extractDocxText = async (file: File) => {
+    const mammoth: { extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> } =
+      (await import("mammoth/mammoth.browser.js")) as unknown as {
+        extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
+      };
     const buf = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: buf });
     return (result.value || "").trim();
   };
 
-  const handleExemplarFile = async (file) => {
+  const handleExemplarFile = async (file: File | null | undefined) => {
     if (!file) return;
     setExError("");
     setExemplarDesc("");
@@ -473,8 +487,8 @@ export function LessonPlanGenerator({
       setExemplarFile({ name: file.name, preview });
       setExemplarDesc(desc);
       setExemplarRaw(raw);
-    } catch (e) {
-      setExError(`Could not analyze: ${e.message}. Try the Paste Text tab.`);
+    } catch (e: unknown) {
+      setExError(`Could not analyze: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
     }
     setAnalyzingEx(false);
   };
@@ -503,8 +517,8 @@ export function LessonPlanGenerator({
       );
       setExemplarDesc(desc);
       setExemplarRaw(text);
-    } catch (e) {
-      setExError(`Could not load URL: ${e.message}. Try the Paste Text tab.`);
+    } catch (e: unknown) {
+      setExError(`Could not load URL: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
     }
     setAnalyzingEx(false);
   };
@@ -521,8 +535,8 @@ export function LessonPlanGenerator({
       );
       setExemplarDesc(desc);
       setExemplarRaw(exemplarText);
-    } catch (e) {
-      setExError(`Analysis failed: ${e.message}`);
+    } catch (e: unknown) {
+      setExError(`Analysis failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     setAnalyzingEx(false);
   };
@@ -536,7 +550,7 @@ export function LessonPlanGenerator({
     setExError("");
     setAnalyzingEx(false);
   };
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
     setDraggingOver(false);
     const f = e.dataTransfer.files?.[0];
@@ -756,7 +770,7 @@ Return this JSON (replace all placeholder text with real content, keep values co
       }
 
       // Scrub "N/A"-style answers from homework/extension and ask AI to retry just those if needed
-      const isEmpty = (v) =>
+      const isEmpty = (v: unknown) =>
         !v || /^(n\/?a|none|not applicable|tbd|n\.a\.?)\.?$/i.test(String(v).trim());
       if (isEmpty(parsed.homework) || isEmpty(parsed.extension)) {
         try {
@@ -781,7 +795,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       if (!Array.isArray(parsed.successCriteria) || parsed.successCriteria.length === 0) {
         const objs = Array.isArray(parsed.objectives) ? parsed.objectives : [];
         if (objs.length > 0) {
-          parsed.successCriteria = objs.map((o) => {
+          parsed.successCriteria = objs.map((o: unknown) => {
             const t = String(o)
               .replace(/^(students will be able to|swbat|tlw|the learner will)\s*/i, "")
               .trim();
@@ -980,8 +994,8 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       setResult(parsed);
       setDeckData(null); // invalidate cached deck so next export regenerates from new plan
       setSlidesError("");
-    } catch (e) {
-      setError(`Generation failed: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`Generation failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     setLoading(false);
   };
@@ -1052,7 +1066,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         await navigator.clipboard.writeText(text);
         success = true;
       }
-    } catch (e) {}
+    } catch (e: unknown) {}
     if (!success) {
       // execCommand fallback
       try {
@@ -1063,7 +1077,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         ta.select();
         success = document.execCommand("copy");
         document.body.removeChild(ta);
-      } catch (e) {}
+      } catch (e: unknown) {}
     }
     if (success) {
       setCopied(true);
@@ -1077,7 +1091,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
   // Print: write into a hidden iframe to avoid popup blockers and blob: CSP issues
   const printPlan = () => {
     if (!result) return;
-    const safeHtml = (s) =>
+    const safeHtml = (s: unknown) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -1138,22 +1152,23 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
 </body></html>`;
 
     // Use hidden iframe — avoids popup blockers AND blob: CSP restrictions
-    let iframe = document.getElementById("__lp_print_frame__");
+    let iframe = document.getElementById("__lp_print_frame__") as HTMLIFrameElement | null;
     if (!iframe) {
       iframe = document.createElement("iframe");
       iframe.id = "__lp_print_frame__";
       iframe.style.cssText = "position:fixed;width:0;height:0;opacity:0;border:none;top:0;left:0";
       document.body.appendChild(iframe);
     }
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
     doc.open();
     doc.write(html);
     doc.close();
     setTimeout(() => {
       try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } catch (e) {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e: unknown) {
         alert("Print blocked by browser. Please use Ctrl+P / Cmd+P to print.");
       }
     }, 600);
@@ -1211,14 +1226,14 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
   };
 
   // Build the standalone HTML deck string (used for HTML and PDF exports)
-  const buildDeckHtml = (deck) => {
-    const safe = (v) =>
+  const buildDeckHtml = (deck: DeckData) => {
+    const safe = (v: unknown) =>
       String(v ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
     const slidesHtml = deck.slides
-      .map((sl, i) => {
+      .map((sl: DeckSlide, i: number) => {
         const isTitle = sl.kind === "title" || i === 0;
         const bullets = Array.isArray(sl.bullets) ? sl.bullets : [];
         const imgTag = sl.imageUrl
@@ -1229,7 +1244,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
           ${
             isTitle
               ? `<div class="title-block">${imgTag}<h1>${safe(sl.title || deck.title)}</h1>${deck.subtitle ? `<p class="subtitle">${safe(deck.subtitle)}</p>` : ""}</div>`
-              : `<h2>${safe(sl.title)}</h2><div class="slide-body">${imgTag ? `<div class="slide-text"><ul>${bullets.map((b) => `<li>${safe(b)}</li>`).join("")}</ul></div>${imgTag}` : `<ul>${bullets.map((b) => `<li>${safe(b)}</li>`).join("")}</ul>`}</div>`
+              : `<h2>${safe(sl.title)}</h2><div class="slide-body">${imgTag ? `<div class="slide-text"><ul>${bullets.map((b: string) => `<li>${safe(b)}</li>`).join("")}</ul></div>${imgTag}` : `<ul>${bullets.map((b: string) => `<li>${safe(b)}</li>`).join("")}</ul>`}</div>`
           }
           <div class="slide-num">${i + 1} / ${deck.slides.length}</div>
         </div>
@@ -1237,7 +1252,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
       })
       .join("");
 
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result.title)} — Slide Deck</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result?.title)} — Slide Deck</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0F0A1A;font-family:'Inter','Segoe UI',sans-serif;color:#1F2937;overflow:hidden}
@@ -1295,12 +1310,12 @@ document.addEventListener('keydown',e=>{
 <\/script></body></html>`;
   };
 
-  const deckBaseName = (deck) =>
+  const deckBaseName = (deck: DeckData | null | undefined) =>
     (deck?.title || result?.title || "lesson")
       .replace(/[^a-z0-9]+/gi, "_")
       .replace(/^_+|_+$/g, "") || "lesson";
 
-  const triggerDownload = (blob, filename) => {
+  const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1331,8 +1346,8 @@ document.addEventListener('keydown',e=>{
           `${deckBaseName(deck)}_slides.html`,
         );
       }
-    } catch (err) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+    } catch (err: unknown) {
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1350,18 +1365,18 @@ document.addEventListener('keydown',e=>{
       lines.push(deck.title || result.title);
       if (deck.subtitle) lines.push(deck.subtitle);
       lines.push("=".repeat(60), "");
-      deck.slides.forEach((sl, i) => {
+      deck.slides.forEach((sl: DeckSlide, i: number) => {
         lines.push(`SLIDE ${i + 1}: ${sl.title || ""}`);
         lines.push("-".repeat(40));
-        (sl.bullets || []).forEach((b) => lines.push(`  • ${b}`));
+        (sl.bullets || []).forEach((b: string) => lines.push(`  • ${b}`));
         lines.push("");
       });
       triggerDownload(
         new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }),
         `${deckBaseName(deck)}_slides.txt`,
       );
-    } catch (err) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+    } catch (err: unknown) {
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1394,19 +1409,19 @@ document.addEventListener('keydown',e=>{
         );
         setSlidesError("Popup blocked — downloaded as HTML. Open it and use Print → Save as PDF.");
       }
-    } catch (err) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+    } catch (err: unknown) {
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
   };
 
   // Build a .pptx Blob from a deck (shared by PPTX + Google Slides exports)
-  const buildPptxBlob = async (deck) => {
+  const buildPptxBlob = async (deck: DeckData) => {
     const PptxGenJS = (await import("pptxgenjs")).default;
     const pptx = new PptxGenJS();
     pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inch
-    pptx.title = deck.title || result.title || "Lesson Slides";
+    pptx.title = deck.title || result?.title || "Lesson Slides";
     pptx.author = "The Tech Savvy Teacher";
 
     const PPTX_BRAND = "8B0AB0";
@@ -1414,7 +1429,7 @@ document.addEventListener('keydown',e=>{
     const PPTX_DARK = "1F2937";
     const PPTX_MUTED = "9CA3AF";
 
-    deck.slides.forEach((sl, i) => {
+    deck.slides.forEach((sl: DeckSlide, i: number) => {
       const isTitle = sl.kind === "title" || i === 0;
       const slide = pptx.addSlide();
 
@@ -1465,7 +1480,7 @@ document.addEventListener('keydown',e=>{
           fill: { color: PPTX_ACCENT },
           line: { color: PPTX_ACCENT },
         });
-        const bullets = (sl.bullets || []).map((b) => ({
+        const bullets = (sl.bullets || []).map((b: string) => ({
           text: String(b),
           options: { bullet: { code: "25CF" }, color: PPTX_DARK, fontSize: 20 },
         }));
@@ -1518,7 +1533,7 @@ document.addEventListener('keydown',e=>{
     });
 
     // pptxgenjs returns a Blob when output type is "blob"
-    return await pptx.write({ outputType: "blob" });
+    return (await pptx.write({ outputType: "blob" })) as Blob;
   };
 
   // ── Export: PowerPoint (.pptx) ────────────────────────────────────
@@ -1531,8 +1546,8 @@ document.addEventListener('keydown',e=>{
       const deck = await ensureDeck();
       const blob = await buildPptxBlob(deck);
       triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
-    } catch (err) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+    } catch (err: unknown) {
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1555,8 +1570,8 @@ document.addEventListener('keydown',e=>{
       setSlidesError(
         "✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.",
       );
-    } catch (err) {
-      setSlidesError(`Could not generate slides: ${err.message}`);
+    } catch (err: unknown) {
+      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1622,7 +1637,7 @@ document.addEventListener('keydown',e=>{
   };
 
   // Helper: trigger download of a Blob
-  const downloadBlob = (blob, filename) => {
+  const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1643,7 +1658,8 @@ document.addEventListener('keydown',e=>{
 
   // Build the same rich HTML used for Print — reused for PDF + Word
   const buildPlanHtml = () => {
-    const safeHtml = (s) =>
+    if (!result) return "";
+    const safeHtml = (s: unknown) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -1710,15 +1726,15 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
   const exportCSV = () => {
     if (!result) return;
     setShowExportMenu(false);
-    const esc = (v) =>
+    const esc = (v: unknown) =>
       `"${String(v || "")
         .replace(/"/g, '""')
         .replace(/\r?\n/g, " ")}"`;
-    const rows = [["Section", "Field", "Value"]];
-    rows.push(["Meta", "Title", result.title]);
-    rows.push(["Meta", "Grade/Subject", result.gradeSubject]);
-    rows.push(["Meta", "Duration", result.duration]);
-    rows.push(["Meta", "Standard", result.standard]);
+    const rows: string[][] = [["Section", "Field", "Value"]];
+    rows.push(["Meta", "Title", result.title || ""]);
+    rows.push(["Meta", "Grade/Subject", result.gradeSubject || ""]);
+    rows.push(["Meta", "Duration", result.duration || ""]);
+    rows.push(["Meta", "Standard", result.standard || ""]);
     (result.objectives || []).forEach((o, i) => rows.push(["Objectives", `#${i + 1}`, o]));
     (result.successCriteria || []).forEach((s, i) =>
       rows.push(["Success Criteria", `#${i + 1}`, s]),
@@ -1726,27 +1742,27 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
     (result.materials || []).forEach((m, i) => rows.push(["Materials", `#${i + 1}`, m]));
     (result.vocabulary || []).forEach((v, i) => rows.push(["Vocabulary", `#${i + 1}`, v]));
     (result.sections || []).forEach((s) => {
-      rows.push([`Section: ${s.name}`, "Duration", s.duration]);
-      rows.push([`Section: ${s.name}`, "Description", s.description]);
-      rows.push([`Section: ${s.name}`, "Teacher Moves", s.teacherMoves]);
-      rows.push([`Section: ${s.name}`, "Student Actions", s.studentActions]);
+      rows.push([`Section: ${s.name}`, "Duration", s.duration || ""]);
+      rows.push([`Section: ${s.name}`, "Description", s.description || ""]);
+      rows.push([`Section: ${s.name}`, "Teacher Moves", s.teacherMoves || ""]);
+      rows.push([`Section: ${s.name}`, "Student Actions", s.studentActions || ""]);
       if (s.udlNotes) rows.push([`Section: ${s.name}`, "UDL", s.udlNotes]);
     });
-    rows.push(["Assessment", "Formative", result.assessment?.formative]);
-    rows.push(["Assessment", "Exit Ticket", result.assessment?.exitTicket]);
-    rows.push(["Assessment", "Summative", result.assessment?.summative]);
+    rows.push(["Assessment", "Formative", result.assessment?.formative || ""]);
+    rows.push(["Assessment", "Exit Ticket", result.assessment?.exitTicket || ""]);
+    rows.push(["Assessment", "Summative", result.assessment?.summative || ""]);
     (result.dokQuestions || []).forEach((lv) =>
       (lv.items || []).forEach((q, i) =>
         rows.push([`DOK ${lv.level} ${lv.label || ""}`, `Q${i + 1}`, q]),
       ),
     );
-    rows.push(["Differentiation", "ELL", result.differentiation?.ell]);
-    rows.push(["Differentiation", "IEP", result.differentiation?.iep]);
-    rows.push(["Differentiation", "Gifted", result.differentiation?.gifted]);
-    rows.push(["Differentiation", "Universal", result.differentiation?.universal]);
-    rows.push(["Homework", "", result.homework]);
-    rows.push(["Extension", "", result.extension]);
-    rows.push(["Teacher Notes", "", result.teacherNotes]);
+    rows.push(["Differentiation", "ELL", result.differentiation?.ell || ""]);
+    rows.push(["Differentiation", "IEP", result.differentiation?.iep || ""]);
+    rows.push(["Differentiation", "Gifted", result.differentiation?.gifted || ""]);
+    rows.push(["Differentiation", "Universal", result.differentiation?.universal || ""]);
+    rows.push(["Homework", "", result.homework || ""]);
+    rows.push(["Extension", "", result.extension || ""]);
+    rows.push(["Teacher Notes", "", result.teacherNotes || ""]);
     const csv = rows.map((r) => r.map(esc).join(",")).join("\r\n");
     downloadBlob(
       new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
@@ -1762,12 +1778,12 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
       typeof window !== "undefined"
         ? window.location.href
         : "https://thetechsavvyteacher.lovable.app";
-    const shareUrl = `https://classroom.google.com/share?url=${encodeURIComponent(url)}&title=${encodeURIComponent(result.title)}&body=${encodeURIComponent(buildPlanText().slice(0, 1500))}`;
+    const shareUrl = `https://classroom.google.com/share?url=${encodeURIComponent(url)}&title=${encodeURIComponent(result.title || "")}&body=${encodeURIComponent(buildPlanText().slice(0, 1500))}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
   };
 
   // Canvas / Edmodo / other LMS — instruct to import the .doc or copy text
-  const exportLMSGuidance = (lms) => {
+  const exportLMSGuidance = (lms: string) => {
     setShowExportMenu(false);
     exportWord();
     setTimeout(
@@ -1791,7 +1807,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
       s.desc.toLowerCase().includes(stdSearch.toLowerCase()),
   );
 
-  const lbl = {
+  const lbl: CSSProperties = {
     fontSize: 10,
     fontWeight: 700,
     textTransform: "uppercase",
@@ -1800,7 +1816,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
     display: "block",
     marginBottom: 5,
   };
-  const inp = {
+  const inp: CSSProperties = {
     width: "100%",
     padding: "9px 11px",
     borderRadius: 7,
@@ -2511,7 +2527,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                   type="file"
                   accept="image/*,.pdf,.doc,.docx,.txt,.md,.rtf"
                   aria-label="Upload exemplar lesson plan"
-                  onChange={(e) => e.target.files[0] && handleExemplarFile(e.target.files[0])}
+                  onChange={(e) => e.target.files?.[0] && handleExemplarFile(e.target.files[0])}
                   style={{ display: "none" }}
                 />
               </label>
@@ -3029,7 +3045,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             <textarea
               readOnly
               value={buildPlanText()}
-              onClick={(e) => e.target.select()}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               style={{
                 width: "100%",
                 height: 160,
@@ -3110,7 +3126,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             <textarea
               readOnly
               value={buildPlanText()}
-              onClick={(e) => e.target.select()}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               style={{
                 width: "100%",
                 height: 160,

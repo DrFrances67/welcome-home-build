@@ -1,24 +1,14 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import {
   type StateCode,
-  type StateInfo,
   DEFAULT_STATE,
   getStateInfo,
   hasStandards as hasStandardsFor,
   setActiveStateCode,
 } from "@/data/state-standards";
+import { AppStateContext, type AppStateContextValue } from "./app-state-context";
 
 const STORAGE_KEY = "tst-selected-state";
-
-interface AppStateContextValue {
-  stateCode: StateCode;
-  setStateCode: (code: StateCode) => void;
-  info: StateInfo;
-  /** Whether the selected state has standards loaded. */
-  hasStandards: boolean;
-}
-
-const AppStateContext = createContext<AppStateContextValue | null>(null);
 
 function readInitialState(): StateCode {
   if (typeof window === "undefined") return DEFAULT_STATE;
@@ -58,16 +48,5 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
 
-export function useAppState(): AppStateContextValue {
-  const ctx = useContext(AppStateContext);
-  if (!ctx) {
-    // Safe fallback if a component renders outside the provider.
-    return {
-      stateCode: DEFAULT_STATE,
-      setStateCode: () => {},
-      info: getStateInfo(DEFAULT_STATE),
-      hasStandards: hasStandardsFor(DEFAULT_STATE),
-    };
-  }
-  return ctx;
-}
+// Temporary re-export for existing importers; prefer "@/contexts/app-state-context".
+export { useAppState } from "./app-state-context";

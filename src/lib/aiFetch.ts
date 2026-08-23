@@ -94,6 +94,84 @@ export async function callAiRaw(
   }
 }
 
+export interface CallAiStreamOptions extends CallAiOptions {
+  /** Called with each new text delta as it arrives. */
+  onDelta?: (delta: string, full: string) => void;
+  signal?: AbortSignal;
+}
+
+/**
+ * Streaming variant of {@link callAiRaw}. Sends `stream: true` to the proxy,
+ * reads the OpenAI-style SSE frames, and invokes `onDelta` as tokens arrive.
+ * Resolves with the full accumulated text. Falls back to a non-streaming call
+ * if the server does not return an event stream.
+ */
+export async function callAiStream(
+  body: Record<string, unknown>,
+  opts: CallAiStreamOptions = {},
+): Promise<string> {
+  const { onDelta, signal, timeoutMs = 120000 } = opts;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const onAbort = () => ctrl.abort();
+  signal?.addEventListener("abort", onAbort);
+
+  try {
+    const res = await fetch(`${AI_BASE}/anthropic-proxy`, {
+      method: "POST",
+      headers: await aiHeaders({ Accept: "text/event-stream" }),
+      body: JSON.stringify({ ...body, stream: true }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e?.error?.message || e?.error || `API error ${res.status}`);
+    }
+    const isStream = (res.headers.get("content-type") || "").includes("text/event-stream");
+    if (!isStream || !res.body) {
+      const data = await res.json().catch(() => null);
+      const text =
+        (data?.content?.map((b: { text?: string }) => b.text || "").join("") as string) || "";
+      if (text) onDelta?.(text, text);
+      return text;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let full = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const json = JSON.parse(payload);
+          const delta: string =
+            json?.choices?.[0]?.delta?.content ?? json?.choices?.[0]?.message?.content ?? "";
+          if (delta) {
+            full += delta;
+            onDelta?.(delta, full);
+          }
+        } catch {
+          /* ignore malformed frame */
+        }
+      }
+    }
+    return full;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", onAbort);
+  }
+}
+
+
 export interface GenerateImageOptions {
   prompt: string;
   style?: string;
