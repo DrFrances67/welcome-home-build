@@ -4755,7 +4755,7 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
   const [numVersions, setNumVersions] = useState(2);
   const [randomize, setRandomize] = useState(true);
   const [keepFixed, setKeepFixed] = useState(true); // keep non-question elements (instructions, passages) in place
-  const [previewVer, setPreviewVer] = useState(null); // null = config, 0-3 = preview index
+  const [previewVer, setPreviewVer] = useState<number | null>(null); // null = config, 0-3 = preview index
 
   // Build a version's element order
   const buildVersion = (label: string) => {
@@ -4971,16 +4971,18 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
             <div>
               <label style={{ ...LBL, marginTop: 0 }}>Options</label>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
-                {[
-                  [randomize, setRandomize, "Randomize question order"],
-                  [keepFixed, setKeepFixed, "Keep instructions & passages fixed"],
-                ].map(([val, set, lbl], i) => (
+                {(
+                  [
+                    [randomize, setRandomize, "Randomize question order"],
+                    [keepFixed, setKeepFixed, "Keep instructions & passages fixed"],
+                  ] as [boolean, React.Dispatch<React.SetStateAction<boolean>>, string][]
+                ).map(([val, set, lbl], i) => (
                   <label
                     key={i}
                     style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}
                   >
                     <div
-                      onClick={() => set((v) => !v)}
+                      onClick={() => set((v: boolean) => !v)}
                       style={{
                         width: 36,
                         height: 20,
@@ -5032,11 +5034,13 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
               gap: 24,
             }}
           >
-            {[
-              ["Total elements", ws.elements.length],
-              ["Questions (randomized)", ws.elements.filter(isQuestion).length],
-              ["Fixed elements", ws.elements.filter((e) => !isQuestion(e)).length],
-            ].map(([lbl, val]) => (
+            {(
+              [
+                ["Total elements", ws.elements.length],
+                ["Questions (randomized)", ws.elements.filter(isQuestion).length],
+                ["Fixed elements", ws.elements.filter((e: WorksheetElement) => !isQuestion(e)).length],
+              ] as [string, number][]
+            ).map(([lbl, val]) => (
               <div key={lbl} style={{ textAlign: "center" }}>
                 <div style={{ fontFamily: FF, fontSize: 22, color: gv.color }}>{val}</div>
                 <div style={{ fontFamily: F, fontSize: 11, color: "#999", fontWeight: 700 }}>
@@ -5094,7 +5098,7 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
               >
                 Version {VERSION_LABELS[previewVer]} — Question Order
               </p>
-              {versions[previewVer].filter(isQuestion).map((el, i) => (
+              {versions[previewVer].filter(isQuestion).map((el: WorksheetElement, i: number) => (
                 <div
                   key={el.id}
                   style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 7 }}
@@ -5155,7 +5159,7 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
             justifyContent: "flex-end",
           }}
         >
-          <Btn onClick={onClose} bg="#F2F2F2" xs={{ color: "#666" }}>
+          <Btn onClick={onClose} bg="#F2F2F2" style={{ color: "#666" }}>
             Cancel
           </Btn>
           <button
@@ -5186,11 +5190,11 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
 
 function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
   const [copied, setCopied] = useState(false);
-  const dialogRef = useRef(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   // Close on Escape and move focus into the dialog when it opens.
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
@@ -5205,7 +5209,7 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
     if (ws.showName) lines.push("Name: _______________________________   ");
     if (ws.showDate) lines.push("Date: _______________________________");
     lines.push("");
-    const renderEl = (el, i) => {
+    const renderEl = (el: WorksheetElement, i: number) => {
       if (el.type === "instruction") {
         lines.push(`[Instructions]`);
         lines.push(el.text || "");
@@ -5215,11 +5219,11 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         lines.push("");
       } else if (el.type === "multipleChoice") {
         lines.push(`${i + 1}. ${el.question}`);
-        (el.choices || []).forEach((c) => lines.push(`   ○ ${c}`));
+        (el.choices || []).forEach((c: string) => lines.push(`   ○ ${c}`));
         lines.push("");
       } else if (el.type === "truefalse") {
         lines.push("True or False? Circle your answer.");
-        (el.statements || []).forEach((s, j) => lines.push(`${j + 1}. ${s}    TRUE / FALSE`));
+        (el.statements || []).forEach((s: string, j: number) => lines.push(`${j + 1}. ${s}    TRUE / FALSE`));
         lines.push("");
       } else if (el.type === "shortAnswer") {
         lines.push(el.question || "");
@@ -5242,21 +5246,21 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         lines.push("");
       } else if (el.type === "matching") {
         lines.push(el.title || "Match the following:");
-        (el.left || []).forEach((item, j) =>
+        (el.left || []).forEach((item: string, j: number) =>
           lines.push(`${item}  ──  ${(el.right || [])[j] || "______"}`),
         );
         lines.push("");
       } else if (el.type === "successCriteria" || el.type === "exitTicket") {
         if (el.title) lines.push(el.title);
         if (el.intro) lines.push(el.intro);
-        (el.items || []).forEach((item) => lines.push(`[ ] ${item}`));
+        (el.items || []).forEach((item: string) => lines.push(`[ ] ${item}`));
         lines.push("");
       } else if (el.type === "dokQuestions") {
         if (el.title) lines.push(el.title);
         if (el.intro) lines.push(el.intro);
-        (el.levels || []).forEach((lv) => {
+        (el.levels || []).forEach((lv: DokLevel) => {
           lines.push(`-- DOK ${lv.level} · ${lv.label} --`);
-          (lv.items || []).forEach((q) => lines.push(`[ ] ${q}`));
+          (lv.items || []).forEach((q: string) => lines.push(`[ ] ${q}`));
         });
         lines.push("");
       } else if (el.type === "divider") {
@@ -5269,8 +5273,8 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         lines.push(`──── Page ${p + 1} ────`);
         lines.push("");
       }
-      const pageEls = ws.elements.filter((e) => Math.min(totalPages - 1, e.page || 0) === p);
-      pageEls.forEach((el, i) => renderEl(el, i));
+      const pageEls = ws.elements.filter((e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === p);
+      pageEls.forEach((el: WorksheetElement, i: number) => renderEl(el, i));
       if (p < totalPages - 1) {
         lines.push("\f");
         lines.push("");
@@ -5285,14 +5289,14 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
       lines.push("═══════════════════════════════════════");
       lines.push(`Aligned to the ${getActiveStateInfo().standardsName}.`);
       lines.push("");
-      stds.forEach((s) => {
+      stds.forEach((s: { code: string; desc: string }) => {
         lines.push(`• ${s.code}: ${s.desc}`);
         // Show items aligned to this standard
         const aligned = (ws.elements || [])
-          .map((el, i) => ({ el, i }))
-          .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+          .map((el: WorksheetElement, i: number) => ({ el, i }))
+          .filter(({ el }: { el: WorksheetElement }) => ((el.stdCodes as string[]) || []).includes(s.code));
         if (aligned.length) {
-          aligned.forEach(({ el, i }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
+          aligned.forEach(({ el, i }: { el: WorksheetElement; i: number }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
         }
         lines.push("");
       });
@@ -5303,9 +5307,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
   // Build full HTML export
   const toHTML = () => {
     const gv2 = gInfo(ws.gradeId);
-    const renderEl = (el) => {
+    const renderEl = (el: WorksheetElement) => {
       const fs = gv2.fontSize;
-      const mb = (s) => inlineMarkdownToHtml(s || "");
+      const mb = (s?: string) => inlineMarkdownToHtml(s || "");
       if (el.type === "instruction")
         return `<div style="background:#FFFACD;padding:10px 16px;border-radius:10px;border-left:6px solid ${gv2.color};margin-bottom:16px;font-size:${Math.max(fs - 7, 13)}px;font-weight:700;line-height:1.55">${mb(el.text)}</div>`;
       if (el.type === "text")
@@ -5361,7 +5365,7 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
       if (el.type === "divider")
         return `<div style="margin:8px 0;text-align:center;color:${gv2.color};font-size:16px">✦</div>`;
       if (el.type === "table")
-        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 10px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse;font-size:${Math.max(fs - 4, 12)}px"><thead><tr>${(el.headers || []).map((h) => `<th style="padding:8px 12px;border:2px solid ${gv2.color};background:${gv2.color};color:white;font-weight:900;text-align:center">${mb(h)}</th>`).join("")}</tr></thead><tbody>${(el.rows || []).map((row) => `<tr>${(row || []).map((cell) => `<td style="padding:6px 10px;border:1.5px solid #DDD;height:${gv2.lineH}px;vertical-align:top">${mb(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+        return `<div style="margin-bottom:18px">${el.title ? `<p style="font-size:${Math.max(fs - 4, 13)}px;font-weight:800;margin:0 0 10px">${mb(el.title)}</p>` : ""}<table style="width:100%;border-collapse:collapse;font-size:${Math.max(fs - 4, 12)}px"><thead><tr>${(el.headers || []).map((h: string) => `<th style="padding:8px 12px;border:2px solid ${gv2.color};background:${gv2.color};color:white;font-weight:900;text-align:center">${mb(h)}</th>`).join("")}</tr></thead><tbody>${(el.rows || []).map((row: string[]) => `<tr>${(row || []).map((cell: string) => `<td style="padding:6px 10px;border:1.5px solid #DDD;height:${gv2.lineH}px;vertical-align:top">${mb(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
       if (el.type === "successCriteria" || el.type === "exitTicket") {
         const a = el.type === "successCriteria" ? gv2.color : "#0369A1";
         const bg2 = el.type === "successCriteria" ? gv2.light : "#EFF6FF";
@@ -5384,7 +5388,7 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
     const hidden = new Set(ws.pageHeadersHidden || []);
     const pagesHtml = Array.from({ length: totalPages })
       .map((_, pIdx) => {
-        const pageEls = ws.elements.filter((e) => Math.min(totalPages - 1, e.page || 0) === pIdx);
+        const pageEls = ws.elements.filter((e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === pIdx);
         const isLast = pIdx === totalPages - 1;
         const hideHeader = hidden.has(pIdx);
         const headerHtml = hideHeader
@@ -5395,7 +5399,7 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
       .join("");
 
     // Standards Citations page
-    const safe = (s) =>
+    const safe = (s?: string) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -5404,12 +5408,12 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
     let citationsHtml = "";
     if (stds.length > 0) {
       const items = stds
-        .map((s) => {
+        .map((s: { code: string; desc: string }) => {
           const aligned = (ws.elements || [])
-            .map((el, i) => ({ el, i }))
-            .filter(({ el }) => (el.stdCodes || []).includes(s.code));
+            .map((el: WorksheetElement, i: number) => ({ el, i }))
+            .filter(({ el }: { el: WorksheetElement }) => ((el.stdCodes as string[]) || []).includes(s.code));
           const alignedHtml = aligned.length
-            ? `<div style="margin-top:6px;padding-left:14px;font-size:12px;color:#555">Aligned items: ${aligned.map(({ i }) => `#${i + 1}`).join(", ")}</div>`
+            ? `<div style="margin-top:6px;padding-left:14px;font-size:12px;color:#555">Aligned items: ${aligned.map(({ i }: { i: number }) => `#${i + 1}`).join(", ")}</div>`
             : "";
           return `<li style="margin-bottom:14px;line-height:1.55"><strong style="color:${gv2.color}">${safe(s.code)}</strong> — ${safe(s.desc)}${alignedHtml}</li>`;
         })
@@ -5451,6 +5455,7 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
 
   const openPrintPreview = () => {
     const w = window.open("", "_blank");
+    if (!w) return;
     w.document.write(toHTML());
     w.document.close();
     setTimeout(() => w.print(), 500);
@@ -5768,7 +5773,7 @@ function HelpModal({ onClose, gv }: { onClose: (...a: any[]) => void; gv: Global
 function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void; onSetMapping?: (...a: any[]) => void }) {
   const stateInfo = getActiveStateInfo();
   const standards = ws.standards || [];
-  const items = (ws.elements || []).filter((e) => !["divider"].includes(e.type));
+  const items = (ws.elements || []).filter((e: WorksheetElement) => !["divider"].includes(e.type));
 
   return (
     <div
@@ -5863,7 +5868,7 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws:
               <div style={{ marginBottom: 16 }}>
                 <p style={{ ...LBL, marginTop: 0 }}>Cited Standards ({standards.length})</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {standards.map((s) => (
+                  {standards.map((s: { code: string; desc: string }) => (
                     <span
                       key={s.code}
                       title={s.desc}
@@ -5885,8 +5890,8 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws:
               </div>
 
               <p style={{ ...LBL, marginTop: 0 }}>Item-by-Item Mapping</p>
-              {items.map((el, i) => {
-                const mapped = el.stdCodes || [];
+              {items.map((el: WorksheetElement, i: number) => {
+                const mapped = (el.stdCodes as string[]) || [];
                 return (
                   <div
                     key={el.id}
@@ -5910,14 +5915,14 @@ function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws:
                       {elSummary(el, i)}
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                      {standards.map((s) => {
+                      {standards.map((s: { code: string; desc: string }) => {
                         const on = mapped.includes(s.code);
                         return (
                           <button
                             key={s.code}
                             onClick={() => {
                               const next = on
-                                ? mapped.filter((c) => c !== s.code)
+                                ? mapped.filter((c: string) => c !== s.code)
                                 : [...mapped, s.code];
                               onSetMapping?.(el.id, next);
                             }}
