@@ -22,6 +22,7 @@ import {
   VERSION_LABELS,
 } from "@/data/worksheet-options";
 import { F, FF, PRINT_CSS } from "@/lib/worksheet-styles";
+import type { DokLevel, WorksheetShape } from "@/types/worksheet";
 import {
   uid,
   COLS,
@@ -48,6 +49,16 @@ import {
 interface WsElement {
   id: string;
   type: string;
+  words?: string[];
+  left?: string[];
+  right?: string[];
+  choices?: string[];
+  statements?: string[];
+  items?: string[];
+  headers?: string[];
+  rows?: string[][];
+  levels?: DokLevel[];
+  shapes?: WorksheetShape[];
   [key: string]: any;
 }
 
