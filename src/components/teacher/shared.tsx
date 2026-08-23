@@ -63,6 +63,18 @@ interface GlobalView {
 // SHARED UI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+interface BtnProps {
+  children?: ReactNode;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  bg?: string;
+  color?: string;
+  disabled?: boolean;
+  full?: boolean;
+  sm?: boolean;
+  style?: CSSProperties;
+  ariaLabel?: string;
+}
+
 function Btn({
   children,
   onClick,
@@ -73,7 +85,7 @@ function Btn({
   sm,
   style: xs = {},
   ariaLabel,
-}) {
+}: BtnProps) {
   return (
     <button
       onClick={onClick}
@@ -102,7 +114,7 @@ function Btn({
   );
 }
 
-const LBL = {
+const LBL: CSSProperties = {
   fontSize: 10,
   fontWeight: 700,
   color: "#6B7280",
@@ -113,7 +125,7 @@ const LBL = {
   marginBottom: 4,
   fontFamily: F,
 };
-const INP = () => ({
+const INP = (): CSSProperties => ({
   width: "100%",
   padding: "8px 11px",
   borderRadius: 7,
@@ -133,7 +145,29 @@ const INP = () => ({
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // Returns SVG <path> or shape element string for a given id, rendered into a W×H viewBox
-function ShapeSVG({ shape, fill, border, borderWidth, width, height, label, lines, fontSize }) {
+interface ShapeSVGProps {
+  shape: string;
+  fill?: string;
+  border?: string;
+  borderWidth?: number;
+  width?: number | string;
+  height?: number | string;
+  label?: string;
+  lines?: number;
+  fontSize?: number;
+}
+
+function ShapeSVG({
+  shape,
+  fill,
+  border,
+  borderWidth,
+  width,
+  height,
+  label,
+  lines,
+  fontSize,
+}: ShapeSVGProps) {
   const sw = borderWidth || 2;
   // Allow width="100%" or "auto" — use a numeric basis for the viewBox math
   // and let CSS scale the SVG to fit its container.
