@@ -25,12 +25,6 @@ import type {
 } from "./lesson-plan-types";
 
 const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
-// mammoth ships without types for its browser build
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare module "mammoth/mammoth.browser.js" {
-  const mammoth: { extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> };
-  export = mammoth;
-}
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
 
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
@@ -167,7 +161,7 @@ export function LessonPlanGenerator({
             ? "Saved to your account."
             : `Draft v${res.current?.version_no ?? ""} saved to your account.`,
       });
-    } catch (e) {
+    } catch (e: unknown) {
       if (isLessonPlanConflict(e)) {
         setConflictPaused(true);
         setAccountMsg({
@@ -228,7 +222,7 @@ export function LessonPlanGenerator({
         rememberPlanId(res.id);
         setBaseVersionNo(res.current?.version_no ?? null);
         setCloudSavedAt(Date.now());
-      } catch (e) {
+      } catch (e: unknown) {
         if (isLessonPlanConflict(e)) {
           setConflictPaused(true);
           setAccountMsg({
@@ -273,14 +267,18 @@ export function LessonPlanGenerator({
   const [deckData, setDeckData] = useState<DeckData | null>(null); // cached AI-generated deck
   const [exportingFmt, setExportingFmt] = useState(""); // which format is being exported
 
-  const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-  const toggleDiff = (d) =>
+  const setF = (k: keyof LessonPlanForm, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
+  const toggleDiff = (d: string) =>
     setF("diff", form.diff.includes(d) ? form.diff.filter((x) => x !== d) : [...form.diff, d]);
 
   // ── Shared Claude call ─────────────────────────────────────────────
   // Network-resilient: retries once on transient "Failed to fetch" / abort,
   // uses an AbortController with a generous timeout, and surfaces clear errors.
-  const callClaude = (system, userContent, maxTokens = 600) =>
+  const callClaude = (
+    system: string,
+    userContent: string | Array<Record<string, unknown>>,
+    maxTokens = 600,
+  ) =>
     callAiRaw({
       model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
@@ -296,7 +294,7 @@ export function LessonPlanGenerator({
     }
     setAiHelperLoading(true);
     setAiHelperResult("");
-    const fieldLabels = {
+    const fieldLabels: Record<string, string> = {
       objectives: "3 specific SWBAT learning objectives",
       materials: "a list of materials and resources needed",
       notes: "teacher preparation notes, tips, and things to watch out for",
@@ -308,8 +306,8 @@ export function LessonPlanGenerator({
         500,
       );
       setAiHelperResult(text);
-    } catch (e) {
-      setAiHelperResult(`Error: ${e.message}`);
+    } catch (e: unknown) {
+      setAiHelperResult(`Error: ${e instanceof Error ? e.message : String(e)}`);
     }
     setAiHelperLoading(false);
   };
@@ -383,8 +381,8 @@ export function LessonPlanGenerator({
     try {
       const dok = await generateDokFromObjectives(result.objectives || [], result.title);
       setResult((prev) => (prev ? { ...prev, dokQuestions: normalizeDok(dok) } : prev));
-    } catch (e) {
-      setError(`DOK regeneration failed: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`DOK regeneration failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     setRegeneratingDok(false);
   };
@@ -426,7 +424,10 @@ export function LessonPlanGenerator({
   };
 
   const extractDocxText = async (file) => {
-    const mammoth = await import("mammoth/mammoth.browser.js");
+    const mammoth: { extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> } =
+      (await import("mammoth/mammoth.browser.js")) as unknown as {
+        extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
+      };
     const buf = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: buf });
     return (result.value || "").trim();
@@ -485,8 +486,8 @@ export function LessonPlanGenerator({
       setExemplarFile({ name: file.name, preview });
       setExemplarDesc(desc);
       setExemplarRaw(raw);
-    } catch (e) {
-      setExError(`Could not analyze: ${e.message}. Try the Paste Text tab.`);
+    } catch (e: unknown) {
+      setExError(`Could not analyze: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
     }
     setAnalyzingEx(false);
   };
@@ -515,8 +516,8 @@ export function LessonPlanGenerator({
       );
       setExemplarDesc(desc);
       setExemplarRaw(text);
-    } catch (e) {
-      setExError(`Could not load URL: ${e.message}. Try the Paste Text tab.`);
+    } catch (e: unknown) {
+      setExError(`Could not load URL: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
     }
     setAnalyzingEx(false);
   };
@@ -533,8 +534,8 @@ export function LessonPlanGenerator({
       );
       setExemplarDesc(desc);
       setExemplarRaw(exemplarText);
-    } catch (e) {
-      setExError(`Analysis failed: ${e.message}`);
+    } catch (e: unknown) {
+      setExError(`Analysis failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     setAnalyzingEx(false);
   };
@@ -992,8 +993,8 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
       setResult(parsed);
       setDeckData(null); // invalidate cached deck so next export regenerates from new plan
       setSlidesError("");
-    } catch (e) {
-      setError(`Generation failed: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`Generation failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     setLoading(false);
   };
@@ -1064,7 +1065,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         await navigator.clipboard.writeText(text);
         success = true;
       }
-    } catch (e) {}
+    } catch (e: unknown) {}
     if (!success) {
       // execCommand fallback
       try {
@@ -1075,7 +1076,7 @@ Return ONLY this JSON: {"homework":"...","extension":"..."}`;
         ta.select();
         success = document.execCommand("copy");
         document.body.removeChild(ta);
-      } catch (e) {}
+      } catch (e: unknown) {}
     }
     if (success) {
       setCopied(true);
@@ -1165,7 +1166,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
       try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-      } catch (e) {
+      } catch (e: unknown) {
         alert("Print blocked by browser. Please use Ctrl+P / Cmd+P to print.");
       }
     }, 600);
@@ -1343,7 +1344,7 @@ document.addEventListener('keydown',e=>{
           `${deckBaseName(deck)}_slides.html`,
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
     setSlidesLoading(false);
@@ -1372,7 +1373,7 @@ document.addEventListener('keydown',e=>{
         new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }),
         `${deckBaseName(deck)}_slides.txt`,
       );
-    } catch (err) {
+    } catch (err: unknown) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
     setSlidesLoading(false);
@@ -1406,7 +1407,7 @@ document.addEventListener('keydown',e=>{
         );
         setSlidesError("Popup blocked — downloaded as HTML. Open it and use Print → Save as PDF.");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
     setSlidesLoading(false);
@@ -1543,7 +1544,7 @@ document.addEventListener('keydown',e=>{
       const deck = await ensureDeck();
       const blob = await buildPptxBlob(deck);
       triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
-    } catch (err) {
+    } catch (err: unknown) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
     setSlidesLoading(false);
@@ -1567,7 +1568,7 @@ document.addEventListener('keydown',e=>{
       setSlidesError(
         "✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.",
       );
-    } catch (err) {
+    } catch (err: unknown) {
       setSlidesError(`Could not generate slides: ${err.message}`);
     }
     setSlidesLoading(false);
