@@ -115,6 +115,8 @@ serve(async (req) => {
       }
     }
 
+    const wantsStream = body?.stream === true;
+
     const upstream = await fetch(GATEWAY_URL, {
       method: "POST",
       headers: {
@@ -125,8 +127,10 @@ serve(async (req) => {
         model: mappedModel,
         messages: oaiMessages,
         max_tokens: typeof max_tokens === "number" ? max_tokens : undefined,
+        ...(wantsStream ? { stream: true } : {}),
       }),
     });
+
 
     if (!upstream.ok) {
       const text = await upstream.text();
