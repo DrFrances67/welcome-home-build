@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { repairAndParse } from "@/lib/repairJson";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
-import { callAiRaw, generateImage } from "@/lib/aiFetch";
+import { callAiRaw, callAiStream, generateImage } from "@/lib/aiFetch";
 import { SpellInput } from "@/components/SpellCheckField";
 import type { Grade, Band } from "@/data/grades";
 import type { WorksheetElement } from "@/types/worksheet";
@@ -183,7 +183,14 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
 
     // ─── Otherwise: normal conversational reply ───
     try {
-      const reply = await callAiRaw({
+      // Insert a placeholder assistant bubble that fills in as tokens arrive.
+      let streamIndex = -1;
+      setMsgs((p) => {
+        streamIndex = p.length;
+        return [...p, { role: "assistant", content: "" }];
+      });
+      const reply = await callAiStream(
+        {
         model: MODEL,
         max_tokens: 1000,
         system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
@@ -204,11 +211,21 @@ Grade-level calibration:
 - Grades 6-8: analytical thinking, text evidence, abstract concepts
 - Grades 9-12: sophisticated arguments, primary sources, complex analysis`,
         messages: next.map((m) => ({ role: m.role, content: m.content })),
-      });
-      setMsgs((p) => [
-        ...p,
-        { role: "assistant", content: reply || "Sorry, couldn't connect. Try again!" },
-      ]);
+        },
+        {
+          onDelta: (_d, full) =>
+            setMsgs((p) =>
+              p.map((m, i) => (i === streamIndex ? { ...m, content: full } : m)),
+            ),
+        },
+      );
+      setMsgs((p) =>
+        p.map((m, i) =>
+          i === streamIndex
+            ? { ...m, content: reply || "Sorry, couldn't connect. Try again!" }
+            : m,
+        ),
+      );
     } catch {
       setMsgs((p) => [
         ...p,
