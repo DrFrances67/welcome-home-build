@@ -183,7 +183,14 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
 
     // ─── Otherwise: normal conversational reply ───
     try {
-      const reply = await callAiRaw({
+      // Insert a placeholder assistant bubble that fills in as tokens arrive.
+      let streamIndex = -1;
+      setMsgs((p) => {
+        streamIndex = p.length;
+        return [...p, { role: "assistant", content: "" }];
+      });
+      const reply = await callAiStream(
+        {
         model: MODEL,
         max_tokens: 1000,
         system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
