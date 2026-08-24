@@ -1442,7 +1442,13 @@ Output ONLY the JSON array.`,
         <span
           role="status"
           aria-live="polite"
-          title="Your worksheet is automatically saved in this browser."
+          title={
+            cloud.conflict
+              ? cloud.conflict
+              : cloud.cloudSavedAt
+                ? "Saved in this browser and synced to your account."
+                : "Your worksheet is automatically saved in this browser."
+          }
           style={{
             display: "flex",
             alignItems: "center",
@@ -1450,12 +1456,55 @@ Output ONLY the JSON array.`,
             fontFamily: F,
             fontSize: 11,
             fontWeight: 700,
-            color: "#6B7280",
+            color: cloud.conflict ? "#B91C1C" : "#6B7280",
             whiteSpace: "nowrap",
           }}
         >
-          {savedAt ? "✓ Saved" : "Saving…"}
+          {cloud.conflict
+            ? "⚠ Sync conflict"
+            : savedAt
+              ? cloud.cloudSavedAt
+                ? "✓ Saved · synced"
+                : "✓ Saved"
+              : "Saving…"}
         </span>
+        {cloud.conflict && (
+          <>
+            <button
+              onClick={() => void loadCloudDraft()}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 7,
+                border: "1px solid #B91C1C",
+                background: "white",
+                color: "#B91C1C",
+                cursor: "pointer",
+                fontFamily: F,
+                fontWeight: 700,
+                fontSize: 11,
+              }}
+            >
+              Load newest
+            </button>
+            <button
+              onClick={() => void cloud.save("draft", { force: true })}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 7,
+                border: "1px solid #6B7280",
+                background: "white",
+                color: "#374151",
+                cursor: "pointer",
+                fontFamily: F,
+                fontWeight: 700,
+                fontSize: 11,
+              }}
+            >
+              Keep mine
+            </button>
+          </>
+        )}
+
         <button
           style={{
             padding: "6px 14px",
