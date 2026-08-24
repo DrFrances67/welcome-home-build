@@ -154,7 +154,31 @@ export function WorksheetBuilder() {
     }, 600);
     return () => clearTimeout(t);
   }, [ws]);
+
+  // ── Cloud sync: signed-in users also get the worksheet mirrored to their
+  //    account (debounced ~5s) with optimistic concurrency, so switching
+  //    devices picks up the work instead of losing it. ──
+  const cloud = useWorksheetCloudDraft<WsData>({
+    data: ws,
+    title: ws.title,
+    isEmpty: (d) => !d.elements?.length && (!d.title || d.title === DEFAULT_WS.title),
+  });
+  const loadCloudDraft = async () => {
+    try {
+      const remote = await cloud.pull();
+      if (remote) {
+        setWs({ ...DEFAULT_WS, ...remote, elements: remote.elements || [] });
+        setSelId(null);
+        announce("Loaded the newest version from your account");
+      } else {
+        announce("No saved version found in your account");
+      }
+    } catch {
+      announce("Could not load from your account");
+    }
+  };
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
+
   // Resize state
   const resizeRef = useRef<any>(null);
 
