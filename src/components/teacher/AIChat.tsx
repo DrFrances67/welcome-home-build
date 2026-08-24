@@ -191,9 +191,9 @@ Calibrate complexity to ${gv.name} (${BANDS[gv.band]?.label}). Always start with
       });
       const reply = await callAiStream(
         {
-        model: MODEL,
-        max_tokens: 1000,
-        system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
+          model: MODEL,
+          max_tokens: 1000,
+          system: `You are a warm, expert assistant for educators creating academic worksheets. The current worksheet targets ${gv.name} students (${BANDS[gv.band]?.label}). The worksheet is titled "${wsTitle}" and has ${elCount} elements so far.${refDesc ? `\n\nReference worksheet the teacher uploaded: ${refDesc}` : ""}
 
 Your role:
 - Generate ready-to-use worksheet content (questions, activities, word banks, matching pairs, passages)
@@ -210,20 +210,16 @@ Grade-level calibration:
 - Grades 3-5: paragraphs, multi-step problems, content areas emerging
 - Grades 6-8: analytical thinking, text evidence, abstract concepts
 - Grades 9-12: sophisticated arguments, primary sources, complex analysis`,
-        messages: next.map((m) => ({ role: m.role, content: m.content })),
+          messages: next.map((m) => ({ role: m.role, content: m.content })),
         },
         {
           onDelta: (_d, full) =>
-            setMsgs((p) =>
-              p.map((m, i) => (i === streamIndex ? { ...m, content: full } : m)),
-            ),
+            setMsgs((p) => p.map((m, i) => (i === streamIndex ? { ...m, content: full } : m))),
         },
       );
       setMsgs((p) =>
         p.map((m, i) =>
-          i === streamIndex
-            ? { ...m, content: reply || "Sorry, couldn't connect. Try again!" }
-            : m,
+          i === streamIndex ? { ...m, content: reply || "Sorry, couldn't connect. Try again!" } : m,
         ),
       );
     } catch {

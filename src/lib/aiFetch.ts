@@ -171,7 +171,6 @@ export async function callAiStream(
   }
 }
 
-
 export interface GenerateImageOptions {
   prompt: string;
   style?: string;
