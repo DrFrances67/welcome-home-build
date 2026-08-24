@@ -211,11 +211,21 @@ Grade-level calibration:
 - Grades 6-8: analytical thinking, text evidence, abstract concepts
 - Grades 9-12: sophisticated arguments, primary sources, complex analysis`,
         messages: next.map((m) => ({ role: m.role, content: m.content })),
-      });
-      setMsgs((p) => [
-        ...p,
-        { role: "assistant", content: reply || "Sorry, couldn't connect. Try again!" },
-      ]);
+        },
+        {
+          onDelta: (_d, full) =>
+            setMsgs((p) =>
+              p.map((m, i) => (i === streamIndex ? { ...m, content: full } : m)),
+            ),
+        },
+      );
+      setMsgs((p) =>
+        p.map((m, i) =>
+          i === streamIndex
+            ? { ...m, content: reply || "Sorry, couldn't connect. Try again!" }
+            : m,
+        ),
+      );
     } catch {
       setMsgs((p) => [
         ...p,
