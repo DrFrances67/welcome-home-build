@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { repairAndParse } from "@/lib/repairJson";
 import { detectPII, PII_BLOCK_MESSAGE } from "@/lib/pii";
-import { callAiRaw, generateImage } from "@/lib/aiFetch";
+import { callAiRaw, callAiStream, generateImage } from "@/lib/aiFetch";
 import { SpellInput } from "@/components/SpellCheckField";
 import type { Grade, Band } from "@/data/grades";
 import type { WorksheetElement } from "@/types/worksheet";
