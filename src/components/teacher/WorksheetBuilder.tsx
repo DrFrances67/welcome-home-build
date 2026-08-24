@@ -36,6 +36,7 @@ import {
 } from "./shared";
 import { getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
+import { useWorksheetCloudDraft } from "@/hooks/useWorksheetCloudDraft";
 import type { WorksheetElement } from "@/types/worksheet";
 
 type WsStandard = { code: string; desc: string };
@@ -154,7 +155,31 @@ export function WorksheetBuilder() {
     }, 600);
     return () => clearTimeout(t);
   }, [ws]);
+
+  // ── Cloud sync: signed-in users also get the worksheet mirrored to their
+  //    account (debounced ~5s) with optimistic concurrency, so switching
+  //    devices picks up the work instead of losing it. ──
+  const cloud = useWorksheetCloudDraft<WsData>({
+    data: ws,
+    title: ws.title,
+    isEmpty: (d) => !d.elements?.length && (!d.title || d.title === DEFAULT_WS.title),
+  });
+  const loadCloudDraft = async () => {
+    try {
+      const remote = await cloud.pull();
+      if (remote) {
+        setWs({ ...DEFAULT_WS, ...remote, elements: remote.elements || [] });
+        setSelId(null);
+        announce("Loaded the newest version from your account");
+      } else {
+        announce("No saved version found in your account");
+      }
+    } catch {
+      announce("Could not load from your account");
+    }
+  };
   const [statusMsg, setStatusMsg] = useState(""); // aria-live announcements
+
   // Resize state
   const resizeRef = useRef<any>(null);
 
@@ -1418,7 +1443,13 @@ Output ONLY the JSON array.`,
         <span
           role="status"
           aria-live="polite"
-          title="Your worksheet is automatically saved in this browser."
+          title={
+            cloud.conflict
+              ? cloud.conflict
+              : cloud.cloudSavedAt
+                ? "Saved in this browser and synced to your account."
+                : "Your worksheet is automatically saved in this browser."
+          }
           style={{
             display: "flex",
             alignItems: "center",
@@ -1426,12 +1457,55 @@ Output ONLY the JSON array.`,
             fontFamily: F,
             fontSize: 11,
             fontWeight: 700,
-            color: "#6B7280",
+            color: cloud.conflict ? "#B91C1C" : "#6B7280",
             whiteSpace: "nowrap",
           }}
         >
-          {savedAt ? "✓ Saved" : "Saving…"}
+          {cloud.conflict
+            ? "⚠ Sync conflict"
+            : savedAt
+              ? cloud.cloudSavedAt
+                ? "✓ Saved · synced"
+                : "✓ Saved"
+              : "Saving…"}
         </span>
+        {cloud.conflict && (
+          <>
+            <button
+              onClick={() => void loadCloudDraft()}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 7,
+                border: "1px solid #B91C1C",
+                background: "white",
+                color: "#B91C1C",
+                cursor: "pointer",
+                fontFamily: F,
+                fontWeight: 700,
+                fontSize: 11,
+              }}
+            >
+              Load newest
+            </button>
+            <button
+              onClick={() => void cloud.save("draft", { force: true })}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 7,
+                border: "1px solid #6B7280",
+                background: "white",
+                color: "#374151",
+                cursor: "pointer",
+                fontFamily: F,
+                fontWeight: 700,
+                fontSize: 11,
+              }}
+            >
+              Keep mine
+            </button>
+          </>
+        )}
+
         <button
           style={{
             padding: "6px 14px",

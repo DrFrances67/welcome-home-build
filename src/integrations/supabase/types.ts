@@ -422,6 +422,85 @@ export type Database = {
         }
         Relationships: []
       }
+      worksheet_versions: {
+        Row: {
+          created_at: string
+          form: Json
+          id: string
+          label: string | null
+          result: Json | null
+          user_id: string
+          version_no: number
+          worksheet_id: string
+        }
+        Insert: {
+          created_at?: string
+          form: Json
+          id?: string
+          label?: string | null
+          result?: Json | null
+          user_id: string
+          version_no: number
+          worksheet_id: string
+        }
+        Update: {
+          created_at?: string
+          form?: Json
+          id?: string
+          label?: string | null
+          result?: Json | null
+          user_id?: string
+          version_no?: number
+          worksheet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worksheet_versions_worksheet_id_fkey"
+            columns: ["worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worksheets: {
+        Row: {
+          created_at: string
+          current_version_id: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worksheets_current_version_fk"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "worksheet_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
