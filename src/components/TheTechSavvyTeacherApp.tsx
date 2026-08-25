@@ -1163,37 +1163,9 @@ function DanielsonReview() {
       r.readAsText(f);
     });
 
-  const extractPdfText = async (f: File) => {
-    const pdfjsMod: any = await import("pdfjs-dist");
-    const pdfjs = pdfjsMod.default ?? pdfjsMod;
-    const workerMod: any = await import("pdfjs-dist/build/pdf.worker.mjs?url");
-    const workerUrl = workerMod.default ?? workerMod;
-    if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    const buf = await f.arrayBuffer();
-    const doc = await pdfjs.getDocument({ data: buf }).promise;
-    const pages = Math.min(doc.numPages, 25);
-    let text = "";
-    for (let p = 1; p <= pages; p++) {
-      const page = await doc.getPage(p);
-      const content = await page.getTextContent();
-      const items = Array.isArray(content?.items) ? content.items : [];
-      text +=
-        items.map((it: any) => (it && typeof it.str === "string" ? it.str : "")).join(" ") + "\n\n";
-    }
-    return text.trim();
-  };
+  const extractPdfText = async (f: File) => extractPdfPlainText(f, 25);
 
-  const extractDocxText = async (f: File) => {
-    const mammothMod: any = await import("mammoth/mammoth.browser.js");
-    const mammoth = mammothMod.default ?? mammothMod;
-    const buf = await f.arrayBuffer();
-    const extractFn = mammoth.extractRawText || mammothMod.extractRawText;
-    if (typeof extractFn !== "function") {
-      throw new Error("Word document reader failed to load. Please try a PDF or .txt file.");
-    }
-    const result = await extractFn.call(mammoth, { arrayBuffer: buf });
-    return (result?.value || "").trim();
-  };
+  const extractDocxText = async (f: File) => extractDocxTextFile(f);
 
   const handleFile = async (f: File | null) => {
     if (!f) return;
