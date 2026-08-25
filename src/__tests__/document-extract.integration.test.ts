@@ -1,6 +1,4 @@
 /**
- * @vitest-environment node
- *
  * Integration tests for the PDF/DOCX import paths.
  *
  * These load real sample files from `fixtures/`, run them through the same
@@ -20,6 +18,21 @@ import {
   loadMammoth,
   loadPdfjs,
 } from "@/lib/document-extract";
+
+// The happy-dom test environment exposes slightly older intrinsics than a real
+// browser; pdfjs's worker bridge needs these two. Polyfill before importing.
+const PromiseCtor = Promise as unknown as {
+  try?: (fn: (...a: unknown[]) => unknown, ...args: unknown[]) => Promise<unknown>;
+};
+if (typeof PromiseCtor.try !== "function") {
+  PromiseCtor.try = (fn, ...args) => new Promise((res) => res(fn(...args)));
+}
+const u8 = Uint8Array.prototype as unknown as { toHex?: () => string };
+if (typeof u8.toHex !== "function") {
+  u8.toHex = function toHex(this: Uint8Array) {
+    return Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("");
+  };
+}
 
 // In Node the "?url" worker import resolves to a browser-style path pdfjs can't
 // load, so point it at the real file on disk (same module, same API surface).
