@@ -38,6 +38,7 @@ import { getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
 import { useWorksheetCloudDraft } from "@/hooks/useWorksheetCloudDraft";
 import type { WorksheetElement } from "@/types/worksheet";
+import { openPdf, pdfTextFromContent, extractDocxText } from "@/lib/document-extract";
 
 type WsStandard = { code: string; desc: string };
 
@@ -688,18 +689,14 @@ Include a variety of activity types. Make the content directly address the stand
   // Returns { text, pageImages: [dataUrl, ...] } so the AI can both READ the
   // text AND SEE images / layout from the original PDF pages.
   const extractPdfTextLocal = async (file: File) => {
-    const pdfjs: any = await import("pdfjs-dist");
-    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    const buf = await file.arrayBuffer();
-    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const doc = await openPdf(file);
     const pages = Math.min(doc.numPages, 8);
     let text = "";
     const pageImages: string[] = [];
     for (let p = 1; p <= pages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
-      text += `\n\n--- PAGE ${p} ---\n` + content.items.map((it: any) => it.str).join(" ");
+      text += `\n\n--- PAGE ${p} ---\n` + pdfTextFromContent(content);
       // Render page to small canvas → JPEG data URL for AI vision
       try {
         const viewport = page.getViewport({ scale: 1.1 });
@@ -707,10 +704,11 @@ Include a variety of activity types. Make the content directly address the stand
         canvas.width = Math.min(900, viewport.width);
         canvas.height = Math.round((canvas.width / viewport.width) * viewport.height);
         const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
         const scaledViewport = page.getViewport({ scale: canvas.width / viewport.width });
         await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
         pageImages.push(canvas.toDataURL("image/jpeg", 0.7));
-      } catch (e) {
+      } catch {
         /* image render is best-effort */
       }
     }
@@ -923,14 +921,7 @@ Output ONLY the JSON array.`,
       return r.text;
     }
     if (isDocx) {
-      const mod = await import("mammoth/mammoth.browser.js");
-      const mammoth = mod?.default || mod;
-      if (!mammoth || typeof mammoth.extractRawText !== "function") {
-        throw new Error("DOCX reader failed to load. Try TXT or PDF.");
-      }
-      const buf = await file.arrayBuffer();
-      const out = await mammoth.extractRawText({ arrayBuffer: buf });
-      return (out?.value || "").trim();
+      return await extractDocxText(file);
     }
     if (isDoc)
       throw new Error("Legacy .doc files aren't supported — please save as .docx, PDF, or .txt.");

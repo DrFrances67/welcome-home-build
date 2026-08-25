@@ -22,6 +22,10 @@ import { validateSituations } from "@/lib/email-utils";
 import { DANIELSON_COMPONENTS, DANIELSON_RUBRIC_REFERENCE } from "@/data/danielson";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { STATES, type StateCode } from "@/data/state-standards";
+import {
+  extractPdfPlainText,
+  extractDocxText as extractDocxTextFile,
+} from "@/lib/document-extract";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // EMAIL ASSISTANT TOOL

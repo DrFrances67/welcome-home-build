@@ -27,6 +27,10 @@ import type {
 
 const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
 import { LP_DURATIONS, LP_MODELS, LP_DIFF } from "@/data/lesson-plan";
+import {
+  extractPdfPlainText,
+  extractDocxText as extractDocxTextFile,
+} from "@/lib/document-extract";
 
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
 const DEFAULT_LP_FORM: LessonPlanForm = {
@@ -407,32 +411,9 @@ export function LessonPlanGenerator({
   const ANALYZE_Q =
     "Analyze this exemplar lesson plan. In 3 sentences describe: (1) sections and their order, (2) level of detail, (3) formatting style (bullets/tables/numbered steps). This will guide format replication.";
 
-  const extractPdfText = async (file: File) => {
-    // Lazy-load pdfjs only when needed; configure the worker from the same package.
-    const pdfjs = await import("pdfjs-dist");
-    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    const buf = await file.arrayBuffer();
-    const doc = await pdfjs.getDocument({ data: buf }).promise;
-    const pages = Math.min(doc.numPages, 15); // cap pages to keep prompt small
-    let text = "";
-    for (let p = 1; p <= pages; p++) {
-      const page = await doc.getPage(p);
-      const content = await page.getTextContent();
-      text += content.items.map((it: any) => it.str).join(" ") + "\n\n";
-    }
-    return text.trim();
-  };
+  const extractPdfText = async (file: File) => extractPdfPlainText(file, 15);
 
-  const extractDocxText = async (file: File) => {
-    const mammoth: { extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> } =
-      (await import("mammoth/mammoth.browser.js")) as unknown as {
-        extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
-      };
-    const buf = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: buf });
-    return (result.value || "").trim();
-  };
+  const extractDocxText = async (file: File) => extractDocxTextFile(file);
 
   const handleExemplarFile = async (file: File | null | undefined) => {
     if (!file) return;
