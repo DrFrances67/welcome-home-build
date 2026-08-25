@@ -69,7 +69,7 @@ describe("PDF import path (pdfjs-dist)", () => {
   it("extracts text matching the expected snapshot", async () => {
     const text = await extractPdfPlainText(pdfFile(), 15);
     expect(text).toMatchInlineSnapshot(`
-      "Fractions Practice Name: ____________ 1. What is one half of eight?
+      "Fractions Practice  Name: ____________ 1. What is one half of eight?
 
       2. Explain your reasoning."
     `);
