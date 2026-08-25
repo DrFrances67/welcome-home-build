@@ -1,4 +1,6 @@
 /**
+ * @vitest-environment node
+ *
  * Integration tests for the PDF/DOCX import paths.
  *
  * These load real sample files from `fixtures/`, run them through the same
@@ -18,16 +20,6 @@ import {
   loadMammoth,
   loadPdfjs,
 } from "@/lib/document-extract";
-
-// happy-dom's Promise global predates Promise.try, which pdfjs's worker bridge
-// relies on. Polyfill it so the worker behaves like it does in real browsers.
-const PromiseCtor = Promise as unknown as {
-  try?: (fn: () => unknown, ...args: unknown[]) => Promise<unknown>;
-};
-if (typeof PromiseCtor.try !== "function") {
-  PromiseCtor.try = (fn, ...args) =>
-    new Promise((res) => res((fn as (...a: unknown[]) => unknown)(...args)));
-}
 
 // In Node the "?url" worker import resolves to a browser-style path pdfjs can't
 // load, so point it at the real file on disk (same module, same API surface).
