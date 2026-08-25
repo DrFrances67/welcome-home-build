@@ -6,10 +6,10 @@
  * document metadata match snapshots. An upstream API change (or a regression in
  * our narrow interfaces) breaks these tests.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   extractPdfPlainText,
   extractDocxText,
@@ -18,6 +18,13 @@ import {
   loadMammoth,
   loadPdfjs,
 } from "@/lib/document-extract";
+
+// In Node the "?url" worker import resolves to a browser-style path pdfjs can't
+// load, so point it at the real file on disk (same module, same API surface).
+vi.mock("pdfjs-dist/build/pdf.worker.mjs?url", () => ({
+  default: pathToFileURL(resolve(process.cwd(), "node_modules/pdfjs-dist/build/pdf.worker.mjs"))
+    .href,
+}));
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 
