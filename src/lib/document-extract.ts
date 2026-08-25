@@ -22,10 +22,7 @@ export interface PdfRenderTask {
 export interface PdfPageProxy {
   getTextContent(): Promise<PdfTextContent>;
   getViewport(params: { scale: number }): PdfViewport;
-  render(params: {
-    canvasContext: CanvasRenderingContext2D;
-    viewport: PdfViewport;
-  }): PdfRenderTask;
+  render(params: { canvasContext: CanvasRenderingContext2D; viewport: PdfViewport }): PdfRenderTask;
 }
 
 export interface PdfDocumentProxy {
@@ -44,9 +41,7 @@ export interface MammothModule {
 
 /** Lazily import pdfjs-dist and point it at its bundled worker. */
 export async function loadPdfjs(): Promise<PdfJsModule> {
-  const mod = (await import("pdfjs-dist")) as unknown as
-    | PdfJsModule
-    | { default?: PdfJsModule };
+  const mod = (await import("pdfjs-dist")) as unknown as PdfJsModule | { default?: PdfJsModule };
   const pdfjs = ("default" in mod && mod.default ? mod.default : mod) as PdfJsModule;
   const workerMod = (await import("pdfjs-dist/build/pdf.worker.mjs?url")) as unknown as {
     default?: string;
