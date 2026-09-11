@@ -52,6 +52,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     let warnTimer: ReturnType<typeof setTimeout>;
     let signOutTimer: ReturnType<typeof setTimeout>;
     let tickInterval: ReturnType<typeof setInterval> | null = null;
+    const { timeout: idleTimeoutMs, warning: idleWarningMs } = idleTimings();
 
     const clearAll = () => {
       clearTimeout(warnTimer);
