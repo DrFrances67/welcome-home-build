@@ -7,6 +7,7 @@ import {
   setActiveStateCode,
 } from "@/data/state-standards";
 import { AppStateContext, type AppStateContextValue } from "./app-state-context";
+import { StateOnboarding } from "@/components/StateOnboarding";
 
 const STORAGE_KEY = "tst-selected-state";
 
@@ -45,7 +46,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     hasStandards: hasStandardsFor(stateCode),
   };
 
-  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+  return (
+    <AppStateContext.Provider value={value}>
+      {children}
+      <StateOnboarding storageKey={STORAGE_KEY} />
+    </AppStateContext.Provider>
+  );
 }
 
 // Temporary re-export for existing importers; prefer "@/contexts/app-state-context".
