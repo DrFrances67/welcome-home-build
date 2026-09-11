@@ -78,12 +78,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             tickInterval = null;
           }
         }, 1000);
-      }, IDLE_TIMEOUT_MS - IDLE_WARNING_MS);
+      }, Math.max(100, idleTimeoutMs - idleWarningMs));
       signOutTimer = setTimeout(() => {
         setWarning(false);
         toast.info("You've been signed out due to inactivity.");
         supabase.auth.signOut();
-      }, IDLE_TIMEOUT_MS);
+      }, idleTimeoutMs);
     };
 
     const events: (keyof WindowEventMap)[] = [
