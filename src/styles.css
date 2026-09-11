@@ -142,3 +142,100 @@
     color: var(--color-foreground);
   }
 }
+
+/* ── Accessibility helpers ─────────────────────────────────────────── */
+
+/* Skip link: hidden until keyboard-focused, then pinned top-left. */
+.skip-nav {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10050;
+  padding: 8px 14px;
+  border-radius: 0 0 8px 0;
+  background: var(--color-primary, #8b0ab0);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-nav:focus,
+.skip-nav:focus-visible {
+  left: 0;
+}
+
+/* Visible focus ring on every interactive control, including the inline-styled
+   worksheet toolbar buttons that carry no Tailwind classes. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #8b0ab0;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Worksheet printing ────────────────────────────────────────────── */
+
+@media print {
+  /* Chrome/Safari: keep authored backgrounds and colours on paper. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Editor chrome never prints. */
+  .no-print,
+  .skip-nav,
+  [data-sonner-toaster],
+  [role="alertdialog"],
+  nav,
+  header:not(.worksheet-paper header) {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* The canvas becomes the page: no scrolling frame, no shadows. */
+  #worksheet-canvas {
+    position: static !important;
+    overflow: visible !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    display: block !important;
+  }
+
+  /* One sheet per page, with no clipping or drop shadows. */
+  .worksheet-paper {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+  .worksheet-paper:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* Avoid orphaned headings/answers across a page break. */
+  .worksheet-paper h1,
+  .worksheet-paper h2,
+  .worksheet-paper h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  @page {
+    size: letter portrait;
+    margin: 0.4in;
+  }
+}

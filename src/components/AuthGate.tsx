@@ -8,6 +8,28 @@ import { toast } from "sonner";
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const IDLE_WARNING_MS = 60 * 1000; // warn 60s before sign-out
 
+/**
+ * Local-only shrink of the idle window so the warning can be exercised with
+ * real timers (end-to-end checks) instead of a 30-minute wait. Ignored on any
+ * deployed host, so production behaviour is unchanged.
+ */
+function idleTimings(): { timeout: number; warning: number } {
+  if (typeof window === "undefined") return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+  const host = window.location?.hostname ?? "";
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host === "";
+  if (!isLocal) return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+  try {
+    const raw = window.localStorage.getItem("tts.idleTimeoutMs.test");
+    const timeout = raw ? Number(raw) : NaN;
+    if (!Number.isFinite(timeout) || timeout < 500) {
+      return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+    }
+    return { timeout, warning: Math.max(200, Math.round(timeout / 3)) };
+  } catch {
+    return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+  }
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const userId = user?.id;
@@ -30,6 +52,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     let warnTimer: ReturnType<typeof setTimeout>;
     let signOutTimer: ReturnType<typeof setTimeout>;
     let tickInterval: ReturnType<typeof setInterval> | null = null;
+    const { timeout: idleTimeoutMs, warning: idleWarningMs } = idleTimings();
 
     const clearAll = () => {
       clearTimeout(warnTimer);
@@ -43,24 +66,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const reset = () => {
       clearAll();
       setWarning(false);
-      warnTimer = setTimeout(() => {
-        setWarning(true);
-        secondsLeftRef.current = Math.round(IDLE_WARNING_MS / 1000);
-        setSecondsLeft(secondsLeftRef.current);
-        tickInterval = setInterval(() => {
-          secondsLeftRef.current -= 1;
+      warnTimer = setTimeout(
+        () => {
+          setWarning(true);
+          secondsLeftRef.current = Math.max(1, Math.round(idleWarningMs / 1000));
           setSecondsLeft(secondsLeftRef.current);
-          if (secondsLeftRef.current <= 0 && tickInterval) {
-            clearInterval(tickInterval);
-            tickInterval = null;
-          }
-        }, 1000);
-      }, IDLE_TIMEOUT_MS - IDLE_WARNING_MS);
+          tickInterval = setInterval(() => {
+            secondsLeftRef.current -= 1;
+            setSecondsLeft(secondsLeftRef.current);
+            if (secondsLeftRef.current <= 0 && tickInterval) {
+              clearInterval(tickInterval);
+              tickInterval = null;
+            }
+          }, 1000);
+        },
+        Math.max(100, idleTimeoutMs - idleWarningMs),
+      );
       signOutTimer = setTimeout(() => {
         setWarning(false);
         toast.info("You've been signed out due to inactivity.");
         supabase.auth.signOut();
-      }, IDLE_TIMEOUT_MS);
+      }, idleTimeoutMs);
     };
 
     const events: (keyof WindowEventMap)[] = [

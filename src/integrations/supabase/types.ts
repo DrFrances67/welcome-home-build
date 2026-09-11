@@ -510,6 +510,31 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_dlq_discard: {
+        Args: { _msg_id: number; _queue: string }
+        Returns: boolean
+      }
+      email_dlq_messages: {
+        Args: { _limit?: number; _queue: string }
+        Returns: {
+          enqueued_at: string
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
+      }
+      email_dlq_overview: {
+        Args: never
+        Returns: {
+          message_count: number
+          oldest_at: string
+          queue_name: string
+        }[]
+      }
+      email_dlq_requeue: {
+        Args: { _msg_id: number; _queue: string }
+        Returns: boolean
+      }
       email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
