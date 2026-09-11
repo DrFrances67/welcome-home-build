@@ -162,6 +162,9 @@ export function AdminDashboard() {
           <Link to="/admin/resends" style={{ color: "#8B0AB0", fontSize: 14, fontWeight: 600 }}>
             Resend log
           </Link>
+          <Link to="/admin/dlq" style={{ color: "#8B0AB0", fontSize: 14, fontWeight: 600 }}>
+            Undelivered emails
+          </Link>
           <Link to="/" style={{ color: "#4f46e5", fontSize: 14 }}>
             ← Back to app
           </Link>
