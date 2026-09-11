@@ -68,7 +68,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       setWarning(false);
       warnTimer = setTimeout(() => {
         setWarning(true);
-        secondsLeftRef.current = Math.round(IDLE_WARNING_MS / 1000);
+        secondsLeftRef.current = Math.max(1, Math.round(idleWarningMs / 1000));
         setSecondsLeft(secondsLeftRef.current);
         tickInterval = setInterval(() => {
           secondsLeftRef.current -= 1;
