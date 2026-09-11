@@ -22,6 +22,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminResendsRouteImport } from './routes/admin.resends'
+import { Route as AdminDlqRouteImport } from './routes/admin.dlq'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
@@ -100,6 +101,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 const AdminResendsRoute = AdminResendsRouteImport.update({
   id: '/resends',
   path: '/resends',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDlqRoute = AdminDlqRouteImport.update({
+  id: '/dlq',
+  path: '/dlq',
   getParentRoute: () => AdminRoute,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/dlq': typeof AdminDlqRoute
   '/admin/resends': typeof AdminResendsRoute
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/dlq': typeof AdminDlqRoute
   '/admin/resends': typeof AdminResendsRoute
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/dlq': typeof AdminDlqRoute
   '/admin/resends': typeof AdminResendsRoute
   '/admin/users': typeof AdminUsersRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/dlq'
     | '/admin/resends'
     | '/admin/users'
     | '/email/unsubscribe'
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/dlq'
     | '/admin/resends'
     | '/admin/users'
     | '/email/unsubscribe'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/dlq'
     | '/admin/resends'
     | '/admin/users'
     | '/email/unsubscribe'
@@ -480,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminResendsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/dlq': {
+      id: '/admin/dlq'
+      path: '/dlq'
+      fullPath: '/admin/dlq'
+      preLoaderRoute: typeof AdminDlqRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -582,11 +601,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminDlqRoute: typeof AdminDlqRoute
   AdminResendsRoute: typeof AdminResendsRoute
   AdminUsersRoute: typeof AdminUsersRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminDlqRoute: AdminDlqRoute,
   AdminResendsRoute: AdminResendsRoute,
   AdminUsersRoute: AdminUsersRoute,
 }
