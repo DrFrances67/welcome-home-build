@@ -12,7 +12,7 @@ export interface DlqMessage {
   msg_id: number;
   enqueued_at: string;
   read_ct: number;
-  message: Record<string, unknown>;
+  message: string;
 }
 
 const QUEUES = ["auth_emails_dlq", "transactional_emails_dlq"] as const;
@@ -56,7 +56,14 @@ export const getDlqMessages = createServerFn({ method: "POST" })
       _limit: data.limit,
     });
     if (error) throw new Response(error.message, { status: 500 });
-    return (rows ?? []) as DlqMessage[];
+    type RawRow = { msg_id: number; enqueued_at: string; read_ct: number; message: unknown };
+    return ((rows ?? []) as RawRow[]).map((r) => ({
+      msg_id: r.msg_id,
+      enqueued_at: r.enqueued_at,
+      read_ct: r.read_ct,
+      // Serialized for transport; the admin UI only displays it.
+      message: typeof r.message === "string" ? r.message : JSON.stringify(r.message ?? {}),
+    }));
   });
 
 /** Move a parked message back onto its live queue, or drop it. Admin only. */
