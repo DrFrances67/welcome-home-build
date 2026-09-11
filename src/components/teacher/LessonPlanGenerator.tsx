@@ -1888,7 +1888,13 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             <span
               role="status"
               aria-live="polite"
-              title="Your lesson plan is automatically saved in this browser."
+              title={
+                conflictPaused
+                  ? "A newer version of this lesson plan exists in your account."
+                  : cloudSavedAt
+                    ? "Saved in this browser and synced to your account."
+                    : "Your lesson plan is automatically saved in this browser."
+              }
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -1896,12 +1902,58 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 fontFamily: "'Playfair Display',serif",
                 fontSize: 11,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.9)",
+                color: conflictPaused ? "#FFD1D1" : "rgba(255,255,255,0.9)",
                 whiteSpace: "nowrap",
               }}
             >
-              {savedAt ? "✓ Saved" : "Saving…"}
+              {conflictPaused
+                ? "⚠ Sync conflict"
+                : savedAt
+                  ? cloudSavedAt
+                    ? "✓ Saved · synced"
+                    : "✓ Saved"
+                  : "Saving…"}
             </span>
+            {conflictPaused && user && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void loadNewestFromAccount()}
+                  disabled={accountSaving !== null}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    border: "1px solid white",
+                    background: "white",
+                    color: "#B91C1C",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Load newest
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveToAccount("draft", { force: true })}
+                  disabled={accountSaving !== null}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    border: "1px solid rgba(255,255,255,0.7)",
+                    background: "transparent",
+                    color: "white",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Keep mine
+                </button>
+              </>
+            )}
             {user && (
               <>
                 <button
