@@ -7,11 +7,7 @@ import { useAppState } from "@/contexts/app-state-context";
  * Only shown when no choice has ever been stored; the picker in the app
  * header remains the way to change it later.
  */
-export function StateOnboarding({
-  storageKey = "tst-selected-state",
-}: {
-  storageKey?: string;
-}) {
+export function StateOnboarding({ storageKey = "tst-selected-state" }: { storageKey?: string }) {
   const { stateCode, setStateCode } = useAppState();
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState<StateCode>(stateCode);

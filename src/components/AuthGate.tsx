@@ -66,19 +66,22 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const reset = () => {
       clearAll();
       setWarning(false);
-      warnTimer = setTimeout(() => {
-        setWarning(true);
-        secondsLeftRef.current = Math.max(1, Math.round(idleWarningMs / 1000));
-        setSecondsLeft(secondsLeftRef.current);
-        tickInterval = setInterval(() => {
-          secondsLeftRef.current -= 1;
+      warnTimer = setTimeout(
+        () => {
+          setWarning(true);
+          secondsLeftRef.current = Math.max(1, Math.round(idleWarningMs / 1000));
           setSecondsLeft(secondsLeftRef.current);
-          if (secondsLeftRef.current <= 0 && tickInterval) {
-            clearInterval(tickInterval);
-            tickInterval = null;
-          }
-        }, 1000);
-      }, Math.max(100, idleTimeoutMs - idleWarningMs));
+          tickInterval = setInterval(() => {
+            secondsLeftRef.current -= 1;
+            setSecondsLeft(secondsLeftRef.current);
+            if (secondsLeftRef.current <= 0 && tickInterval) {
+              clearInterval(tickInterval);
+              tickInterval = null;
+            }
+          }, 1000);
+        },
+        Math.max(100, idleTimeoutMs - idleWarningMs),
+      );
       signOutTimer = setTimeout(() => {
         setWarning(false);
         toast.info("You've been signed out due to inactivity.");

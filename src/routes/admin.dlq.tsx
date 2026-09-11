@@ -128,7 +128,9 @@ function DlqAdminPage() {
                 {row?.message_count ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">
-                {row?.oldest_at ? `Oldest: ${new Date(row.oldest_at).toLocaleString()}` : "None waiting"}
+                {row?.oldest_at
+                  ? `Oldest: ${new Date(row.oldest_at).toLocaleString()}`
+                  : "None waiting"}
               </div>
             </button>
           );
