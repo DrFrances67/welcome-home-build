@@ -14,7 +14,7 @@ import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import { useAppState } from "@/contexts/AppStateContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
-import { saveLessonPlan } from "@/lib/lesson-plans.functions";
+import { saveLessonPlan, getLessonPlan } from "@/lib/lesson-plans.functions";
 import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
 import type { CSSProperties } from "react";
 import type {
