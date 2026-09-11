@@ -135,6 +135,37 @@ export function LessonPlanGenerator({
     }
   };
 
+  /**
+   * Conflict recovery — "Load newest": pull the newest version saved on the
+   * account, replace the in-progress form with it, and resume auto-saving from
+   * that baseline. Mirrors the worksheet builder's recovery path.
+   */
+  const loadNewestFromAccount = async () => {
+    if (!accountPlanId) return;
+    setAccountSaving("draft");
+    try {
+      const plan = await getPlanFn({ data: { id: accountPlanId } });
+      const remoteForm = plan.current?.form as Partial<LessonPlanForm> | undefined;
+      if (remoteForm) {
+        setForm({ ...DEFAULT_LP_FORM, ...remoteForm, diff: remoteForm.diff ?? [] });
+        const remoteResult = plan.current?.result as LessonPlanResult | null | undefined;
+        if (remoteResult) setResult(remoteResult);
+        setBaseVersionNo(plan.current?.version_no ?? null);
+        setConflictPaused(false);
+        setAccountMsg({ type: "ok", text: "Loaded the newest version from your account." });
+      } else {
+        setAccountMsg({ type: "err", text: "No saved version found in your account." });
+      }
+    } catch (e: unknown) {
+      setAccountMsg({
+        type: "err",
+        text: e instanceof Error ? e.message : "Could not load from your account.",
+      });
+    } finally {
+      setAccountSaving(null);
+    }
+  };
+
   const saveToAccount = async (status: "draft" | "saved", opts?: { force?: boolean }) => {
     setAccountMsg(null);
     setAccountSaving(status);
