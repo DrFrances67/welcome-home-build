@@ -8,6 +8,28 @@ import { toast } from "sonner";
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const IDLE_WARNING_MS = 60 * 1000; // warn 60s before sign-out
 
+/**
+ * Local-only shrink of the idle window so the warning can be exercised with
+ * real timers (end-to-end checks) instead of a 30-minute wait. Ignored on any
+ * deployed host, so production behaviour is unchanged.
+ */
+function idleTimings(): { timeout: number; warning: number } {
+  if (typeof window === "undefined") return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+  const host = window.location?.hostname ?? "";
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host === "";
+  if (!isLocal) return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+  try {
+    const raw = window.localStorage.getItem("tts.idleTimeoutMs.test");
+    const timeout = raw ? Number(raw) : NaN;
+    if (!Number.isFinite(timeout) || timeout < 500) {
+      return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+    }
+    return { timeout, warning: Math.max(200, Math.round(timeout / 3)) };
+  } catch {
+    return { timeout: IDLE_TIMEOUT_MS, warning: IDLE_WARNING_MS };
+  }
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const userId = user?.id;
