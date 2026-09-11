@@ -105,6 +105,7 @@ export function LessonPlanGenerator({
   // ── Saved Lesson Plans (account) ──────────────────────────────────
   const { user } = useAuth();
   const saveToAccountFn = useServerFn(saveLessonPlan);
+  const getPlanFn = useServerFn(getLessonPlan);
   const [accountPlanId, setAccountPlanId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     try {
