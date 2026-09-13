@@ -16,6 +16,8 @@ import {
 } from "@/data/email";
 import { validateSituations } from "@/lib/email-utils";
 
+const SITE_COLOR = "#CF27F5";
+
 export function EmailAssistant() {
   const [recipient, setRecipient] = useState("administrator");
   const [tone, setTone] = useState("warm-professional");
