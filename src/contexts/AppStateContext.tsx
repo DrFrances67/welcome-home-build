@@ -1,10 +1,11 @@
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, useEffect, type ReactNode } from "react";
 import {
   type StateCode,
   DEFAULT_STATE,
   getStateInfo,
   hasStandards as hasStandardsFor,
   setActiveStateCode,
+  onStandardsLoaded,
 } from "@/data/state-standards";
 import { AppStateContext, type AppStateContextValue } from "./app-state-context";
 import { StateOnboarding } from "@/components/StateOnboarding";
