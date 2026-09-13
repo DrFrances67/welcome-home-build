@@ -7,7 +7,7 @@
 // where incoming.json is an array of { "code": string, "desc": string }.
 // Exits non-zero if any duplicates are detected, so it can block integration.
 import { readFileSync } from "node:fs";
-import { STATE_STANDARDS } from "../src/data/state-standards";
+import { loadStandards, STATES } from "../src/data/state-standards";
 import type { StateCode } from "../src/data/state-standards";
 import type { Standard } from "../src/data/ny-standards";
 import { dedupeIncomingStandards } from "../src/data/standards-validation";
@@ -19,11 +19,11 @@ if (!state || !subject || !file) {
   process.exit(2);
 }
 
-const dataset = STATE_STANDARDS[state as StateCode];
-if (!dataset) {
-  console.error(`Unknown state "${state}". Known: ${Object.keys(STATE_STANDARDS).join(", ")}`);
+if (!STATES.some((s) => s.code === state)) {
+  console.error(`Unknown state "${state}". Known: ${STATES.map((s) => s.code).join(", ")}`);
   process.exit(2);
 }
+const dataset = await loadStandards(state as StateCode);
 
 let incoming: Standard[];
 try {

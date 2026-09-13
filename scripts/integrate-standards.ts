@@ -39,7 +39,7 @@ import { fileURLToPath } from "node:url";
 
 import { z } from "zod";
 import type { Standard, NyStandards } from "../src/data/ny-standards";
-import { STATE_STANDARDS, type StateCode } from "../src/data/state-standards";
+import { loadStandards, type StateCode } from "../src/data/state-standards";
 import {
   dedupeIncomingStandards,
   validateStateStandards,
@@ -93,7 +93,7 @@ try {
 }
 
 const state = config!.state as StateCode;
-const existing = STATE_STANDARDS[state];
+const existing = await loadStandards(state);
 
 // ── Phase 0: make sure the Python extractor can run ─────────────────────────
 const python = process.env.PYTHON ?? "python3";

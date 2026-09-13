@@ -2,7 +2,7 @@
 // dataset breaks schema shape, drops below its baseline count, contains a
 // non-normalized code, or contains duplicate standards.
 import { describe, it, expect } from "vitest";
-import { STATES, STATE_STANDARDS } from "@/data/state-standards";
+import { STATES, loadStandards } from "@/data/state-standards";
 import {
   validateStateStandards,
   summarizeState,
@@ -15,8 +15,8 @@ import {
 
 describe("state standards integrity", () => {
   for (const { code, name } of STATES) {
-    it(`${name} (${code}) passes schema, count, normalization, and dedup checks`, () => {
-      const issues = validateStateStandards(code, STATE_STANDARDS[code]);
+    it(`${name} (${code}) passes schema, count, normalization, and dedup checks`, async () => {
+      const issues = validateStateStandards(code, await loadStandards(code));
       if (issues.length) {
         // Surface readable details when the assertion fails.
         throw new Error(`\n${formatIssues(issues)}`);
@@ -24,8 +24,8 @@ describe("state standards integrity", () => {
       expect(issues).toEqual([]);
     });
 
-    it(`${name} (${code}) meets its baseline standard count`, () => {
-      const summary = summarizeState(code, STATE_STANDARDS[code]);
+    it(`${name} (${code}) meets its baseline standard count`, async () => {
+      const summary = summarizeState(code, await loadStandards(code));
       expect(summary.total).toBeGreaterThanOrEqual(EXPECTED_MIN_COUNTS[code]);
     });
   }

@@ -1,10 +1,11 @@
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, useEffect, type ReactNode } from "react";
 import {
   type StateCode,
   DEFAULT_STATE,
   getStateInfo,
   hasStandards as hasStandardsFor,
   setActiveStateCode,
+  onStandardsLoaded,
 } from "@/data/state-standards";
 import { AppStateContext, type AppStateContextValue } from "./app-state-context";
 import { StateOnboarding } from "@/components/StateOnboarding";
@@ -28,6 +29,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // Keep the module-level active state in sync on every render so non-component
   // helpers (worksheet-utils, AI prompt builders) read the selected state.
   setActiveStateCode(stateCode);
+
+  // Datasets load lazily; re-render once the selected state's chunk resolves so
+  // standards pickers populate.
+  const [, bumpLoaded] = useState(0);
+  useEffect(() => onStandardsLoaded(() => bumpLoaded((n) => n + 1)), []);
 
   const setStateCode = useCallback((code: StateCode) => {
     setActiveStateCode(code);

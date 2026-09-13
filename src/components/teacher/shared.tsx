@@ -11,7 +11,7 @@ import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { BANDS, GRADES, gInfo } from "@/data/grades";
-import { NY_STANDARDS, type Standard } from "@/data/ny-standards";
+import type { Standard } from "@/data/ny-standards";
 import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import {
   IMG_STYLES,
@@ -1633,7 +1633,11 @@ function ElView({
     const dokTextScale = fsLocked ? 1 : dokS;
     const levelGap = 10;
     const itemGap = 6;
-    const dokLineStyle: CSSProperties = { whiteSpace: "normal", overflow: "visible", wordBreak: "break-word" };
+    const dokLineStyle: CSSProperties = {
+      whiteSpace: "normal",
+      overflow: "visible",
+      wordBreak: "break-word",
+    };
     return (
       <div
         className="ws-element"
@@ -2008,7 +2012,23 @@ function ElView({
 // ELEMENT EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }: { el: WsElement; gv: GlobalView; onChange: (...a: any[]) => void; onDelete?: (...a: any[]) => void; onMoveUp?: (...a: any[]) => void; onMoveDown?: (...a: any[]) => void; onDuplicate?: (...a: any[]) => void }) {
+function ElEditor({
+  el,
+  gv,
+  onChange,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
+}: {
+  el: WsElement;
+  gv: GlobalView;
+  onChange: (...a: any[]) => void;
+  onDelete?: (...a: any[]) => void;
+  onMoveUp?: (...a: any[]) => void;
+  onMoveDown?: (...a: any[]) => void;
+  onDuplicate?: (...a: any[]) => void;
+}) {
   const inp = { ...INP(), marginTop: 4 };
   if (!el)
     return (
@@ -2791,7 +2811,17 @@ function ElEditor({ el, gv, onChange, onDelete, onMoveUp, onMoveDown, onDuplicat
 // DOK QUESTIONS EDITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function DokEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
+function DokEditor({
+  el,
+  onChange,
+  gv,
+  inp,
+}: {
+  el: WsElement;
+  onChange: (...a: any[]) => void;
+  gv: GlobalView;
+  inp: CSSProperties;
+}) {
   const mode = el.mode || "manual";
   const [topic, setTopic] = useState(el.topic || "");
   const [busy, setBusy] = useState(false);
@@ -3132,7 +3162,17 @@ No markdown, no preamble, no commentary.`;
 // CHECKLIST EDITOR (Success Criteria & Exit Ticket)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ChecklistEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
+function ChecklistEditor({
+  el,
+  onChange,
+  gv,
+  inp,
+}: {
+  el: WsElement;
+  onChange: (...a: any[]) => void;
+  gv: GlobalView;
+  inp: CSSProperties;
+}) {
   const isSuccess = el.type === "successCriteria";
   const accent = isSuccess ? gv.color : "#0369A1";
   const mode = el.mode || "manual";
@@ -3310,7 +3350,17 @@ function ChecklistEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (
   );
 }
 
-function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange: (...a: any[]) => void; gv: GlobalView; inp: CSSProperties }) {
+function CustomShapeEditor({
+  el,
+  onChange,
+  gv,
+  inp,
+}: {
+  el: WsElement;
+  onChange: (...a: any[]) => void;
+  gv: GlobalView;
+  inp: CSSProperties;
+}) {
   const shapes = el.shapes || [];
   const [activeIdx, setActiveIdx] = useState(0);
   const [editorTab, setEditorTab] = useState("presets"); // "presets" | "custom"
@@ -4274,7 +4324,19 @@ function CustomShapeEditor({ el, onChange, gv, inp }: { el: WsElement; onChange:
   );
 }
 
-function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: GlobalView; onClose: (...a: any[]) => void; onInsert?: (...a: any[]) => void; onGenerate?: (...a: any[]) => void; gradeId?: any }) {
+function StandardsModal({
+  gv,
+  onClose,
+  onInsert,
+  onGenerate,
+  gradeId,
+}: {
+  gv: GlobalView;
+  onClose: (...a: any[]) => void;
+  onInsert?: (...a: any[]) => void;
+  onGenerate?: (...a: any[]) => void;
+  gradeId?: any;
+}) {
   const STD = getActiveStandards();
   const stateInfo = getActiveStateInfo();
   const subjects = Object.keys(STD);
@@ -4751,7 +4813,15 @@ function StandardsModal({ gv, onClose, onInsert, onGenerate, gradeId }: { gv: Gl
 // QUIZ VERSIONS MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
+function VersionsModal({
+  gv,
+  ws,
+  onClose,
+}: {
+  gv: GlobalView;
+  ws: any;
+  onClose: (...a: any[]) => void;
+}) {
   const [numVersions, setNumVersions] = useState(2);
   const [randomize, setRandomize] = useState(true);
   const [keepFixed, setKeepFixed] = useState(true); // keep non-question elements (instructions, passages) in place
@@ -5038,7 +5108,10 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
               [
                 ["Total elements", ws.elements.length],
                 ["Questions (randomized)", ws.elements.filter(isQuestion).length],
-                ["Fixed elements", ws.elements.filter((e: WorksheetElement) => !isQuestion(e)).length],
+                [
+                  "Fixed elements",
+                  ws.elements.filter((e: WorksheetElement) => !isQuestion(e)).length,
+                ],
               ] as [string, number][]
             ).map(([lbl, val]) => (
               <div key={lbl} style={{ textAlign: "center" }}>
@@ -5188,7 +5261,15 @@ function VersionsModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: 
 // EXPORT MODAL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void }) {
+function ExportModal({
+  gv,
+  ws,
+  onClose,
+}: {
+  gv: GlobalView;
+  ws: any;
+  onClose: (...a: any[]) => void;
+}) {
   const [copied, setCopied] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
@@ -5223,7 +5304,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         lines.push("");
       } else if (el.type === "truefalse") {
         lines.push("True or False? Circle your answer.");
-        (el.statements || []).forEach((s: string, j: number) => lines.push(`${j + 1}. ${s}    TRUE / FALSE`));
+        (el.statements || []).forEach((s: string, j: number) =>
+          lines.push(`${j + 1}. ${s}    TRUE / FALSE`),
+        );
         lines.push("");
       } else if (el.type === "shortAnswer") {
         lines.push(el.question || "");
@@ -5273,7 +5356,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         lines.push(`──── Page ${p + 1} ────`);
         lines.push("");
       }
-      const pageEls = ws.elements.filter((e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === p);
+      const pageEls = ws.elements.filter(
+        (e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === p,
+      );
       pageEls.forEach((el: WorksheetElement, i: number) => renderEl(el, i));
       if (p < totalPages - 1) {
         lines.push("\f");
@@ -5294,9 +5379,13 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         // Show items aligned to this standard
         const aligned = (ws.elements || [])
           .map((el: WorksheetElement, i: number) => ({ el, i }))
-          .filter(({ el }: { el: WorksheetElement }) => ((el.stdCodes as string[]) || []).includes(s.code));
+          .filter(({ el }: { el: WorksheetElement }) =>
+            ((el.stdCodes as string[]) || []).includes(s.code),
+          );
         if (aligned.length) {
-          aligned.forEach(({ el, i }: { el: WorksheetElement; i: number }) => lines.push(`     ↳ Item ${i + 1} (${el.type})`));
+          aligned.forEach(({ el, i }: { el: WorksheetElement; i: number }) =>
+            lines.push(`     ↳ Item ${i + 1} (${el.type})`),
+          );
         }
         lines.push("");
       });
@@ -5388,7 +5477,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
     const hidden = new Set(ws.pageHeadersHidden || []);
     const pagesHtml = Array.from({ length: totalPages })
       .map((_, pIdx) => {
-        const pageEls = ws.elements.filter((e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === pIdx);
+        const pageEls = ws.elements.filter(
+          (e: WorksheetElement) => Math.min(totalPages - 1, e.page || 0) === pIdx,
+        );
         const isLast = pIdx === totalPages - 1;
         const hideHeader = hidden.has(pIdx);
         const headerHtml = hideHeader
@@ -5411,7 +5502,9 @@ function ExportModal({ gv, ws, onClose }: { gv: GlobalView; ws: any; onClose: (.
         .map((s: { code: string; desc: string }) => {
           const aligned = (ws.elements || [])
             .map((el: WorksheetElement, i: number) => ({ el, i }))
-            .filter(({ el }: { el: WorksheetElement }) => ((el.stdCodes as string[]) || []).includes(s.code));
+            .filter(({ el }: { el: WorksheetElement }) =>
+              ((el.stdCodes as string[]) || []).includes(s.code),
+            );
           const alignedHtml = aligned.length
             ? `<div style="margin-top:6px;padding-left:14px;font-size:12px;color:#555">Aligned items: ${aligned.map(({ i }: { i: number }) => `#${i + 1}`).join(", ")}</div>`
             : "";
@@ -5770,7 +5863,17 @@ function HelpModal({ onClose, gv }: { onClose: (...a: any[]) => void; gv: Global
 // ALIGNMENT MODAL — shows which standard each question/activity maps to
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AlignmentModal({ gv, ws, onClose, onSetMapping }: { gv: GlobalView; ws: any; onClose: (...a: any[]) => void; onSetMapping?: (...a: any[]) => void }) {
+function AlignmentModal({
+  gv,
+  ws,
+  onClose,
+  onSetMapping,
+}: {
+  gv: GlobalView;
+  ws: any;
+  onClose: (...a: any[]) => void;
+  onSetMapping?: (...a: any[]) => void;
+}) {
   const stateInfo = getActiveStateInfo();
   const standards = ws.standards || [];
   const items = (ws.elements || []).filter((e: WorksheetElement) => !["divider"].includes(e.type));
@@ -5984,7 +6087,6 @@ export {
   BANDS,
   GRADES,
   gInfo,
-  NY_STANDARDS,
   IMG_STYLES,
   PALETTE,
   uid,
