@@ -11,7 +11,7 @@ import { callAiRaw, generateImage } from "@/lib/aiFetch";
 import { SpellTextarea, SpellInput } from "@/components/SpellCheckField";
 
 import { BANDS, GRADES, gInfo } from "@/data/grades";
-import { NY_STANDARDS, type Standard } from "@/data/ny-standards";
+import type { Standard } from "@/data/ny-standards";
 import { getActiveStandards, getActiveStateInfo } from "@/data/state-standards";
 import {
   IMG_STYLES,
@@ -5984,7 +5984,6 @@ export {
   BANDS,
   GRADES,
   gInfo,
-  NY_STANDARDS,
   IMG_STYLES,
   PALETTE,
   uid,

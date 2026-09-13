@@ -12,7 +12,7 @@ import {
   formatIssues,
 } from "../src/data/standards-validation";
 
-const summaries = summarizeAllStandards();
+const summaries = await summarizeAllStandards();
 console.log("State standards summary:");
 for (const s of summaries) {
   const flag = s.total >= s.expectedMin ? "ok" : "LOW";
@@ -21,7 +21,7 @@ for (const s of summaries) {
   );
 }
 
-const issues = validateAllStandards();
+const issues = await validateAllStandards();
 const errors = issues.filter((i) => i.level === "error");
 const warnings = issues.filter((i) => i.level === "warning");
 
