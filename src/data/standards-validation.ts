@@ -12,7 +12,7 @@
 import { z } from "zod";
 import type { Standard, NyStandards } from "./ny-standards";
 import type { StateCode } from "./state-standards";
-import { STATES, STATE_STANDARDS } from "./state-standards";
+import { STATES, loadStandards } from "./state-standards";
 
 // ── Schema shape ──────────────────────────────────────────────────────────
 export const standardSchema = z
@@ -168,16 +168,16 @@ export function summarizeState(state: string, subjects: NyStandards): StateCount
 }
 
 /** Validate every registered state. Returns a flat list of issues (empty = healthy). */
-export function validateAllStandards(): ValidationIssue[] {
+export async function validateAllStandards(): Promise<ValidationIssue[]> {
   const issues: ValidationIssue[] = [];
   for (const { code } of STATES) {
-    issues.push(...validateStateStandards(code, STATE_STANDARDS[code]));
+    issues.push(...validateStateStandards(code, await loadStandards(code)));
   }
   return issues;
 }
 
-export function summarizeAllStandards(): StateCountSummary[] {
-  return STATES.map(({ code }) => summarizeState(code, STATE_STANDARDS[code]));
+export async function summarizeAllStandards(): Promise<StateCountSummary[]> {
+  return Promise.all(STATES.map(async ({ code }) => summarizeState(code, await loadStandards(code))));
 }
 
 // ── Deduplication for new PDF-sourced batches ───────────────────────────────
