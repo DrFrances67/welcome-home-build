@@ -177,7 +177,9 @@ export async function validateAllStandards(): Promise<ValidationIssue[]> {
 }
 
 export async function summarizeAllStandards(): Promise<StateCountSummary[]> {
-  return Promise.all(STATES.map(async ({ code }) => summarizeState(code, await loadStandards(code))));
+  return Promise.all(
+    STATES.map(async ({ code }) => summarizeState(code, await loadStandards(code))),
+  );
 }
 
 // ── Deduplication for new PDF-sourced batches ───────────────────────────────

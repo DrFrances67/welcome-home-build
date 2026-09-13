@@ -35,7 +35,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [, bumpLoaded] = useState(0);
   useEffect(() => onStandardsLoaded(() => bumpLoaded((n) => n + 1)), []);
 
-
   const setStateCode = useCallback((code: StateCode) => {
     setActiveStateCode(code);
     try {

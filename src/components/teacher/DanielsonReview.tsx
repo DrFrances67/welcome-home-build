@@ -389,7 +389,8 @@ export function DanielsonReview() {
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 800, color: BRAND, lineHeight: 1 }}>
                   {(
-                    result.scores.reduce((s: number, x) => s + (x.score || 0), 0) / result.scores.length
+                    result.scores.reduce((s: number, x) => s + (x.score || 0), 0) /
+                    result.scores.length
                   ).toFixed(2)}
                 </div>
                 <div style={{ fontSize: 10, color: "#6B7280", marginTop: 4 }}>of 4.00</div>
