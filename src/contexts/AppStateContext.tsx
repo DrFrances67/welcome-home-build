@@ -30,6 +30,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // helpers (worksheet-utils, AI prompt builders) read the selected state.
   setActiveStateCode(stateCode);
 
+  // Datasets load lazily; re-render once the selected state's chunk resolves so
+  // standards pickers populate.
+  const [, bumpLoaded] = useState(0);
+  useEffect(() => onStandardsLoaded(() => bumpLoaded((n) => n + 1)), []);
+
+
   const setStateCode = useCallback((code: StateCode) => {
     setActiveStateCode(code);
     try {
