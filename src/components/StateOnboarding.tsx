@@ -43,6 +43,20 @@ export function StateOnboarding({ storageKey = "tst-selected-state" }: { storage
 
   const confirm = () => {
     setStateCode(choice);
+    try {
+      window.localStorage.removeItem(dismissedKey);
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+  };
+
+  const skip = () => {
+    try {
+      window.localStorage.setItem(dismissedKey, "1");
+    } catch {
+      /* ignore */
+    }
     setOpen(false);
   };
 
