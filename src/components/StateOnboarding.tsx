@@ -102,7 +102,7 @@ export function StateOnboarding({ storageKey = "tst-selected-state" }: { storage
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={skip}
             className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
           >
             Skip for now
