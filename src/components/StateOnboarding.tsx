@@ -8,6 +8,9 @@ import { useAppState } from "@/contexts/app-state-context";
  * header remains the way to change it later.
  */
 export function StateOnboarding({ storageKey = "tst-selected-state" }: { storageKey?: string }) {
+  // Skipping is remembered under its own key so the welcome only ever shows
+  // once; the header picker remains the way to set a state later.
+  const dismissedKey = `${storageKey}:dismissed`;
   const { stateCode, setStateCode } = useAppState();
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState<StateCode>(stateCode);
@@ -15,11 +18,12 @@ export function StateOnboarding({ storageKey = "tst-selected-state" }: { storage
 
   useEffect(() => {
     try {
-      if (!window.localStorage.getItem(storageKey)) setOpen(true);
+      if (!window.localStorage.getItem(storageKey) && !window.localStorage.getItem(dismissedKey))
+        setOpen(true);
     } catch {
       /* storage blocked — skip onboarding */
     }
-  }, [storageKey]);
+  }, [storageKey, dismissedKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +43,20 @@ export function StateOnboarding({ storageKey = "tst-selected-state" }: { storage
 
   const confirm = () => {
     setStateCode(choice);
+    try {
+      window.localStorage.removeItem(dismissedKey);
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+  };
+
+  const skip = () => {
+    try {
+      window.localStorage.setItem(dismissedKey, "1");
+    } catch {
+      /* ignore */
+    }
     setOpen(false);
   };
 
@@ -84,7 +102,7 @@ export function StateOnboarding({ storageKey = "tst-selected-state" }: { storage
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={skip}
             className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
           >
             Skip for now
