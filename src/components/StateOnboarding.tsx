@@ -8,6 +8,9 @@ import { useAppState } from "@/contexts/app-state-context";
  * header remains the way to change it later.
  */
 export function StateOnboarding({ storageKey = "tst-selected-state" }: { storageKey?: string }) {
+  // Skipping is remembered under its own key so the welcome only ever shows
+  // once; the header picker remains the way to set a state later.
+  const dismissedKey = `${storageKey}:dismissed`;
   const { stateCode, setStateCode } = useAppState();
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState<StateCode>(stateCode);
@@ -15,11 +18,12 @@ export function StateOnboarding({ storageKey = "tst-selected-state" }: { storage
 
   useEffect(() => {
     try {
-      if (!window.localStorage.getItem(storageKey)) setOpen(true);
+      if (!window.localStorage.getItem(storageKey) && !window.localStorage.getItem(dismissedKey))
+        setOpen(true);
     } catch {
       /* storage blocked — skip onboarding */
     }
-  }, [storageKey]);
+  }, [storageKey, dismissedKey]);
 
   useEffect(() => {
     if (!open) return;
