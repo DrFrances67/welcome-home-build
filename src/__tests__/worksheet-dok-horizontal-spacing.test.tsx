@@ -30,9 +30,13 @@ function setViewport(width: number, height: number) {
   }));
 }
 
-function openBuilder() {
+async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
   fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  // The worksheet tool is code-split; resolve its chunk before asserting.
+  await act(async () => {
+    await import("@/components/teacher/WorksheetBuilder");
+  });
 }
 
 function getLastElement(): HTMLElement {
@@ -137,7 +141,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("DOK Questions: horizontal-only resize does NOT spread the per-level boxes apart", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add dok questions element/i);
 
     const before = getDokLevelLayout(wrapper);
@@ -161,7 +165,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("DOK Questions: vertical resize keeps spacing compact and content readable", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add dok questions element/i);
     const before = getDokLevelLayout(wrapper);
 
@@ -182,7 +186,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("DOK Questions: extreme narrow and wide resize keeps questions wrapped and gaps bounded", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add dok questions element/i);
 
     await dragHandle(getHandles(wrapper).right, -1200, 0);
@@ -206,7 +210,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("DOK Questions: extreme short and tall heights use scrolling instead of spreading levels", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add dok questions element/i);
 
     await dragHandle(getHandles(wrapper).bottom, 0, -1200);
@@ -225,7 +229,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("DOK Questions: multi-line and long questions remain visible after extreme resizing", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add dok questions element/i);
 
     fireEvent.change(screen.getByLabelText(/DOK Level 1 questions/i), {
@@ -254,7 +258,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("Success Criteria: horizontal-only resize keeps list item gap tight", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add success criteria element/i);
     const before = getListLayout(wrapper);
 
@@ -266,7 +270,7 @@ describe("worksheet builder: horizontal-only resize keeps inner box spacing tigh
   });
 
   it("Exit Ticket: horizontal-only resize keeps list item gap tight", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addElement(/add exit ticket element/i);
     const before = getListLayout(wrapper);
 

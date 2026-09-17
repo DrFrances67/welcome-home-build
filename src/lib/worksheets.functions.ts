@@ -2,12 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   deleteWorksheetImpl,
+  deleteWorksheetVersionImpl,
   getWorksheetImpl,
   listWorksheetVersionsImpl,
   listWorksheetsImpl,
   renameWorksheetImpl,
   restoreWorksheetVersionImpl,
   saveWorksheetImpl,
+  wsDeleteVersionInputSchema,
   wsGetInputSchema,
   wsListInputSchema,
   wsListVersionsInputSchema,
@@ -59,3 +61,8 @@ export const deleteWorksheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => wsGetInputSchema.parse(data))
   .handler(({ context, data }) => deleteWorksheetImpl(context.supabase, data));
+
+export const deleteWorksheetVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => wsDeleteVersionInputSchema.parse(data))
+  .handler(({ context, data }) => deleteWorksheetVersionImpl(context.supabase, data));

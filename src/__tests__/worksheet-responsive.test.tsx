@@ -1,6 +1,6 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { TheTechSavvyTeacherApp } from "../components/TheTechSavvyTeacherApp";
 
 const worksheetOptions = [
@@ -44,9 +44,13 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   }));
 }
 
-function openWorksheetBuilder() {
+async function openWorksheetBuilder() {
   render(<TheTechSavvyTeacherApp />);
   fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  // The worksheet tool is code-split; resolve its chunk before asserting.
+  await act(async () => {
+    await import("@/components/teacher/WorksheetBuilder");
+  });
   return screen.getByRole("navigation", { name: /worksheet tools/i }) as HTMLElement;
 }
 
@@ -60,8 +64,8 @@ describe("worksheet builder responsive sidebar", () => {
     vi.restoreAllMocks();
   });
 
-  it("keeps the left sidebar independently scrollable on desktop/Mac-sized screens", () => {
-    const sidebar = openWorksheetBuilder();
+  it("keeps the left sidebar independently scrollable on desktop/Mac-sized screens", async () => {
+    const sidebar = await openWorksheetBuilder();
 
     expect(sidebar.style.overflowY).toBe("auto");
     expect(sidebar.style.maxHeight).toBe("100%");
@@ -79,9 +83,9 @@ describe("worksheet builder responsive sidebar", () => {
     ).toBeTruthy();
   });
 
-  it("keeps every worksheet section and option reachable in the mobile stacked layout", () => {
+  it("keeps every worksheet section and option reachable in the mobile stacked layout", async () => {
     setViewport(390, 844, "coarse");
-    const sidebar = openWorksheetBuilder();
+    const sidebar = await openWorksheetBuilder();
 
     expect(
       within(sidebar).getByRole("button", { name: /browse new york standards/i }),

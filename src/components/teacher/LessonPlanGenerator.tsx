@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
 import { saveLessonPlan, getLessonPlan } from "@/lib/lesson-plans.functions";
 import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
+import { useCloudDraft, type CloudSaveResult } from "@/hooks/useCloudDraft";
 import type { CSSProperties } from "react";
 import type {
   LessonPlanResult,
@@ -60,7 +61,6 @@ function readLpDraft(): LessonPlanForm {
   }
 }
 
-
 export function LessonPlanGenerator({
   onBuildWorksheets,
 }: {
@@ -77,7 +77,7 @@ export function LessonPlanGenerator({
 
   const [form, setForm] = useState<LessonPlanForm>(readLpDraft);
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  const [cloudSavedAt, setCloudSavedAt] = useState<number | null>(null);
+  // (cloud save timestamp comes from the shared cloud-draft hook below)
 
   // ── Auto-save the lesson-plan form draft (debounced) so refreshing or
   //    navigating away never loses in-progress work. Restored on next load. ──
@@ -103,37 +103,57 @@ export function LessonPlanGenerator({
   const [showStdPicker, setShowStdPicker] = useState(false);
 
   // ── Saved Lesson Plans (account) ──────────────────────────────────
+  // Cloud drafting, optimistic concurrency and conflict handling all come from
+  // the shared engine in useCloudDraft (the worksheet builder uses the same
+  // one), so there is a single place to fix sync bugs.
   const { user } = useAuth();
   const saveToAccountFn = useServerFn(saveLessonPlan);
   const getPlanFn = useServerFn(getLessonPlan);
-  const [accountPlanId, setAccountPlanId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      return window.localStorage.getItem(LP_PLAN_ID_KEY);
-    } catch {
-      return null;
-    }
-  });
   const [accountSaving, setAccountSaving] = useState<null | "draft" | "saved">(null);
   const [accountMsg, setAccountMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  // Optimistic-concurrency baseline: the version_no we last observed on the
-  // server for this plan. Sent with each save so a newer version created on
-  // another device is detected instead of silently overwritten.
-  const [baseVersionNo, setBaseVersionNo] = useState<number | null>(null);
-  // When a conflict is detected we suspend cloud auto-drafting for this plan
-  // until the user reloads or explicitly overrides. Local (browser) draft
-  // keeps working so no in-progress work is lost.
-  const [conflictPaused, setConflictPaused] = useState(false);
 
-  const rememberPlanId = (id: string | null) => {
-    setAccountPlanId(id);
-    try {
-      if (id) window.localStorage.setItem(LP_PLAN_ID_KEY, id);
-      else window.localStorage.removeItem(LP_PLAN_ID_KEY);
-    } catch {
-      /* ignore */
-    }
+  const resultRef = useRef<LessonPlanResult | null>(result);
+  resultRef.current = result;
+
+  const lpTitle =
+    (form.topic && form.topic.trim()) ||
+    (form.subject && form.subject.trim()) ||
+    "Untitled lesson plan";
+
+  const isDefaultForm = (f: Record<string, unknown>) => {
+    const v = f as unknown as LessonPlanForm;
+    return (
+      !v.subject?.trim() &&
+      !v.topic?.trim() &&
+      !v.objectives?.trim() &&
+      !v.materials?.trim() &&
+      !v.standard?.trim() &&
+      !v.notes?.trim() &&
+      (!v.diff || v.diff.length === 0)
+    );
   };
+
+  const draft = useCloudDraft<Record<string, unknown>>({
+    data: form as unknown as Record<string, unknown>,
+    title: lpTitle,
+    isEmpty: isDefaultForm,
+    isConflict: isLessonPlanConflict,
+    storagePrefix: LP_PLAN_ID_KEY,
+    missingPattern: /lesson plan not found/i,
+    conflictMessage:
+      "A newer version of this lesson plan was saved on another device. " +
+      "Load it, or click Save again to overwrite it with your changes.",
+    autoConflictMessage:
+      "Auto-save paused: a newer version exists on another device. " +
+      "Load newest to pull it in, or press Save draft to overwrite.",
+    extraPayload: () => ({ result: resultRef.current ?? undefined }),
+    save: (payload) => saveToAccountFn({ data: payload }),
+    load: (args) => getPlanFn({ data: args }),
+  });
+
+  const accountPlanId = draft.documentId;
+  const cloudSavedAt = draft.cloudSavedAt;
+  const conflictPaused = draft.conflict !== null;
 
   /**
    * Conflict recovery — "Load newest": pull the newest version saved on the
@@ -144,14 +164,12 @@ export function LessonPlanGenerator({
     if (!accountPlanId) return;
     setAccountSaving("draft");
     try {
-      const plan = await getPlanFn({ data: { id: accountPlanId } });
-      const remoteForm = plan.current?.form as Partial<LessonPlanForm> | undefined;
+      const current = await draft.pull();
+      const remoteForm = current?.form as Partial<LessonPlanForm> | undefined;
       if (remoteForm) {
         setForm({ ...DEFAULT_LP_FORM, ...remoteForm, diff: remoteForm.diff ?? [] });
-        const remoteResult = plan.current?.result as LessonPlanResult | null | undefined;
+        const remoteResult = current?.result as LessonPlanResult | null | undefined;
         if (remoteResult) setResult(remoteResult);
-        setBaseVersionNo(plan.current?.version_no ?? null);
-        setConflictPaused(false);
         setAccountMsg({ type: "ok", text: "Loaded the newest version from your account." });
       } else {
         setAccountMsg({ type: "err", text: "No saved version found in your account." });
@@ -170,27 +188,7 @@ export function LessonPlanGenerator({
     setAccountMsg(null);
     setAccountSaving(status);
     try {
-      const title =
-        (form.topic && form.topic.trim()) ||
-        (form.subject && form.subject.trim()) ||
-        "Untitled lesson plan";
-      const res = await saveToAccountFn({
-        data: {
-          id: accountPlanId ?? undefined,
-          title,
-          form,
-          result: result ?? undefined,
-          status,
-          // Only send the baseline when we have one AND the user hasn't
-          // explicitly asked to overwrite the server copy.
-          ...(accountPlanId && baseVersionNo !== null && !opts?.force
-            ? { expectedVersionNo: baseVersionNo }
-            : {}),
-        },
-      });
-      rememberPlanId(res.id);
-      setBaseVersionNo(res.current?.version_no ?? null);
-      setConflictPaused(false);
+      const res = await draft.save(status, opts);
       setAccountMsg({
         type: "ok",
         text:
@@ -199,86 +197,19 @@ export function LessonPlanGenerator({
             : `Draft v${res.current?.version_no ?? ""} saved to your account.`,
       });
     } catch (e: unknown) {
-      if (isLessonPlanConflict(e)) {
-        setConflictPaused(true);
-        setAccountMsg({
-          type: "err",
-          text:
-            "A newer version of this lesson plan was saved on another device. " +
-            "Reload to see it, or click Save again to overwrite it with your changes.",
-        });
-        // Next click on Save should force-overwrite.
-        setBaseVersionNo(null);
-      } else {
-        setAccountMsg({
-          type: "err",
-          text: e instanceof Error ? e.message : "Could not save. Please try again.",
-        });
-      }
+      setAccountMsg({
+        type: "err",
+        text: isLessonPlanConflict(e)
+          ? "A newer version of this lesson plan was saved on another device. " +
+            "Load newest to see it, or click Save again to overwrite it with your changes."
+          : e instanceof Error
+            ? e.message
+            : "Could not save. Please try again.",
+      });
     } finally {
       setAccountSaving(null);
     }
   };
-
-  // ── Cloud auto-draft: when signed in, mirror the local draft to the
-  //    user's account as a lesson_plan_versions snapshot (debounced ~5s).
-  //    Skipped when the form is still the untouched default so we don't
-  //    create empty draft plans just from opening the page. ──
-  const isDefaultForm = (f: typeof form) =>
-    !f.subject?.trim() &&
-    !f.topic?.trim() &&
-    !f.objectives?.trim() &&
-    !f.materials?.trim() &&
-    !f.standard?.trim() &&
-    !f.notes?.trim() &&
-    (!f.diff || f.diff.length === 0);
-
-  useEffect(() => {
-    if (!user) return;
-    if (isDefaultForm(form)) return;
-    if (conflictPaused) return; // wait for explicit user resolution
-    const t = setTimeout(async () => {
-      try {
-        const title =
-          (form.topic && form.topic.trim()) ||
-          (form.subject && form.subject.trim()) ||
-          "Untitled lesson plan";
-        const res = await saveToAccountFn({
-          data: {
-            id: accountPlanId ?? undefined,
-            title,
-            form,
-            result: result ?? undefined,
-            status: "draft",
-            label: "Auto-saved draft",
-            ...(accountPlanId && baseVersionNo !== null
-              ? { expectedVersionNo: baseVersionNo }
-              : {}),
-          },
-        });
-        rememberPlanId(res.id);
-        setBaseVersionNo(res.current?.version_no ?? null);
-        setCloudSavedAt(Date.now());
-      } catch (e: unknown) {
-        if (isLessonPlanConflict(e)) {
-          setConflictPaused(true);
-          setAccountMsg({
-            type: "err",
-            text:
-              "Auto-save paused: a newer version exists on another device. " +
-              "Reload the page to pull it in, or press Save draft to overwrite.",
-          });
-          setBaseVersionNo(null);
-        }
-        /* other transient errors: local draft still holds work */
-      }
-    }, 5000);
-    return () => clearTimeout(t);
-     
-  }, [form, user?.id, conflictPaused, baseVersionNo, accountPlanId]);
-
-
-
 
   // AI Idea Helper
   const [aiHelperOpen, setAiHelperOpen] = useState(false);
@@ -368,15 +299,20 @@ export function LessonPlanGenerator({
     Array.isArray(arr) &&
     arr.length >= 4 &&
     DOK_DEFS.every((d) => {
-      const lv = (arr as Array<Record<string, unknown>>).find((x) => Number((x as any)?.level) === d.level);
+      const lv = (arr as Array<Record<string, unknown>>).find(
+        (x) => Number((x as any)?.level) === d.level,
+      );
       return (
-        lv && Array.isArray((lv as any).items) && (lv as any).items.filter((s: unknown) => s && String(s).trim()).length >= 1
+        lv &&
+        Array.isArray((lv as any).items) &&
+        (lv as any).items.filter((s: unknown) => s && String(s).trim()).length >= 1
       );
     });
 
   const normalizeDok = (arr: unknown) =>
     DOK_DEFS.map((d) => {
-      const found: Record<string, any> = (Array.isArray(arr) ? arr : []).find((x: any) => Number(x?.level) === d.level) || {};
+      const found: Record<string, any> =
+        (Array.isArray(arr) ? arr : []).find((x: any) => Number(x?.level) === d.level) || {};
       const items = (Array.isArray(found.items) ? found.items : [])
         .map((s: unknown) => String(s || "").trim())
         .filter(Boolean);
@@ -501,7 +437,9 @@ export function LessonPlanGenerator({
       setExemplarDesc(desc);
       setExemplarRaw(raw);
     } catch (e: unknown) {
-      setExError(`Could not analyze: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
+      setExError(
+        `Could not analyze: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`,
+      );
     }
     setAnalyzingEx(false);
   };
@@ -531,7 +469,9 @@ export function LessonPlanGenerator({
       setExemplarDesc(desc);
       setExemplarRaw(text);
     } catch (e: unknown) {
-      setExError(`Could not load URL: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
+      setExError(
+        `Could not load URL: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`,
+      );
     }
     setAnalyzingEx(false);
   };
@@ -1360,7 +1300,9 @@ document.addEventListener('keydown',e=>{
         );
       }
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1389,7 +1331,9 @@ document.addEventListener('keydown',e=>{
         `${deckBaseName(deck)}_slides.txt`,
       );
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1423,7 +1367,9 @@ document.addEventListener('keydown',e=>{
         setSlidesError("Popup blocked — downloaded as HTML. Open it and use Print → Save as PDF.");
       }
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1560,7 +1506,9 @@ document.addEventListener('keydown',e=>{
       const blob = await buildPptxBlob(deck);
       triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1584,7 +1532,9 @@ document.addEventListener('keydown',e=>{
         "✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.",
       );
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -2033,8 +1983,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}
           >
             <div>
-              <label style={lbl}>Grade</label>
+              <label style={lbl} htmlFor="lp-grade">
+                Grade
+              </label>
               <select
+                id="lp-grade"
                 value={form.grade}
                 onChange={(e) => setF("grade", e.target.value)}
                 style={{ ...inp, cursor: "pointer" }}
@@ -2081,8 +2034,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Subject</label>
+            <label style={lbl} htmlFor="lp-subject">
+              Subject
+            </label>
             <SpellInput
+              id="lp-subject"
               type="text"
               value={form.subject}
               onChange={(e) => setF("subject", e.target.value)}
@@ -2093,8 +2049,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Lesson Topic / Title</label>
+            <label style={lbl} htmlFor="lp-lesson-topic-title">
+              Lesson Topic / Title
+            </label>
             <SpellInput
+              id="lp-lesson-topic-title"
               type="text"
               value={form.topic}
               onChange={(e) => setF("topic", e.target.value)}
@@ -2105,8 +2064,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Instructional Model</label>
+            <label style={lbl} htmlFor="lp-instructional-model">
+              Instructional Model
+            </label>
             <select
+              id="lp-instructional-model"
               value={form.model}
               onChange={(e) => setF("model", e.target.value)}
               style={{ ...inp, cursor: "pointer" }}
@@ -2118,8 +2080,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Learning Objectives (optional — AI will suggest if blank)</label>
+            <label style={lbl} htmlFor="lp-learning-objectives-optional">
+              Learning Objectives (optional — AI will suggest if blank)
+            </label>
             <SpellTextarea
+              id="lp-learning-objectives-optional"
               value={form.objectives}
               onChange={(e) => setF("objectives", e.target.value)}
               spellCheck
@@ -2129,8 +2094,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Materials (optional)</label>
+            <label style={lbl} htmlFor="lp-materials-optional">
+              Materials (optional)
+            </label>
             <SpellTextarea
+              id="lp-materials-optional"
               value={form.materials}
               onChange={(e) => setF("materials", e.target.value)}
               spellCheck
@@ -2468,6 +2436,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                     </div>
                   </div>
                   <button
+                    type="button"
+                    aria-label="Remove the uploaded example lesson plan"
+                    title="Remove example"
                     onClick={clearExemplar}
                     style={{
                       width: 24,
@@ -3095,6 +3066,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 Select all text below and copy (Ctrl+A then Ctrl+C):
               </span>
               <button
+                type="button"
+                aria-label="Close the copy box"
+                title="Close"
                 onClick={() => setShowCopyBox(false)}
                 style={{
                   border: "none",
@@ -3154,6 +3128,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 Export to Google Docs — 2 steps:
               </span>
               <button
+                type="button"
+                aria-label="Close the Google Docs export box"
+                title="Close"
                 onClick={() => setShowGdocsBox(false)}
                 style={{
                   border: "none",

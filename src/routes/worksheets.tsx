@@ -3,41 +3,41 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  listLessonPlans,
-  listVersions,
-  getLessonPlan,
-  restoreVersion,
-  renameLessonPlan,
-  deleteLessonPlan,
-  deleteVersion,
-  type LessonPlanRow,
-  type LessonPlanVersionRow,
-} from "@/lib/lesson-plans.functions";
+  listWorksheets,
+  listWorksheetVersions,
+  getWorksheet,
+  restoreWorksheetVersion,
+  renameWorksheet,
+  deleteWorksheet,
+  deleteWorksheetVersion,
+  type WorksheetRow,
+  type WorksheetVersionRow,
+} from "@/lib/worksheets.functions";
 
-const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
-const LP_PLAN_ID_KEY = "tts.lessonPlanId.v1";
+const WS_DRAFT_KEY = "tts.worksheetDraft.v1";
+const WS_ID_PREFIX = "tts.worksheetCloudId.v1";
 
-export const Route = createFileRoute("/lesson-plans")({
+export const Route = createFileRoute("/worksheets")({
   head: () => ({
     meta: [
-      { title: "Saved Lesson Plans — The Tech Savvy Teacher" },
+      { title: "Saved Worksheets — The Tech Savvy Teacher" },
       {
         name: "description",
         content:
-          "Your saved lesson plans and draft version history. Restore previous drafts and pick up where you left off.",
+          "Your saved worksheets and draft version history. Reopen a worksheet, restore an earlier draft, or clear versions you no longer need.",
       },
-      { property: "og:title", content: "Saved Lesson Plans — The Tech Savvy Teacher" },
+      { property: "og:title", content: "Saved Worksheets — The Tech Savvy Teacher" },
       {
         property: "og:description",
-        content: "Manage saved lesson plans and draft versions on The Tech Savvy Teacher.",
+        content: "Manage saved worksheets and draft versions on The Tech Savvy Teacher.",
       },
-      { property: "og:url", content: "https://techsavvyteacher.app/lesson-plans" },
+      { property: "og:url", content: "https://techsavvyteacher.app/worksheets" },
       { property: "og:type", content: "website" },
       { name: "robots", content: "noindex" },
     ],
-    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/lesson-plans" }],
+    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/worksheets" }],
   }),
-  component: LessonPlansPage,
+  component: WorksheetsPage,
 });
 
 type Tab = "saved" | "draft";
@@ -55,24 +55,24 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-function LessonPlansPage() {
+function WorksheetsPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const list = useServerFn(listLessonPlans);
-  const getOne = useServerFn(getLessonPlan);
-  const del = useServerFn(deleteLessonPlan);
-  const rename = useServerFn(renameLessonPlan);
+  const list = useServerFn(listWorksheets);
+  const getOne = useServerFn(getWorksheet);
+  const del = useServerFn(deleteWorksheet);
+  const rename = useServerFn(renameWorksheet);
 
   const [tab, setTab] = useState<Tab>("saved");
-  const [plans, setPlans] = useState<LessonPlanRow[]>([]);
+  const [sheets, setSheets] = useState<WorksheetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user)
-      navigate({ to: "/auth", search: { mode: "signin", next: "/lesson-plans" } });
+      navigate({ to: "/auth", search: { mode: "signin", next: "/worksheets" } });
   }, [authLoading, user, navigate]);
 
   const load = useCallback(async () => {
@@ -80,9 +80,9 @@ function LessonPlansPage() {
     setError(null);
     try {
       const rows = await list({ data: { status: tab } });
-      setPlans(rows);
+      setSheets(rows);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load lesson plans.");
+      setError(e instanceof Error ? e.message : "Failed to load worksheets.");
     } finally {
       setLoading(false);
     }
@@ -92,39 +92,39 @@ function LessonPlansPage() {
     if (user) load();
   }, [user, load]);
 
-  const openForEditing = async (planId: string, form?: Record<string, unknown> | null) => {
+  const openForEditing = async (id: string, form?: Record<string, unknown> | null) => {
     let formToUse = form;
     if (!formToUse) {
-      const plan = await getOne({ data: { id: planId } });
-      formToUse = (plan.current?.form as Record<string, unknown>) ?? null;
+      const ws = await getOne({ data: { id } });
+      formToUse = (ws.current?.form as Record<string, unknown>) ?? null;
     }
     if (formToUse) {
       try {
-        window.localStorage.setItem(LP_DRAFT_KEY, JSON.stringify(formToUse));
-        window.localStorage.setItem(LP_PLAN_ID_KEY, planId);
+        window.localStorage.setItem(WS_DRAFT_KEY, JSON.stringify(formToUse));
+        if (user) window.localStorage.setItem(`${WS_ID_PREFIX}:${user.id}`, id);
       } catch {
-        /* ignore */
+        /* private mode — the worksheet still opens with server data next time */
       }
     }
     navigate({ to: "/" });
   };
 
-  const handleRename = async (plan: LessonPlanRow) => {
-    const next = window.prompt("Rename lesson plan", plan.title);
-    if (next == null || !next.trim() || next.trim() === plan.title) return;
+  const handleRename = async (ws: WorksheetRow) => {
+    const next = window.prompt("Rename worksheet", ws.title);
+    if (next == null || !next.trim() || next.trim() === ws.title) return;
     try {
-      await rename({ data: { id: plan.id, title: next.trim() } });
+      await rename({ data: { id: ws.id, title: next.trim() } });
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rename failed.");
     }
   };
 
-  const handleDelete = async (plan: LessonPlanRow) => {
-    if (!window.confirm(`Delete "${plan.title}"? This removes all its draft versions.`)) return;
+  const handleDelete = async (ws: WorksheetRow) => {
+    if (!window.confirm(`Delete "${ws.title}"? This removes all its draft versions.`)) return;
     try {
-      await del({ data: { id: plan.id } });
-      setExpanded((x) => (x === plan.id ? null : x));
+      await del({ data: { id: ws.id } });
+      setExpanded((x) => (x === ws.id ? null : x));
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Delete failed.");
@@ -137,17 +137,17 @@ function LessonPlansPage() {
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "80px 20px 60px" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
-          Saved Lesson Plans
+          Saved Worksheets
         </h1>
         <Link to="/" style={{ fontSize: 13, color: "#7c3aed", fontWeight: 600 }}>
           ← Back to tools
         </Link>
       </div>
       <p style={{ color: "#64748b", marginBottom: 20, fontSize: 14 }}>
-        Open a plan to keep editing, save finalized plans, and restore earlier draft versions.
+        Reopen a worksheet to keep editing, restore an earlier draft, or delete versions you no
+        longer need.
       </p>
 
-      {/* Tabs */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {(["saved", "draft"] as Tab[]).map((t) => (
           <button
@@ -191,7 +191,7 @@ function LessonPlansPage() {
 
       {loading ? (
         <p style={{ color: "#64748b" }}>Loading…</p>
-      ) : plans.length === 0 ? (
+      ) : sheets.length === 0 ? (
         <div
           style={{
             background: "white",
@@ -203,17 +203,17 @@ function LessonPlansPage() {
           }}
         >
           <p style={{ marginBottom: 12 }}>
-            {tab === "saved" ? "No saved lesson plans yet." : "No drafts yet."}
+            {tab === "saved" ? "No saved worksheets yet." : "No drafts yet."}
           </p>
           <Link to="/" style={{ color: "#7c3aed", fontWeight: 700 }}>
-            Create a lesson plan →
+            Create a worksheet →
           </Link>
         </div>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
-          {plans.map((plan) => (
+          {sheets.map((ws) => (
             <li
-              key={plan.id}
+              key={ws.id}
               style={{
                 background: "white",
                 borderRadius: 12,
@@ -233,35 +233,33 @@ function LessonPlansPage() {
                 }}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15 }}>
-                    {plan.title}
-                  </div>
+                  <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15 }}>{ws.title}</div>
                   <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
-                    Updated {timeAgo(plan.updated_at)}
+                    Updated {timeAgo(ws.updated_at)}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <button style={btnPrimary} onClick={() => openForEditing(plan.id)}>
+                  <button style={btnPrimary} onClick={() => openForEditing(ws.id)}>
                     Open & edit
                   </button>
                   <button
                     style={btn}
-                    onClick={() => setExpanded((x) => (x === plan.id ? null : plan.id))}
-                    aria-expanded={expanded === plan.id}
+                    onClick={() => setExpanded((x) => (x === ws.id ? null : ws.id))}
+                    aria-expanded={expanded === ws.id}
                   >
-                    {expanded === plan.id ? "Hide drafts" : "Draft history"}
+                    {expanded === ws.id ? "Hide drafts" : "Draft history"}
                   </button>
-                  <button style={btn} onClick={() => handleRename(plan)}>
+                  <button style={btn} onClick={() => handleRename(ws)}>
                     Rename
                   </button>
-                  <button style={btnDanger} onClick={() => handleDelete(plan)}>
+                  <button style={btnDanger} onClick={() => handleDelete(ws)}>
                     Delete
                   </button>
                 </div>
               </div>
 
-              {expanded === plan.id && (
-                <DraftList planId={plan.id} onOpen={openForEditing} onChanged={load} />
+              {expanded === ws.id && (
+                <WorksheetDraftList worksheetId={ws.id} onOpen={openForEditing} onChanged={load} />
               )}
             </li>
           ))}
@@ -271,20 +269,20 @@ function LessonPlansPage() {
   );
 }
 
-function DraftList({
-  planId,
+function WorksheetDraftList({
+  worksheetId,
   onOpen,
   onChanged,
 }: {
-  planId: string;
-  onOpen: (planId: string, form: Record<string, unknown>) => void;
+  worksheetId: string;
+  onOpen: (id: string, form: Record<string, unknown>) => void;
   onChanged: () => void;
 }) {
-  const versionsFn = useServerFn(listVersions);
-  const restoreFn = useServerFn(restoreVersion);
-  const deleteVersionFn = useServerFn(deleteVersion);
+  const versionsFn = useServerFn(listWorksheetVersions);
+  const restoreFn = useServerFn(restoreWorksheetVersion);
+  const deleteVersionFn = useServerFn(deleteWorksheetVersion);
 
-  const [versions, setVersions] = useState<LessonPlanVersionRow[]>([]);
+  const [versions, setVersions] = useState<WorksheetVersionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -293,7 +291,7 @@ function DraftList({
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await versionsFn({ data: { planId } });
+      const rows = await versionsFn({ data: { worksheetId } });
       setVersions(rows);
       setSelected(rows[0]?.id ?? "");
     } catch (e) {
@@ -301,13 +299,28 @@ function DraftList({
     } finally {
       setLoading(false);
     }
-  }, [versionsFn, planId]);
+  }, [versionsFn, worksheetId]);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
-  const removeVersion = async (v: LessonPlanVersionRow) => {
+  const restore = async () => {
+    if (!selected) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await restoreFn({ data: { worksheetId, versionId: selected } });
+      await reload();
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Restore failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeVersion = async (v: WorksheetVersionRow) => {
     if (!window.confirm(`Delete version v${v.version_no}? This cannot be undone.`)) return;
     setErr(null);
     try {
@@ -319,28 +332,17 @@ function DraftList({
     }
   };
 
-  const restore = async () => {
-    if (!selected) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await restoreFn({ data: { planId, versionId: selected } });
-      await reload();
-      onChanged();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Restore failed.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <div style={{ borderTop: "1px solid #eef2f7", background: "#f8fafc", padding: 16 }}>
       <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b", marginBottom: 10 }}>
         DRAFT VERSIONS
       </div>
 
-      {err && <p style={{ color: "#991b1b", fontSize: 13, marginBottom: 10 }}>{err}</p>}
+      {err && (
+        <p role="alert" style={{ color: "#991b1b", fontSize: 13, marginBottom: 10 }}>
+          {err}
+        </p>
+      )}
 
       {loading ? (
         <p style={{ color: "#94a3b8", fontSize: 13 }}>Loading versions…</p>
@@ -348,7 +350,6 @@ function DraftList({
         <p style={{ color: "#94a3b8", fontSize: 13 }}>No versions yet.</p>
       ) : (
         <>
-          {/* Restore selector */}
           <div
             style={{
               display: "flex",
@@ -358,10 +359,14 @@ function DraftList({
               flexWrap: "wrap",
             }}
           >
-            <label style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
+            <label
+              htmlFor={`ws-restore-${worksheetId}`}
+              style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}
+            >
               Restore version:
             </label>
             <select
+              id={`ws-restore-${worksheetId}`}
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               style={{
@@ -385,7 +390,6 @@ function DraftList({
             </button>
           </div>
 
-          {/* Version list */}
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 6 }}>
             {versions.map((v) => (
               <li
@@ -410,7 +414,7 @@ function DraftList({
                 <span style={{ display: "flex", gap: 6 }}>
                   <button
                     style={btn}
-                    onClick={() => onOpen(planId, v.form as Record<string, unknown>)}
+                    onClick={() => onOpen(worksheetId, v.form as Record<string, unknown>)}
                   >
                     Open & edit
                   </button>

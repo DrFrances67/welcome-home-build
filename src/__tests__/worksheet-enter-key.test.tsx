@@ -1,6 +1,6 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { TheTechSavvyTeacherApp } from "../components/TheTechSavvyTeacherApp";
 
 function setViewport(width: number, height: number, pointer: "fine" | "coarse" = "fine") {
@@ -24,9 +24,13 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   }));
 }
 
-function openBuilder() {
+async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
   fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  // The worksheet tool is code-split; resolve its chunk before asserting.
+  await act(async () => {
+    await import("@/components/teacher/WorksheetBuilder");
+  });
 }
 
 function addElement(label: RegExp) {
@@ -96,8 +100,8 @@ describe("Enter key adds new lines in worksheet editors (desktop)", () => {
   });
 
   for (const c of cases) {
-    it(`${c.name}: pressing Enter after clearing creates additional lines`, () => {
-      openBuilder();
+    it(`${c.name}: pressing Enter after clearing creates additional lines`, async () => {
+      await openBuilder();
       addElement(c.addLabel);
 
       for (const fieldLabel of c.fields) {
@@ -116,8 +120,8 @@ describe("Enter key adds new lines in worksheet editors (mobile)", () => {
   });
 
   for (const c of cases) {
-    it(`${c.name} (mobile): pressing Enter after clearing creates additional lines`, () => {
-      openBuilder();
+    it(`${c.name} (mobile): pressing Enter after clearing creates additional lines`, async () => {
+      await openBuilder();
       addElement(c.addLabel);
 
       for (const fieldLabel of c.fields) {

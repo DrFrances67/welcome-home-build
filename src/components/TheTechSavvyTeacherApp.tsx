@@ -1,12 +1,61 @@
 /* eslint-disable */
-import { useState, useRef, useEffect, useLayoutEffect, type CSSProperties } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  lazy,
+  Suspense,
+  type CSSProperties,
+} from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { useGlobalShortcuts, ShortcutsHelpOverlay } from "@/components/KeyboardShortcuts";
 import { setActiveTool as setActiveToolName } from "@/lib/tracking";
-import { WorksheetBuilder } from "./teacher/WorksheetBuilder";
-import { LessonPlanGenerator } from "./teacher/LessonPlanGenerator";
-import { EmailAssistant } from "./teacher/EmailAssistant";
-import { DanielsonReview } from "./teacher/DanielsonReview";
+
+// Each tool is a heavy, self-contained screen. They are code-split so a first
+// visit only downloads the tool that is actually being opened.
+const WorksheetBuilder = lazy(() =>
+  import("./teacher/WorksheetBuilder").then((m) => ({ default: m.WorksheetBuilder })),
+);
+const LessonPlanGenerator = lazy(() =>
+  import("./teacher/LessonPlanGenerator").then((m) => ({ default: m.LessonPlanGenerator })),
+);
+const EmailAssistant = lazy(() =>
+  import("./teacher/EmailAssistant").then((m) => ({ default: m.EmailAssistant })),
+);
+const DanielsonReview = lazy(() =>
+  import("./teacher/DanielsonReview").then((m) => ({ default: m.DanielsonReview })),
+);
+
+/** Warm the chunk for a tool before the user commits to opening it. */
+const PRELOADERS: Record<string, () => Promise<unknown>> = {
+  worksheet: () => import("./teacher/WorksheetBuilder"),
+  lesson: () => import("./teacher/LessonPlanGenerator"),
+  email: () => import("./teacher/EmailAssistant"),
+  danielson: () => import("./teacher/DanielsonReview"),
+};
+
+function ToolLoading() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 48,
+        color: "#6b7280",
+        fontFamily: "'Inter',sans-serif",
+        fontSize: 14,
+        fontWeight: 600,
+      }}
+    >
+      Loading…
+    </div>
+  );
+}
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { STATES, type StateCode } from "@/data/state-standards";
 
@@ -677,6 +726,8 @@ function TheTechSavvyTeacherAppRoot() {
                 id={`tool-tab-${t.id}`}
                 type="button"
                 onClick={() => setActiveTool(t.id)}
+                onMouseEnter={() => void PRELOADERS[t.id]?.()}
+                onFocus={() => void PRELOADERS[t.id]?.()}
                 className="tool-tab"
                 role="tab"
                 aria-selected={isActive}
@@ -728,23 +779,25 @@ function TheTechSavvyTeacherAppRoot() {
           touchAction: "pan-y",
         }}
       >
-        {activeTool === "worksheet" && (
-          <div className="ws-canvas-wrap" style={{ display: "flex", flexDirection: "column" }}>
-            <WorksheetBuilder />
-          </div>
-        )}
-        {activeTool === "lesson" && (
-          <LessonPlanGenerator
-            onBuildWorksheets={(payload) => {
-              if (typeof window !== "undefined") {
-                (window as any).__pendingLessonForWorksheet = payload;
-              }
-              setActiveTool("worksheet");
-            }}
-          />
-        )}
-        {activeTool === "danielson" && <DanielsonReview />}
-        {activeTool === "email" && <EmailAssistant />}
+        <Suspense fallback={<ToolLoading />}>
+          {activeTool === "worksheet" && (
+            <div className="ws-canvas-wrap" style={{ display: "flex", flexDirection: "column" }}>
+              <WorksheetBuilder />
+            </div>
+          )}
+          {activeTool === "lesson" && (
+            <LessonPlanGenerator
+              onBuildWorksheets={(payload) => {
+                if (typeof window !== "undefined") {
+                  (window as any).__pendingLessonForWorksheet = payload;
+                }
+                setActiveTool("worksheet");
+              }}
+            />
+          )}
+          {activeTool === "danielson" && <DanielsonReview />}
+          {activeTool === "email" && <EmailAssistant />}
+        </Suspense>
       </main>
 
       {/* Swipe hint toast (mobile) */}
@@ -838,4 +891,3 @@ export function TheTechSavvyTeacherApp() {
   );
 }
 
-export { WorksheetBuilder };
