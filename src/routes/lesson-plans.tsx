@@ -101,7 +101,7 @@ function LessonPlansPage() {
     if (formToUse) {
       try {
         window.localStorage.setItem(LP_DRAFT_KEY, JSON.stringify(formToUse));
-        window.localStorage.setItem(LP_PLAN_ID_KEY, planId);
+        if (user) window.localStorage.setItem(`${LP_PLAN_ID_KEY}:${user.id}`, planId);
       } catch {
         /* ignore */
       }
