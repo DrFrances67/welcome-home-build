@@ -13,7 +13,7 @@ export function deckBaseName(deck: DeckData | null | undefined, fallbackTitle?: 
   );
 }
 
-export const buildDeckHtml = (deck: DeckData) => {
+export const buildDeckHtml = (deck: DeckData, fallbackTitle?: string) => {
   const safe = (v: unknown) =>
     String(v ?? "")
       .replace(/&/g, "&amp;")
@@ -39,7 +39,7 @@ export const buildDeckHtml = (deck: DeckData) => {
     })
     .join("");
 
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || result?.title)} — Slide Deck</title>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(deck.title || fallbackTitle)} — Slide Deck</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0F0A1A;font-family:'Inter','Segoe UI',sans-serif;color:#1F2937;overflow:hidden}

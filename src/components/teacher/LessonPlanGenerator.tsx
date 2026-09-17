@@ -16,6 +16,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
 import { saveLessonPlan, getLessonPlan } from "@/lib/lesson-plans.functions";
 import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
+import {
+  buildDeckHtml as buildDeckHtmlFn,
+  buildPptxBlob as buildPptxBlobFn,
+  deckBaseName as deckBaseNameFn,
+  triggerDownload,
+} from "@/lib/lesson-plan-slides";
 import { useCloudDraft, type CloudSaveResult } from "@/hooks/useCloudDraft";
 import type { CSSProperties } from "react";
 import type {
@@ -1181,6 +1187,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
   // Build the standalone HTML deck string (used for HTML and PDF exports)
   const deckBaseName = (deck: DeckData | null | undefined) =>
     deckBaseNameFn(deck, result?.title);
+  const buildDeckHtml = (deck: DeckData) => buildDeckHtmlFn(deck, result?.title);
   const buildPptxBlob = (deck: DeckData) => buildPptxBlobFn(deck, result?.title);
 
 
