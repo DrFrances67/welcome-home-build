@@ -3095,6 +3095,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 Export to Google Docs — 2 steps:
               </span>
               <button
+                type="button"
+                aria-label="Close the Google Docs export box"
+                title="Close"
                 onClick={() => setShowGdocsBox(false)}
                 style={{
                   border: "none",
