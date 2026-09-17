@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
 import { saveLessonPlan, getLessonPlan } from "@/lib/lesson-plans.functions";
 import { isLessonPlanConflict } from "@/lib/lesson-plans.impl";
+import { useCloudDraft, type CloudSaveResult } from "@/hooks/useCloudDraft";
 import type { CSSProperties } from "react";
 import type {
   LessonPlanResult,
