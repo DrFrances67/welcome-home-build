@@ -1968,8 +1968,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}
           >
             <div>
-              <label style={lbl}>Grade</label>
-              <select
+              <label style={lbl} htmlFor="lp-grade">Grade</label>
+              <select id="lp-grade"
                 value={form.grade}
                 onChange={(e) => setF("grade", e.target.value)}
                 style={{ ...inp, cursor: "pointer" }}
@@ -2016,8 +2016,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Subject</label>
-            <SpellInput
+            <label style={lbl} htmlFor="lp-subject">Subject</label>
+            <SpellInput id="lp-subject"
               type="text"
               value={form.subject}
               onChange={(e) => setF("subject", e.target.value)}
@@ -2028,8 +2028,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Lesson Topic / Title</label>
-            <SpellInput
+            <label style={lbl} htmlFor="lp-lesson-topic-title">Lesson Topic / Title</label>
+            <SpellInput id="lp-lesson-topic-title"
               type="text"
               value={form.topic}
               onChange={(e) => setF("topic", e.target.value)}
@@ -2040,8 +2040,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Instructional Model</label>
-            <select
+            <label style={lbl} htmlFor="lp-instructional-model">Instructional Model</label>
+            <select id="lp-instructional-model"
               value={form.model}
               onChange={(e) => setF("model", e.target.value)}
               style={{ ...inp, cursor: "pointer" }}
@@ -2053,8 +2053,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Learning Objectives (optional — AI will suggest if blank)</label>
-            <SpellTextarea
+            <label style={lbl} htmlFor="lp-learning-objectives-optional">Learning Objectives (optional — AI will suggest if blank)</label>
+            <SpellTextarea id="lp-learning-objectives-optional"
               value={form.objectives}
               onChange={(e) => setF("objectives", e.target.value)}
               spellCheck
@@ -2064,8 +2064,8 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl}>Materials (optional)</label>
-            <SpellTextarea
+            <label style={lbl} htmlFor="lp-materials-optional">Materials (optional)</label>
+            <SpellTextarea id="lp-materials-optional"
               value={form.materials}
               onChange={(e) => setF("materials", e.target.value)}
               spellCheck
