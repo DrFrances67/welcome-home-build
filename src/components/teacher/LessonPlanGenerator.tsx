@@ -3033,6 +3033,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                 Select all text below and copy (Ctrl+A then Ctrl+C):
               </span>
               <button
+                type="button"
+                aria-label="Close the copy box"
+                title="Close"
                 onClick={() => setShowCopyBox(false)}
                 style={{
                   border: "none",
