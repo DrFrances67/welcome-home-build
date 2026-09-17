@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dbError } from "@/lib/db-errors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 
@@ -110,7 +111,7 @@ export async function listWorksheetsImpl(
   let query = supabase.from("worksheets").select("*").order("updated_at", { ascending: false });
   if (input.status) query = query.eq("status", input.status);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't load your worksheets.", "listWorksheets");
   return (data as unknown as WorksheetRow[]) ?? [];
 }
 
@@ -123,7 +124,7 @@ export async function getWorksheetImpl(
     .select("*")
     .eq("id", input.id)
     .single();
-  if (error || !sheet) throw new Error(error?.message ?? "Worksheet not found");
+  if (error || !sheet) throw dbError(error, "Worksheet not found", "getWorksheet");
   const row = sheet as unknown as WorksheetRow;
   let current: WorksheetVersionRow | null = null;
   if (row.current_version_id) {
@@ -146,7 +147,7 @@ export async function listWorksheetVersionsImpl(
     .select("*")
     .eq("worksheet_id", input.worksheetId)
     .order("version_no", { ascending: false });
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't load this worksheet's history.", "listWorksheetVersions");
   return (data as unknown as WorksheetVersionRow[]) ?? [];
 }
 
@@ -173,7 +174,7 @@ export async function saveWorksheetImpl(
       .select("id")
       .eq("id", worksheetId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw dbError(error, "We couldn't open that worksheet.", "saveWorksheet");
     if (!existing) throw new Error("Worksheet not found");
   } else {
     const { data: created, error } = await supabase
@@ -185,7 +186,7 @@ export async function saveWorksheetImpl(
       })
       .select("id")
       .single();
-    if (error || !created) throw new Error(error?.message ?? "Failed to create worksheet");
+    if (error || !created) throw dbError(error, "We couldn't create the worksheet.", "saveWorksheet");
     worksheetId = (created as { id: string }).id;
   }
 
@@ -226,7 +227,7 @@ export async function saveWorksheetImpl(
         input.expectedVersionNo ?? latestNo,
       );
     }
-    throw new Error(verErr?.message ?? "Failed to save worksheet version");
+    throw dbError(verErr, "We couldn't save this worksheet.", "saveWorksheetVersion");
   }
 
   const patch: { current_version_id: string; status: WorksheetStatus; title?: string } = {
@@ -240,7 +241,7 @@ export async function saveWorksheetImpl(
     .eq("id", worksheetId)
     .select("*")
     .single();
-  if (updErr || !sheet) throw new Error(updErr?.message ?? "Failed to update worksheet");
+  if (updErr || !sheet) throw dbError(updErr, "We couldn't save this worksheet.", "saveWorksheet");
 
   return {
     ...(sheet as unknown as WorksheetRow),
@@ -259,7 +260,7 @@ export async function restoreWorksheetVersionImpl(
     .eq("id", input.versionId)
     .eq("worksheet_id", input.worksheetId)
     .single();
-  if (error || !source) throw new Error(error?.message ?? "Version not found");
+  if (error || !source) throw dbError(error, "Version not found", "restoreWorksheetVersion");
 
   const nextNo = (await latestVersionNo(supabase, input.worksheetId)) + 1;
   const src = source as unknown as WorksheetVersionRow;
@@ -275,7 +276,7 @@ export async function restoreWorksheetVersionImpl(
     })
     .select("*")
     .single();
-  if (verErr || !version) throw new Error(verErr?.message ?? "Failed to restore version");
+  if (verErr || !version) throw dbError(verErr, "We couldn't restore that version.", "restoreWorksheetVersion");
 
   const { data: sheet, error: updErr } = await supabase
     .from("worksheets")
@@ -283,7 +284,7 @@ export async function restoreWorksheetVersionImpl(
     .eq("id", input.worksheetId)
     .select("*")
     .single();
-  if (updErr || !sheet) throw new Error(updErr?.message ?? "Failed to update worksheet");
+  if (updErr || !sheet) throw dbError(updErr, "We couldn't restore that version.", "restoreWorksheetVersion");
 
   return {
     ...(sheet as unknown as WorksheetRow),
@@ -301,7 +302,7 @@ export async function renameWorksheetImpl(
     .eq("id", input.id)
     .select("*")
     .single();
-  if (error || !data) throw new Error(error?.message ?? "Failed to rename");
+  if (error || !data) throw dbError(error, "We couldn't rename that worksheet.", "renameWorksheet");
   return data as unknown as WorksheetRow;
 }
 
@@ -310,6 +311,41 @@ export async function deleteWorksheetImpl(
   input: z.infer<typeof wsGetInputSchema>,
 ): Promise<{ ok: true }> {
   const { error } = await supabase.from("worksheets").delete().eq("id", input.id);
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't delete that worksheet.", "deleteWorksheet");
+  return { ok: true };
+}
+
+export const wsDeleteVersionInputSchema = z.object({ versionId: z.string().uuid() });
+
+/**
+ * Deletes one saved version of a worksheet. The version currently in use is
+ * protected — restore another one first — so a teacher can never end up with a
+ * worksheet that points at nothing. Mirrors the lesson-plan behaviour.
+ */
+export async function deleteWorksheetVersionImpl(
+  supabase: SB,
+  input: z.infer<typeof wsDeleteVersionInputSchema>,
+): Promise<{ ok: true }> {
+  const { data: ver } = await supabase
+    .from("worksheet_versions")
+    .select("id, worksheet_id")
+    .eq("id", input.versionId)
+    .maybeSingle();
+  if (ver) {
+    const { worksheet_id } = ver as { id: string; worksheet_id: string };
+    const { data: sheet } = await supabase
+      .from("worksheets")
+      .select("current_version_id")
+      .eq("id", worksheet_id)
+      .maybeSingle();
+    if ((sheet as { current_version_id?: string } | null)?.current_version_id === input.versionId) {
+      throw new Error("Cannot delete the current version. Restore another version first.");
+    }
+  }
+  const { error } = await supabase
+    .from("worksheet_versions")
+    .delete()
+    .eq("id", input.versionId);
+  if (error) throw dbError(error, "We couldn't delete that version.", "deleteWorksheetVersion");
   return { ok: true };
 }

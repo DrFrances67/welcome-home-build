@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dbError } from "@/lib/db-errors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 
@@ -120,7 +121,7 @@ export async function listLessonPlansImpl(
   let query = supabase.from("lesson_plans").select("*").order("updated_at", { ascending: false });
   if (input.status) query = query.eq("status", input.status);
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't load your lesson plans.", "listLessonPlans");
   return (data as unknown as LessonPlanRow[]) ?? [];
 }
 
@@ -133,7 +134,7 @@ export async function getLessonPlanImpl(
     .select("*")
     .eq("id", input.id)
     .single();
-  if (error || !plan) throw new Error(error?.message ?? "Lesson plan not found");
+  if (error || !plan) throw dbError(error, "Lesson plan not found", "getLessonPlan");
   const row = plan as unknown as LessonPlanRow;
   let current: LessonPlanVersionRow | null = null;
   if (row.current_version_id) {
@@ -156,7 +157,7 @@ export async function listVersionsImpl(
     .select("*")
     .eq("lesson_plan_id", input.planId)
     .order("version_no", { ascending: false });
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't load this plan's history.", "listVersions");
   return (data as unknown as LessonPlanVersionRow[]) ?? [];
 }
 
@@ -172,7 +173,7 @@ export async function saveLessonPlanImpl(
       .select("id")
       .eq("id", planId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw dbError(error, "We couldn't open that lesson plan.", "saveLessonPlan");
     if (!existing) throw new Error("Lesson plan not found");
   } else {
     const { data: created, error } = await supabase
@@ -184,7 +185,7 @@ export async function saveLessonPlanImpl(
       })
       .select("id")
       .single();
-    if (error || !created) throw new Error(error?.message ?? "Failed to create lesson plan");
+    if (error || !created) throw dbError(error, "We couldn't create the lesson plan.", "saveLessonPlan");
     planId = (created as { id: string }).id;
   }
 
@@ -238,7 +239,7 @@ export async function saveLessonPlanImpl(
         nextNo) as number;
       throw new LessonPlanConflictError(planId!, nowLatest, input.expectedVersionNo ?? latestNo);
     }
-    throw new Error(verErr?.message ?? "Failed to save version");
+    throw dbError(verErr, "We couldn't save this lesson plan.", "saveLessonPlanVersion");
   }
 
   const patch: { current_version_id: string; status: LessonPlanStatus; title?: string } = {
@@ -252,7 +253,7 @@ export async function saveLessonPlanImpl(
     .eq("id", planId)
     .select("*")
     .single();
-  if (updErr || !plan) throw new Error(updErr?.message ?? "Failed to update lesson plan");
+  if (updErr || !plan) throw dbError(updErr, "We couldn't save this lesson plan.", "updateLessonPlan");
 
   return {
     ...(plan as unknown as LessonPlanRow),
@@ -271,7 +272,7 @@ export async function restoreVersionImpl(
     .eq("id", input.versionId)
     .eq("lesson_plan_id", input.planId)
     .single();
-  if (error || !source) throw new Error(error?.message ?? "Version not found");
+  if (error || !source) throw dbError(error, "Version not found", "restoreVersion");
 
   const { data: last } = await supabase
     .from("lesson_plan_versions")
@@ -295,7 +296,7 @@ export async function restoreVersionImpl(
     })
     .select("*")
     .single();
-  if (verErr || !version) throw new Error(verErr?.message ?? "Failed to restore version");
+  if (verErr || !version) throw dbError(verErr, "We couldn't restore that version.", "restoreVersion");
 
   const { data: plan, error: updErr } = await supabase
     .from("lesson_plans")
@@ -303,7 +304,7 @@ export async function restoreVersionImpl(
     .eq("id", input.planId)
     .select("*")
     .single();
-  if (updErr || !plan) throw new Error(updErr?.message ?? "Failed to update lesson plan");
+  if (updErr || !plan) throw dbError(updErr, "We couldn't save this lesson plan.", "updateLessonPlan");
 
   return {
     ...(plan as unknown as LessonPlanRow),
@@ -321,7 +322,7 @@ export async function renameLessonPlanImpl(
     .eq("id", input.id)
     .select("*")
     .single();
-  if (error || !data) throw new Error(error?.message ?? "Failed to rename");
+  if (error || !data) throw dbError(error, "We couldn't rename that lesson plan.", "renameLessonPlan");
   return data as unknown as LessonPlanRow;
 }
 
@@ -335,7 +336,7 @@ export async function renameVersionImpl(
     .eq("id", input.versionId)
     .select("*")
     .single();
-  if (error || !data) throw new Error(error?.message ?? "Failed to label version");
+  if (error || !data) throw dbError(error, "We couldn't rename that version.", "renameVersion");
   return data as unknown as LessonPlanVersionRow;
 }
 
@@ -344,7 +345,7 @@ export async function deleteLessonPlanImpl(
   input: z.infer<typeof getInputSchema>,
 ): Promise<{ ok: true }> {
   const { error } = await supabase.from("lesson_plans").delete().eq("id", input.id);
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't delete that lesson plan.", "deleteLessonPlan");
   return { ok: true };
 }
 
@@ -369,6 +370,6 @@ export async function deleteVersionImpl(
     }
   }
   const { error } = await supabase.from("lesson_plan_versions").delete().eq("id", input.versionId);
-  if (error) throw new Error(error.message);
+  if (error) throw dbError(error, "We couldn't delete that version.", "deleteVersion");
   return { ok: true };
 }
