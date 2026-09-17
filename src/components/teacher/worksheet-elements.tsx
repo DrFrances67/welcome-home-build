@@ -45,13 +45,7 @@ import {
 
 // Element/global-view records are highly dynamic (many worksheet element
 
-import {
-  Btn,
-  LBL,
-  INP,
-  ShapeSVG,
-  ScaledContent,
-} from "./worksheet-primitives";
+import { Btn, LBL, INP, ShapeSVG, ScaledContent } from "./worksheet-primitives";
 import type { WsElement, GlobalView } from "./worksheet-primitives";
 
 interface ElViewProps {

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /* Barrel for the worksheet builder's shared pieces.
  * The implementation lives in three focused modules:
  *   worksheet-primitives.tsx — buttons, inputs, shapes, scaling wrapper
