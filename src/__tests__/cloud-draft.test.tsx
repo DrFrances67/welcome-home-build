@@ -17,8 +17,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: currentUser }) }));
 import { useCloudDraft } from "@/hooks/useCloudDraft";
 
 const DEBOUNCE = 5000;
-const isConflict = (e: unknown) =>
-  e instanceof Error && e.message.startsWith("TEST_CONFLICT");
+const isConflict = (e: unknown) => e instanceof Error && e.message.startsWith("TEST_CONFLICT");
 
 function setup(opts: {
   data?: Record<string, unknown>;
@@ -125,7 +124,9 @@ describe("useCloudDraft", () => {
       await result.current.save("draft", { force: true });
     });
 
-    expect((save.mock.calls[1][0] as { expectedVersionNo?: number }).expectedVersionNo).toBeUndefined();
+    expect(
+      (save.mock.calls[1][0] as { expectedVersionNo?: number }).expectedVersionNo,
+    ).toBeUndefined();
     expect(result.current.conflict).toBeNull();
   });
 

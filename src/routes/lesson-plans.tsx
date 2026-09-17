@@ -9,6 +9,7 @@ import {
   restoreVersion,
   renameLessonPlan,
   deleteLessonPlan,
+  deleteVersion,
   type LessonPlanRow,
   type LessonPlanVersionRow,
 } from "@/lib/lesson-plans.functions";
@@ -281,6 +282,7 @@ function DraftList({
 }) {
   const versionsFn = useServerFn(listVersions);
   const restoreFn = useServerFn(restoreVersion);
+  const deleteVersionFn = useServerFn(deleteVersion);
 
   const [versions, setVersions] = useState<LessonPlanVersionRow[]>([]);
   const [loading, setLoading] = useState(true);
