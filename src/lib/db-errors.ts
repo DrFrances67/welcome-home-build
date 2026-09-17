@@ -27,7 +27,11 @@ const BY_CODE: Record<string, string> = {
  * @param fallback user-facing sentence used when the code isn't recognised
  * @param where    short tag for the server log, e.g. "saveWorksheet"
  */
-export function dbError(err: DbErrorLike | null | undefined, fallback: string, where?: string): Error {
+export function dbError(
+  err: DbErrorLike | null | undefined,
+  fallback: string,
+  where?: string,
+): Error {
   if (err) {
     // Server-side only: full detail for debugging, never sent to the browser.
     console.error(`[db${where ? `:${where}` : ""}]`, {
