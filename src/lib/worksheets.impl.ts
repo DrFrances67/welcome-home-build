@@ -147,7 +147,8 @@ export async function listWorksheetVersionsImpl(
     .select("*")
     .eq("worksheet_id", input.worksheetId)
     .order("version_no", { ascending: false });
-  if (error) throw dbError(error, "We couldn't load this worksheet's history.", "listWorksheetVersions");
+  if (error)
+    throw dbError(error, "We couldn't load this worksheet's history.", "listWorksheetVersions");
   return (data as unknown as WorksheetVersionRow[]) ?? [];
 }
 
@@ -186,7 +187,8 @@ export async function saveWorksheetImpl(
       })
       .select("id")
       .single();
-    if (error || !created) throw dbError(error, "We couldn't create the worksheet.", "saveWorksheet");
+    if (error || !created)
+      throw dbError(error, "We couldn't create the worksheet.", "saveWorksheet");
     worksheetId = (created as { id: string }).id;
   }
 
@@ -276,7 +278,8 @@ export async function restoreWorksheetVersionImpl(
     })
     .select("*")
     .single();
-  if (verErr || !version) throw dbError(verErr, "We couldn't restore that version.", "restoreWorksheetVersion");
+  if (verErr || !version)
+    throw dbError(verErr, "We couldn't restore that version.", "restoreWorksheetVersion");
 
   const { data: sheet, error: updErr } = await supabase
     .from("worksheets")
@@ -284,7 +287,8 @@ export async function restoreWorksheetVersionImpl(
     .eq("id", input.worksheetId)
     .select("*")
     .single();
-  if (updErr || !sheet) throw dbError(updErr, "We couldn't restore that version.", "restoreWorksheetVersion");
+  if (updErr || !sheet)
+    throw dbError(updErr, "We couldn't restore that version.", "restoreWorksheetVersion");
 
   return {
     ...(sheet as unknown as WorksheetRow),
@@ -342,10 +346,7 @@ export async function deleteWorksheetVersionImpl(
       throw new Error("Cannot delete the current version. Restore another version first.");
     }
   }
-  const { error } = await supabase
-    .from("worksheet_versions")
-    .delete()
-    .eq("id", input.versionId);
+  const { error } = await supabase.from("worksheet_versions").delete().eq("id", input.versionId);
   if (error) throw dbError(error, "We couldn't delete that version.", "deleteWorksheetVersion");
   return { ok: true };
 }

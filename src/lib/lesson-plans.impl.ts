@@ -185,7 +185,8 @@ export async function saveLessonPlanImpl(
       })
       .select("id")
       .single();
-    if (error || !created) throw dbError(error, "We couldn't create the lesson plan.", "saveLessonPlan");
+    if (error || !created)
+      throw dbError(error, "We couldn't create the lesson plan.", "saveLessonPlan");
     planId = (created as { id: string }).id;
   }
 
@@ -253,7 +254,8 @@ export async function saveLessonPlanImpl(
     .eq("id", planId)
     .select("*")
     .single();
-  if (updErr || !plan) throw dbError(updErr, "We couldn't save this lesson plan.", "updateLessonPlan");
+  if (updErr || !plan)
+    throw dbError(updErr, "We couldn't save this lesson plan.", "updateLessonPlan");
 
   return {
     ...(plan as unknown as LessonPlanRow),
@@ -296,7 +298,8 @@ export async function restoreVersionImpl(
     })
     .select("*")
     .single();
-  if (verErr || !version) throw dbError(verErr, "We couldn't restore that version.", "restoreVersion");
+  if (verErr || !version)
+    throw dbError(verErr, "We couldn't restore that version.", "restoreVersion");
 
   const { data: plan, error: updErr } = await supabase
     .from("lesson_plans")
@@ -304,7 +307,8 @@ export async function restoreVersionImpl(
     .eq("id", input.planId)
     .select("*")
     .single();
-  if (updErr || !plan) throw dbError(updErr, "We couldn't save this lesson plan.", "updateLessonPlan");
+  if (updErr || !plan)
+    throw dbError(updErr, "We couldn't save this lesson plan.", "updateLessonPlan");
 
   return {
     ...(plan as unknown as LessonPlanRow),
@@ -322,7 +326,8 @@ export async function renameLessonPlanImpl(
     .eq("id", input.id)
     .select("*")
     .single();
-  if (error || !data) throw dbError(error, "We couldn't rename that lesson plan.", "renameLessonPlan");
+  if (error || !data)
+    throw dbError(error, "We couldn't rename that lesson plan.", "renameLessonPlan");
   return data as unknown as LessonPlanRow;
 }
 
