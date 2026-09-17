@@ -45,7 +45,10 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
 async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
   fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
-  await screen.findByRole("navigation", { name: /worksheet tools/i });
+  // The worksheet tool is code-split; resolve its chunk before asserting.
+  await act(async () => {
+    await import("@/components/teacher/WorksheetBuilder");
+  });
 }
 
 function getLastElement(): HTMLElement {
@@ -181,7 +184,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
     describe(`viewport: ${vp.label} (${vp.width}x${vp.height})`, () => {
       beforeEach(() => setViewport(vp.width, vp.height, vp.pointer));
 
-      it("each element type exposes all 5 resize handles (top/right/bottom/left/corner)", () => {
+      it("each element type exposes all 5 resize handles (top/right/bottom/left/corner)", async () => {
         await openBuilder();
         for (const t of ELEMENT_TYPES) {
           const wrapper = addElement(t.label);

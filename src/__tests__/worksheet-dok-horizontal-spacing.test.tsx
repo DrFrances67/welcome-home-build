@@ -33,7 +33,10 @@ function setViewport(width: number, height: number) {
 async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
   fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
-  await screen.findByRole("navigation", { name: /worksheet tools/i });
+  // The worksheet tool is code-split; resolve its chunk before asserting.
+  await act(async () => {
+    await import("@/components/teacher/WorksheetBuilder");
+  });
 }
 
 function getLastElement(): HTMLElement {
