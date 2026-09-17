@@ -8,8 +8,9 @@ import type { DeckData, DeckSlide } from "@/components/teacher/lesson-plan-types
 
 export function deckBaseName(deck: DeckData | null | undefined, fallbackTitle?: string): string {
   return (
-    (deck?.title || fallbackTitle || "lesson").replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "") ||
-    "lesson"
+    (deck?.title || fallbackTitle || "lesson")
+      .replace(/[^a-z0-9]+/gi, "_")
+      .replace(/^_+|_+$/g, "") || "lesson"
   );
 }
 

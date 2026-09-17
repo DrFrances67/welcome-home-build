@@ -1185,12 +1185,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><div class="notes">${safeHtml(res
   };
 
   // Build the standalone HTML deck string (used for HTML and PDF exports)
-  const deckBaseName = (deck: DeckData | null | undefined) =>
-    deckBaseNameFn(deck, result?.title);
+  const deckBaseName = (deck: DeckData | null | undefined) => deckBaseNameFn(deck, result?.title);
   const buildDeckHtml = (deck: DeckData) => buildDeckHtmlFn(deck, result?.title);
   const buildPptxBlob = (deck: DeckData) => buildPptxBlobFn(deck, result?.title);
-
-
 
   // ── Export: HTML (interactive deck in new tab) ────────────────────
   const exportSlidesHTML = async () => {
