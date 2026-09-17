@@ -305,6 +305,18 @@ function DraftList({
     reload();
   }, [reload]);
 
+  const removeVersion = async (v: LessonPlanVersionRow) => {
+    if (!window.confirm(`Delete version v${v.version_no}? This cannot be undone.`)) return;
+    setErr(null);
+    try {
+      await deleteVersionFn({ data: { versionId: v.id } });
+      await reload();
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not delete that version.");
+    }
+  };
+
   const restore = async () => {
     if (!selected) return;
     setBusy(true);
