@@ -61,7 +61,6 @@ function readLpDraft(): LessonPlanForm {
   }
 }
 
-
 export function LessonPlanGenerator({
   onBuildWorksheets,
 }: {
@@ -212,9 +211,6 @@ export function LessonPlanGenerator({
     }
   };
 
-
-
-
   // AI Idea Helper
   const [aiHelperOpen, setAiHelperOpen] = useState(false);
   const [aiHelperField, setAiHelperField] = useState("objectives"); // which field to fill
@@ -303,15 +299,20 @@ export function LessonPlanGenerator({
     Array.isArray(arr) &&
     arr.length >= 4 &&
     DOK_DEFS.every((d) => {
-      const lv = (arr as Array<Record<string, unknown>>).find((x) => Number((x as any)?.level) === d.level);
+      const lv = (arr as Array<Record<string, unknown>>).find(
+        (x) => Number((x as any)?.level) === d.level,
+      );
       return (
-        lv && Array.isArray((lv as any).items) && (lv as any).items.filter((s: unknown) => s && String(s).trim()).length >= 1
+        lv &&
+        Array.isArray((lv as any).items) &&
+        (lv as any).items.filter((s: unknown) => s && String(s).trim()).length >= 1
       );
     });
 
   const normalizeDok = (arr: unknown) =>
     DOK_DEFS.map((d) => {
-      const found: Record<string, any> = (Array.isArray(arr) ? arr : []).find((x: any) => Number(x?.level) === d.level) || {};
+      const found: Record<string, any> =
+        (Array.isArray(arr) ? arr : []).find((x: any) => Number(x?.level) === d.level) || {};
       const items = (Array.isArray(found.items) ? found.items : [])
         .map((s: unknown) => String(s || "").trim())
         .filter(Boolean);
@@ -436,7 +437,9 @@ export function LessonPlanGenerator({
       setExemplarDesc(desc);
       setExemplarRaw(raw);
     } catch (e: unknown) {
-      setExError(`Could not analyze: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
+      setExError(
+        `Could not analyze: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`,
+      );
     }
     setAnalyzingEx(false);
   };
@@ -466,7 +469,9 @@ export function LessonPlanGenerator({
       setExemplarDesc(desc);
       setExemplarRaw(text);
     } catch (e: unknown) {
-      setExError(`Could not load URL: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`);
+      setExError(
+        `Could not load URL: ${e instanceof Error ? e.message : String(e)}. Try the Paste Text tab.`,
+      );
     }
     setAnalyzingEx(false);
   };
@@ -1295,7 +1300,9 @@ document.addEventListener('keydown',e=>{
         );
       }
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1324,7 +1331,9 @@ document.addEventListener('keydown',e=>{
         `${deckBaseName(deck)}_slides.txt`,
       );
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1358,7 +1367,9 @@ document.addEventListener('keydown',e=>{
         setSlidesError("Popup blocked — downloaded as HTML. Open it and use Print → Save as PDF.");
       }
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1495,7 +1506,9 @@ document.addEventListener('keydown',e=>{
       const blob = await buildPptxBlob(deck);
       triggerDownload(blob, `${deckBaseName(deck)}_slides.pptx`);
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1519,7 +1532,9 @@ document.addEventListener('keydown',e=>{
         "✓ PowerPoint file downloaded. Google Slides opened in a new tab — go to File → Import slides → Upload, and pick the .pptx you just downloaded.",
       );
     } catch (err: unknown) {
-      setSlidesError(`Could not generate slides: ${err instanceof Error ? err.message : String(err)}`);
+      setSlidesError(
+        `Could not generate slides: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     setSlidesLoading(false);
     setExportingFmt("");
@@ -1968,8 +1983,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}
           >
             <div>
-              <label style={lbl} htmlFor="lp-grade">Grade</label>
-              <select id="lp-grade"
+              <label style={lbl} htmlFor="lp-grade">
+                Grade
+              </label>
+              <select
+                id="lp-grade"
                 value={form.grade}
                 onChange={(e) => setF("grade", e.target.value)}
                 style={{ ...inp, cursor: "pointer" }}
@@ -2016,8 +2034,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl} htmlFor="lp-subject">Subject</label>
-            <SpellInput id="lp-subject"
+            <label style={lbl} htmlFor="lp-subject">
+              Subject
+            </label>
+            <SpellInput
+              id="lp-subject"
               type="text"
               value={form.subject}
               onChange={(e) => setF("subject", e.target.value)}
@@ -2028,8 +2049,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl} htmlFor="lp-lesson-topic-title">Lesson Topic / Title</label>
-            <SpellInput id="lp-lesson-topic-title"
+            <label style={lbl} htmlFor="lp-lesson-topic-title">
+              Lesson Topic / Title
+            </label>
+            <SpellInput
+              id="lp-lesson-topic-title"
               type="text"
               value={form.topic}
               onChange={(e) => setF("topic", e.target.value)}
@@ -2040,8 +2064,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl} htmlFor="lp-instructional-model">Instructional Model</label>
-            <select id="lp-instructional-model"
+            <label style={lbl} htmlFor="lp-instructional-model">
+              Instructional Model
+            </label>
+            <select
+              id="lp-instructional-model"
               value={form.model}
               onChange={(e) => setF("model", e.target.value)}
               style={{ ...inp, cursor: "pointer" }}
@@ -2053,8 +2080,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl} htmlFor="lp-learning-objectives-optional">Learning Objectives (optional — AI will suggest if blank)</label>
-            <SpellTextarea id="lp-learning-objectives-optional"
+            <label style={lbl} htmlFor="lp-learning-objectives-optional">
+              Learning Objectives (optional — AI will suggest if blank)
+            </label>
+            <SpellTextarea
+              id="lp-learning-objectives-optional"
               value={form.objectives}
               onChange={(e) => setF("objectives", e.target.value)}
               spellCheck
@@ -2064,8 +2094,11 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl} htmlFor="lp-materials-optional">Materials (optional)</label>
-            <SpellTextarea id="lp-materials-optional"
+            <label style={lbl} htmlFor="lp-materials-optional">
+              Materials (optional)
+            </label>
+            <SpellTextarea
+              id="lp-materials-optional"
               value={form.materials}
               onChange={(e) => setF("materials", e.target.value)}
               spellCheck
