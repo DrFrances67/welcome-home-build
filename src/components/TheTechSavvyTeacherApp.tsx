@@ -779,23 +779,25 @@ function TheTechSavvyTeacherAppRoot() {
           touchAction: "pan-y",
         }}
       >
-        {activeTool === "worksheet" && (
-          <div className="ws-canvas-wrap" style={{ display: "flex", flexDirection: "column" }}>
-            <WorksheetBuilder />
-          </div>
-        )}
-        {activeTool === "lesson" && (
-          <LessonPlanGenerator
-            onBuildWorksheets={(payload) => {
-              if (typeof window !== "undefined") {
-                (window as any).__pendingLessonForWorksheet = payload;
-              }
-              setActiveTool("worksheet");
-            }}
-          />
-        )}
-        {activeTool === "danielson" && <DanielsonReview />}
-        {activeTool === "email" && <EmailAssistant />}
+        <Suspense fallback={<ToolLoading />}>
+          {activeTool === "worksheet" && (
+            <div className="ws-canvas-wrap" style={{ display: "flex", flexDirection: "column" }}>
+              <WorksheetBuilder />
+            </div>
+          )}
+          {activeTool === "lesson" && (
+            <LessonPlanGenerator
+              onBuildWorksheets={(payload) => {
+                if (typeof window !== "undefined") {
+                  (window as any).__pendingLessonForWorksheet = payload;
+                }
+                setActiveTool("worksheet");
+              }}
+            />
+          )}
+          {activeTool === "danielson" && <DanielsonReview />}
+          {activeTool === "email" && <EmailAssistant />}
+        </Suspense>
       </main>
 
       {/* Swipe hint toast (mobile) */}
