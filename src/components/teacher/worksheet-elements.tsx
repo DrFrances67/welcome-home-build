@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, memo } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { shouldShowScrollTop, scrollEverythingToTop } from "@/lib/scroll-top";
 import { repairAndParse } from "@/lib/repairJson";
@@ -3958,4 +3958,16 @@ function CustomShapeEditor({
   );
 }
 
-export { ElView, ElEditor, DokEditor, ChecklistEditor, CustomShapeEditor };
+// Worksheets can hold dozens of elements; re-rendering every one on each
+// keystroke made typing feel sluggish. Memoising the row components keeps the
+// work proportional to what actually changed.
+const MemoElView = memo(ElView);
+const MemoElEditor = memo(ElEditor);
+
+export {
+  MemoElView as ElView,
+  MemoElEditor as ElEditor,
+  DokEditor,
+  ChecklistEditor,
+  CustomShapeEditor,
+};

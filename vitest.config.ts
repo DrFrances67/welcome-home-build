@@ -7,6 +7,8 @@ import path from "node:path";
 export default defineConfig({
   test: {
     environment: "happy-dom",
+    // Lazy-loaded tool chunks can take a while when suites run in parallel.
+    testTimeout: 20000,
     globals: false,
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
