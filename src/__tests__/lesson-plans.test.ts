@@ -109,9 +109,12 @@ describe("listLessonPlansImpl", () => {
     expect(ops).toContain("order");
     expect(ops).toContain("eq");
   });
-  it("throws when supabase returns error", async () => {
+  it("throws a user-safe message (not the raw DB error) when supabase fails", async () => {
     fake.results.push({ data: null, error: { message: "db down" } });
-    await expect(listLessonPlansImpl(fake.client, {})).rejects.toThrow("db down");
+    const err = await listLessonPlansImpl(fake.client, {}).catch((e: unknown) => e as Error);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).not.toContain("db down");
+    expect(err.message).toMatch(/couldn't load your lesson plans/i);
   });
 });
 
