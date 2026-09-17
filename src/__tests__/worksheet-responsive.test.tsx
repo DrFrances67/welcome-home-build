@@ -44,9 +44,10 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   }));
 }
 
-function openWorksheetBuilder() {
+async function openWorksheetBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
+  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
   return screen.getByRole("navigation", { name: /worksheet tools/i }) as HTMLElement;
 }
 
@@ -61,7 +62,7 @@ describe("worksheet builder responsive sidebar", () => {
   });
 
   it("keeps the left sidebar independently scrollable on desktop/Mac-sized screens", () => {
-    const sidebar = openWorksheetBuilder();
+    const sidebar = await openWorksheetBuilder();
 
     expect(sidebar.style.overflowY).toBe("auto");
     expect(sidebar.style.maxHeight).toBe("100%");
@@ -81,7 +82,7 @@ describe("worksheet builder responsive sidebar", () => {
 
   it("keeps every worksheet section and option reachable in the mobile stacked layout", () => {
     setViewport(390, 844, "coarse");
-    const sidebar = openWorksheetBuilder();
+    const sidebar = await openWorksheetBuilder();
 
     expect(
       within(sidebar).getByRole("button", { name: /browse new york standards/i }),

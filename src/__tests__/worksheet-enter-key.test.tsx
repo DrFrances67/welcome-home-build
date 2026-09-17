@@ -24,9 +24,10 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   }));
 }
 
-function openBuilder() {
+async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
+  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
 }
 
 function addElement(label: RegExp) {
@@ -97,7 +98,7 @@ describe("Enter key adds new lines in worksheet editors (desktop)", () => {
 
   for (const c of cases) {
     it(`${c.name}: pressing Enter after clearing creates additional lines`, () => {
-      openBuilder();
+      await openBuilder();
       addElement(c.addLabel);
 
       for (const fieldLabel of c.fields) {
@@ -117,7 +118,7 @@ describe("Enter key adds new lines in worksheet editors (mobile)", () => {
 
   for (const c of cases) {
     it(`${c.name} (mobile): pressing Enter after clearing creates additional lines`, () => {
-      openBuilder();
+      await openBuilder();
       addElement(c.addLabel);
 
       for (const fieldLabel of c.fields) {

@@ -42,9 +42,10 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
   }));
 }
 
-function openBuilder() {
+async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
+  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
 }
 
 function getLastElement(): HTMLElement {
@@ -181,7 +182,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       beforeEach(() => setViewport(vp.width, vp.height, vp.pointer));
 
       it("each element type exposes all 5 resize handles (top/right/bottom/left/corner)", () => {
-        openBuilder();
+        await openBuilder();
         for (const t of ELEMENT_TYPES) {
           const wrapper = addElement(t.label);
           const h = getHandles(wrapper);
@@ -196,7 +197,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("resizing each element grows wrapper dims and yields a clean scale() — no leftover transforms across elements", async () => {
-        openBuilder();
+        await openBuilder();
         const resized: Array<{ name: string; wrapper: HTMLElement; startW: number; endW: number }> =
           [];
 
@@ -246,7 +247,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("after resizing, every element type is still draggable (not static) — x/y change with a drag", async () => {
-        openBuilder();
+        await openBuilder();
         for (const t of ELEMENT_TYPES) {
           const wrapper = addElement(t.label);
           // Resize first.
@@ -269,7 +270,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("Word Bank specifically: inner pills/title remain inside the scaled wrapper after enlarging", async () => {
-        openBuilder();
+        await openBuilder();
         const wrapper = addElement(/add word bank element/i);
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
@@ -286,7 +287,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("True/False specifically: each statement row stays inside the scaled wrapper after enlarging", async () => {
-        openBuilder();
+        await openBuilder();
         const wrapper = addElement(/add true \/ false element/i);
         await dragHandle(getHandles(wrapper).corner, 120, 80);
 
@@ -306,7 +307,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("Word Bank and True/False reflow on right-side resize and support vertical-only resize", async () => {
-        openBuilder();
+        await openBuilder();
         for (const label of [/add word bank element/i, /add true \/ false element/i]) {
           const wrapper = addElement(label);
           const startW = widthPctOf(wrapper);
@@ -323,7 +324,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("top and left handles resize from one side by moving that edge, not freezing the element", async () => {
-        openBuilder();
+        await openBuilder();
         const wrapper = addElement(/add word bank element/i);
         await dragHandle(getHandles(wrapper).bottom, 0, 120);
         const beforeTop = topPxOf(wrapper);
@@ -349,7 +350,7 @@ describe("worksheet builder: multi-element back-to-back resize E2E", () => {
       });
 
       it("EVERY worksheet element type supports vertical-only resize (bottom + top handles, width unchanged)", async () => {
-        openBuilder();
+        await openBuilder();
         for (const t of ALL_ELEMENT_TYPES) {
           const wrapper = addElement(t.label);
 

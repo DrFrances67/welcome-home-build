@@ -43,9 +43,10 @@ function stubLayout(node: HTMLElement, clientWidth: number, scrollHeight: number
   Object.defineProperty(node, "offsetHeight", { value: scrollHeight, configurable: true });
 }
 
-function openBuilder() {
+async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
+  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
 }
 
 function getLastElement(): HTMLElement {
@@ -135,7 +136,7 @@ describe("worksheet element resizing scales inner content proportionally", () =>
       beforeEach(() => setViewport(vp.width, vp.height, vp.pointer));
 
       it("Text Block: dragging the right handle grows wrapper width AND inner font scales proportionally", async () => {
-        openBuilder();
+        await openBuilder();
         const wrapper = addElement(/add text block element/i);
 
         const startPct = widthPctOf(wrapper);
@@ -161,7 +162,7 @@ describe("worksheet element resizing scales inner content proportionally", () =>
       });
 
       it("Write Lines: each underline grows in lockstep with the wrapper width", async () => {
-        openBuilder();
+        await openBuilder();
         const wrapper = addElement(/add write lines element/i);
 
         const startPct = widthPctOf(wrapper);
@@ -179,7 +180,7 @@ describe("worksheet element resizing scales inner content proportionally", () =>
       });
 
       it("Image: wrapper width grows on drag and image fill style has no axis cap", async () => {
-        openBuilder();
+        await openBuilder();
         const wrapper = addElement(/add image element/i);
 
         const startPct = widthPctOf(wrapper);

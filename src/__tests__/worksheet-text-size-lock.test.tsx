@@ -39,9 +39,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function openBuilder() {
+async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
+  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
 }
 
 function lastEl(): HTMLElement {
@@ -104,7 +105,7 @@ const TYPES = [
 describe("worksheet builder: per-element text-size lock", () => {
   for (const t of TYPES) {
     it(`${t.name}: resizing the box does NOT change the locked preset font size`, async () => {
-      openBuilder();
+      await openBuilder();
       const wrapper = addAndSelect(t.label);
 
       // Lock to XL (22pt) via the preset button in the edit panel.
@@ -128,7 +129,7 @@ describe("worksheet builder: per-element text-size lock", () => {
   }
 
   it("Auto mode (no preset): resizing DOES scale text — preserves legacy behavior", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addAndSelect(/add text block element/i);
     // Do not set any preset → fontSizeOverride remains null → tScale = sc.s.
     const fsBefore = primaryFs(wrapper);
@@ -138,7 +139,7 @@ describe("worksheet builder: per-element text-size lock", () => {
   });
 
   it("Switching from a preset back to Auto re-enables resize scaling", async () => {
-    openBuilder();
+    await openBuilder();
     const wrapper = addAndSelect(/add text block element/i);
     setTextSizePreset("L");
     const lockedFs = primaryFs(wrapper);
