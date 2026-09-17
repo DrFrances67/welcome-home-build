@@ -61,3 +61,8 @@ export const deleteWorksheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => wsGetInputSchema.parse(data))
   .handler(({ context, data }) => deleteWorksheetImpl(context.supabase, data));
+
+export const deleteWorksheetVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => wsDeleteVersionInputSchema.parse(data))
+  .handler(({ context, data }) => deleteWorksheetVersionImpl(context.supabase, data));
