@@ -393,12 +393,21 @@ function DraftList({
                   {v.label ? <span style={{ color: "#64748b" }}> · {v.label}</span> : null}
                   <span style={{ color: "#94a3b8" }}> — {timeAgo(v.created_at)}</span>
                 </span>
-                <button
-                  style={btn}
-                  onClick={() => onOpen(planId, v.form as Record<string, unknown>)}
-                >
-                  Open & edit
-                </button>
+                <span style={{ display: "flex", gap: 6 }}>
+                  <button
+                    style={btn}
+                    onClick={() => onOpen(planId, v.form as Record<string, unknown>)}
+                  >
+                    Open & edit
+                  </button>
+                  <button
+                    style={btnDanger}
+                    onClick={() => removeVersion(v)}
+                    aria-label={`Delete version ${v.version_no}`}
+                  >
+                    Delete
+                  </button>
+                </span>
               </li>
             ))}
           </ul>
