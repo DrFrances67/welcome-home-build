@@ -32,7 +32,7 @@ import { LessonPlanGenerator } from "@/components/teacher/LessonPlanGenerator";
 const LP_DRAFT_KEY = "tts.lessonPlanDraft.v1";
 
 function typeTopic(value: string) {
-  const topic = screen.getByLabelText(/topic/i, { selector: "input,textarea" });
+  const topic = screen.getByLabelText("Lesson Topic / Title");
   fireEvent.change(topic, { target: { value } });
   return topic;
 }
