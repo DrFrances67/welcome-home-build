@@ -2403,6 +2403,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
                     </div>
                   </div>
                   <button
+                    type="button"
+                    aria-label="Remove the uploaded example lesson plan"
+                    title="Remove example"
                     onClick={clearExemplar}
                     style={{
                       width: 24,
