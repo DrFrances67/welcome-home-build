@@ -55,6 +55,9 @@ export function UserMenu() {
           <DropdownMenuItem asChild>
             <Link to="/lesson-plans">Saved Lesson Plans</Link>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/worksheets">Saved Worksheets</Link>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       {isAdmin && (
