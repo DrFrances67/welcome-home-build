@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { WorksheetBuilder } from "@/components/TheTechSavvyTeacherApp";
+import { WorksheetBuilder } from "@/components/teacher/WorksheetBuilder";
 
 // Helpers
 const isMac = /Mac|iPad|iPhone/.test(typeof navigator !== "undefined" ? navigator.platform : "");
