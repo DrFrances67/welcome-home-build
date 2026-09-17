@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, waitFor, act, cleanup } from "@testing-library/react";
 
 /**
  * Coverage for the Lesson Plan Generator's account-saving surface: explicit
@@ -44,6 +44,8 @@ describe("LessonPlanGenerator — saving to the account", () => {
     getSpy.mockReset();
     saveSpy.mockResolvedValue({ id: "plan-1", current: { version_no: 1 } });
   });
+
+  afterEach(() => cleanup());
 
   it("restores the in-progress plan from the browser draft", () => {
     window.localStorage.setItem(
