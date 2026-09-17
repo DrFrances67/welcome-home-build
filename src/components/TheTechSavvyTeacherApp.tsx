@@ -726,6 +726,8 @@ function TheTechSavvyTeacherAppRoot() {
                 id={`tool-tab-${t.id}`}
                 type="button"
                 onClick={() => setActiveTool(t.id)}
+                onMouseEnter={() => void PRELOADERS[t.id]?.()}
+                onFocus={() => void PRELOADERS[t.id]?.()}
                 className="tool-tab"
                 role="tab"
                 aria-selected={isActive}
