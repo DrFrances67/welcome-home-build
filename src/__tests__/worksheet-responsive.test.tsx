@@ -46,8 +46,8 @@ function setViewport(width: number, height: number, pointer: "fine" | "coarse" =
 
 async function openWorksheetBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
-  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
+  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  await screen.findByRole("navigation", { name: /worksheet tools/i });
   return screen.getByRole("navigation", { name: /worksheet tools/i }) as HTMLElement;
 }
 

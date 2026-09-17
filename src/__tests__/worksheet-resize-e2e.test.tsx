@@ -45,8 +45,8 @@ function stubLayout(node: HTMLElement, clientWidth: number, scrollHeight: number
 
 async function openBuilder() {
   render(<TheTechSavvyTeacherApp />);
-  fireEvent.click(screen.getByRole(\"tab\", { name: /worksheet builder/i }));
-  await screen.findByRole(\"navigation\", { name: /worksheet tools/i });
+  fireEvent.click(screen.getByRole("tab", { name: /worksheet builder/i }));
+  await screen.findByRole("navigation", { name: /worksheet tools/i });
 }
 
 function getLastElement(): HTMLElement {
