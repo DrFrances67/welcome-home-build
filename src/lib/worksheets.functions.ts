@@ -2,12 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   deleteWorksheetImpl,
+  deleteWorksheetVersionImpl,
   getWorksheetImpl,
   listWorksheetVersionsImpl,
   listWorksheetsImpl,
   renameWorksheetImpl,
   restoreWorksheetVersionImpl,
   saveWorksheetImpl,
+  wsDeleteVersionInputSchema,
   wsGetInputSchema,
   wsListInputSchema,
   wsListVersionsInputSchema,
