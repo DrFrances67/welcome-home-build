@@ -134,8 +134,14 @@ function LessonPlansPage() {
   if (authLoading || !user) return null;
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "80px 20px 60px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <main
+      className="saved-plans-page"
+      style={{ maxWidth: 760, margin: "0 auto", padding: "80px 20px 60px" }}
+    >
+      <div
+        className="saved-plans-heading"
+        style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}
+      >
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
           Saved Lesson Plans
         </h1>
@@ -148,7 +154,7 @@ function LessonPlansPage() {
       </p>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+      <div className="saved-plans-tabs" style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {(["saved", "draft"] as Tab[]).map((t) => (
           <button
             key={t}
@@ -223,6 +229,7 @@ function LessonPlansPage() {
               }}
             >
               <div
+                className="saved-plan-card-body"
                 style={{
                   padding: 16,
                   display: "flex",
@@ -232,7 +239,7 @@ function LessonPlansPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <div style={{ minWidth: 0 }}>
+                <div className="saved-plan-card-copy" style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15 }}>
                     {plan.title}
                   </div>
@@ -240,8 +247,15 @@ function LessonPlansPage() {
                     Updated {timeAgo(plan.updated_at)}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <button style={btnPrimary} onClick={() => openForEditing(plan.id)}>
+                <div
+                  className="saved-plan-actions"
+                  style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
+                >
+                  <button
+                    className="saved-plan-primary"
+                    style={btnPrimary}
+                    onClick={() => openForEditing(plan.id)}
+                  >
                     Open & edit
                   </button>
                   <button
@@ -335,7 +349,10 @@ function DraftList({
   };
 
   return (
-    <div style={{ borderTop: "1px solid #eef2f7", background: "#f8fafc", padding: 16 }}>
+    <div
+      className="saved-plan-versions"
+      style={{ borderTop: "1px solid #eef2f7", background: "#f8fafc", padding: 16 }}
+    >
       <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b", marginBottom: 10 }}>
         DRAFT VERSIONS
       </div>
@@ -350,6 +367,7 @@ function DraftList({
         <>
           {/* Restore selector */}
           <div
+            className="saved-plan-restore"
             style={{
               display: "flex",
               gap: 8,
@@ -358,10 +376,14 @@ function DraftList({
               flexWrap: "wrap",
             }}
           >
-            <label style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
+            <label
+              htmlFor={`lp-restore-${planId}`}
+              style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}
+            >
               Restore version:
             </label>
             <select
+              id={`lp-restore-${planId}`}
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               style={{
@@ -389,6 +411,7 @@ function DraftList({
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 6 }}>
             {versions.map((v) => (
               <li
+                className="saved-plan-version-row"
                 key={v.id}
                 style={{
                   display: "flex",
@@ -402,12 +425,12 @@ function DraftList({
                   fontSize: 13,
                 }}
               >
-                <span style={{ color: "#0f172a" }}>
+                <span className="saved-plan-version-copy" style={{ color: "#0f172a" }}>
                   <strong>v{v.version_no}</strong>
                   {v.label ? <span style={{ color: "#64748b" }}> · {v.label}</span> : null}
                   <span style={{ color: "#94a3b8" }}> — {timeAgo(v.created_at)}</span>
                 </span>
-                <span style={{ display: "flex", gap: 6 }}>
+                <span className="saved-plan-version-actions" style={{ display: "flex", gap: 6 }}>
                   <button
                     style={btn}
                     onClick={() => onOpen(planId, v.form as Record<string, unknown>)}
