@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export function ContactWidget() {
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -8,6 +9,10 @@ export function ContactWidget() {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -57,6 +62,10 @@ export function ContactWidget() {
       setSubmitting(false);
     }
   }
+
+  // Render the floating form only after hydration. Browser autofill and form
+  // extensions can otherwise alter its hidden SSR markup before React starts.
+  if (!mounted) return null;
 
   return (
     <>
