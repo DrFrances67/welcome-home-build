@@ -67,7 +67,9 @@ function renderElement(element: WorksheetPreviewData["elements"][number]) {
   if (element.type === "multipleChoice") {
     body += `<ul>${(element.choices ?? []).map((choice) => `<li><b></b>${escapeHtml(choice)}</li>`).join("")}</ul>`;
   } else if (element.type === "truefalse") {
-    body = (element.statements ?? []).map((item) => `<p>${escapeHtml(item)} <strong>TRUE &nbsp; FALSE</strong></p>`).join("");
+    body = (element.statements ?? [])
+      .map((item) => `<p>${escapeHtml(item)} <strong>TRUE &nbsp; FALSE</strong></p>`)
+      .join("");
   } else if (element.type === "wordBank") {
     body += `<div class="word-bank">${(element.words ?? []).map((word) => `<span>${escapeHtml(word)}</span>`).join("")}</div>`;
   } else if (["blank", "shortAnswer", "essay"].includes(element.type)) {
@@ -132,7 +134,10 @@ export function WorksheetPrintPreview({
     try {
       return { content: buildWorksheetPrintHtml(worksheet), error: null };
     } catch (error) {
-      return { content: "", error: error instanceof Error ? error.message : "Preview unavailable." };
+      return {
+        content: "",
+        error: error instanceof Error ? error.message : "Preview unavailable.",
+      };
     }
   }, [worksheet]);
   const pageCount = worksheetSchema.safeParse(worksheet).data?.pageCount ?? 1;
@@ -157,10 +162,15 @@ export function WorksheetPrintPreview({
           </DialogDescription>
         </DialogHeader>
         {html.error ? (
-          <p role="alert" className="worksheet-preview-error">{html.error}</p>
+          <p role="alert" className="worksheet-preview-error">
+            {html.error}
+          </p>
         ) : (
           <div ref={viewportRef} className="worksheet-preview-viewport">
-            <div className="worksheet-preview-scaler" style={{ width: 760 * scale, height: pageCount * 1010 * scale }}>
+            <div
+              className="worksheet-preview-scaler"
+              style={{ width: 760 * scale, height: pageCount * 1010 * scale }}
+            >
               <iframe
                 ref={iframeRef}
                 title="Saved worksheet full-page preview"
@@ -172,8 +182,13 @@ export function WorksheetPrintPreview({
           </div>
         )}
         <div className="worksheet-preview-actions">
-          <Button variant="outline" onClick={onEdit}>Open &amp; edit</Button>
-          <Button onClick={() => iframeRef.current?.contentWindow?.print()} disabled={Boolean(html.error)}>
+          <Button variant="outline" onClick={onEdit}>
+            Open &amp; edit
+          </Button>
+          <Button
+            onClick={() => iframeRef.current?.contentWindow?.print()}
+            disabled={Boolean(html.error)}
+          >
             <Printer aria-hidden="true" /> Print / Save PDF
           </Button>
         </div>

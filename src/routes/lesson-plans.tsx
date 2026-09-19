@@ -134,8 +134,14 @@ function LessonPlansPage() {
   if (authLoading || !user) return null;
 
   return (
-    <main className="saved-plans-page" style={{ maxWidth: 760, margin: "0 auto", padding: "80px 20px 60px" }}>
-      <div className="saved-plans-heading" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <main
+      className="saved-plans-page"
+      style={{ maxWidth: 760, margin: "0 auto", padding: "80px 20px 60px" }}
+    >
+      <div
+        className="saved-plans-heading"
+        style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}
+      >
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
           Saved Lesson Plans
         </h1>
@@ -241,8 +247,15 @@ function LessonPlansPage() {
                     Updated {timeAgo(plan.updated_at)}
                   </div>
                 </div>
-                <div className="saved-plan-actions" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <button className="saved-plan-primary" style={btnPrimary} onClick={() => openForEditing(plan.id)}>
+                <div
+                  className="saved-plan-actions"
+                  style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
+                >
+                  <button
+                    className="saved-plan-primary"
+                    style={btnPrimary}
+                    onClick={() => openForEditing(plan.id)}
+                  >
                     Open & edit
                   </button>
                   <button
@@ -336,7 +349,10 @@ function DraftList({
   };
 
   return (
-    <div className="saved-plan-versions" style={{ borderTop: "1px solid #eef2f7", background: "#f8fafc", padding: 16 }}>
+    <div
+      className="saved-plan-versions"
+      style={{ borderTop: "1px solid #eef2f7", background: "#f8fafc", padding: 16 }}
+    >
       <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b", marginBottom: 10 }}>
         DRAFT VERSIONS
       </div>
@@ -360,7 +376,10 @@ function DraftList({
               flexWrap: "wrap",
             }}
           >
-            <label htmlFor={`lp-restore-${planId}`} style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
+            <label
+              htmlFor={`lp-restore-${planId}`}
+              style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}
+            >
               Restore version:
             </label>
             <select

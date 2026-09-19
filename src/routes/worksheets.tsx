@@ -70,7 +70,9 @@ function WorksheetsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [preview, setPreview] = useState<{ id: string; form: Record<string, unknown> } | null>(null);
+  const [preview, setPreview] = useState<{ id: string; form: Record<string, unknown> } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!authLoading && !user)
@@ -113,7 +115,8 @@ function WorksheetsPage() {
 
   const openPreview = async (id: string, form?: Record<string, unknown> | null) => {
     try {
-      const formToUse = form ?? ((await getOne({ data: { id } })).current?.form as Record<string, unknown> | null);
+      const formToUse =
+        form ?? ((await getOne({ data: { id } })).current?.form as Record<string, unknown> | null);
       if (!formToUse) throw new Error("This worksheet does not have a saved version to preview.");
       setPreview({ id, form: formToUse });
     } catch (e) {
@@ -274,7 +277,12 @@ function WorksheetsPage() {
               </div>
 
               {expanded === ws.id && (
-                <WorksheetDraftList worksheetId={ws.id} onOpen={openForEditing} onPreview={openPreview} onChanged={load} />
+                <WorksheetDraftList
+                  worksheetId={ws.id}
+                  onOpen={openForEditing}
+                  onPreview={openPreview}
+                  onChanged={load}
+                />
               )}
             </li>
           ))}
@@ -283,7 +291,9 @@ function WorksheetsPage() {
       {preview && (
         <WorksheetPrintPreview
           open
-          onOpenChange={(open) => { if (!open) setPreview(null); }}
+          onOpenChange={(open) => {
+            if (!open) setPreview(null);
+          }}
           worksheet={preview.form}
           onEdit={() => openForEditing(preview.id, preview.form)}
         />
@@ -443,7 +453,10 @@ function WorksheetDraftList({
                   >
                     Open & edit
                   </button>
-                  <button style={btn} onClick={() => onPreview(worksheetId, v.form as Record<string, unknown>)}>
+                  <button
+                    style={btn}
+                    onClick={() => onPreview(worksheetId, v.form as Record<string, unknown>)}
+                  >
                     Preview
                   </button>
                   <button
