@@ -22,8 +22,8 @@ describe("saved worksheet print preview", () => {
   });
 
   it("keeps mobile lesson-plan reopen and restore controls touch friendly", () => {
-    const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
-    const route = fs.readFileSync(new URL("../routes/lesson-plans.tsx", import.meta.url), "utf8");
+    const css = fs.readFileSync(`${process.cwd()}/src/styles.css`, "utf8");
+    const route = fs.readFileSync(`${process.cwd()}/src/routes/lesson-plans.tsx`, "utf8");
     expect(route).toContain('className="saved-plan-primary"');
     expect(route).toContain('className="saved-plan-restore"');
     expect(route).toContain("`${LP_PLAN_ID_KEY}:${user.id}`");
