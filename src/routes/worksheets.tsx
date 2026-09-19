@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/useAuth";
+import { WorksheetPrintPreview } from "@/components/worksheet-print-preview";
 import {
   listWorksheets,
   listWorksheetVersions,
@@ -69,6 +70,7 @@ function WorksheetsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ id: string; form: Record<string, unknown> } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user)
@@ -107,6 +109,16 @@ function WorksheetsPage() {
       }
     }
     navigate({ to: "/" });
+  };
+
+  const openPreview = async (id: string, form?: Record<string, unknown> | null) => {
+    try {
+      const formToUse = form ?? ((await getOne({ data: { id } })).current?.form as Record<string, unknown> | null);
+      if (!formToUse) throw new Error("This worksheet does not have a saved version to preview.");
+      setPreview({ id, form: formToUse });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Preview unavailable.");
+    }
   };
 
   const handleRename = async (ws: WorksheetRow) => {
@@ -242,6 +254,9 @@ function WorksheetsPage() {
                   <button style={btnPrimary} onClick={() => openForEditing(ws.id)}>
                     Open & edit
                   </button>
+                  <button style={btn} onClick={() => openPreview(ws.id)}>
+                    Preview
+                  </button>
                   <button
                     style={btn}
                     onClick={() => setExpanded((x) => (x === ws.id ? null : ws.id))}
@@ -259,11 +274,19 @@ function WorksheetsPage() {
               </div>
 
               {expanded === ws.id && (
-                <WorksheetDraftList worksheetId={ws.id} onOpen={openForEditing} onChanged={load} />
+                <WorksheetDraftList worksheetId={ws.id} onOpen={openForEditing} onPreview={openPreview} onChanged={load} />
               )}
             </li>
           ))}
         </ul>
+      )}
+      {preview && (
+        <WorksheetPrintPreview
+          open
+          onOpenChange={(open) => { if (!open) setPreview(null); }}
+          worksheet={preview.form}
+          onEdit={() => openForEditing(preview.id, preview.form)}
+        />
       )}
     </main>
   );
@@ -272,10 +295,12 @@ function WorksheetsPage() {
 function WorksheetDraftList({
   worksheetId,
   onOpen,
+  onPreview,
   onChanged,
 }: {
   worksheetId: string;
   onOpen: (id: string, form: Record<string, unknown>) => void;
+  onPreview: (id: string, form: Record<string, unknown>) => void;
   onChanged: () => void;
 }) {
   const versionsFn = useServerFn(listWorksheetVersions);
@@ -417,6 +442,9 @@ function WorksheetDraftList({
                     onClick={() => onOpen(worksheetId, v.form as Record<string, unknown>)}
                   >
                     Open & edit
+                  </button>
+                  <button style={btn} onClick={() => onPreview(worksheetId, v.form as Record<string, unknown>)}>
+                    Preview
                   </button>
                   <button
                     style={btnDanger}
