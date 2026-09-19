@@ -29,7 +29,7 @@ describe("saved worksheet print preview", () => {
     expect(route).toContain("`${LP_PLAN_ID_KEY}:${user.id}`");
     expect(css).toMatch(/\.saved-plan-actions button \{[^}]*min-height: 44px/);
     expect(css).toMatch(
-      /\.saved-plan-restore select, \.saved-plan-restore button \{[^}]*min-height: 44px/,
+      /\.saved-plan-restore select,\s*\.saved-plan-restore button \{[^}]*min-height: 44px/,
     );
   });
 
