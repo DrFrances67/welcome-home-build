@@ -360,10 +360,11 @@ function DraftList({
               flexWrap: "wrap",
             }}
           >
-            <label style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
+            <label htmlFor={`lp-restore-${planId}`} style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
               Restore version:
             </label>
             <select
+              id={`lp-restore-${planId}`}
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               style={{
