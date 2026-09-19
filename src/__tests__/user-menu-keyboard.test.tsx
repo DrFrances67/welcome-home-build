@@ -96,7 +96,7 @@ describe("UserMenu — signed in", () => {
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
     expect(trigger.getAttribute("aria-controls")).toBeTruthy();
     const items = getItems();
-    expect(items).toHaveLength(3);
+    expect(items).toHaveLength(4);
     await waitFor(() => expect(document.activeElement).toBe(items[0]));
   });
 
@@ -187,11 +187,17 @@ describe("UserMenu — signed in", () => {
     render(<UserMenu />);
     await openWith(user, "{Enter}");
     const items = getItems();
-    expect(items.map((i) => i.getAttribute("role"))).toEqual(["menuitem", "menuitem", "menuitem"]);
+    expect(items.map((i) => i.getAttribute("role"))).toEqual([
+      "menuitem",
+      "menuitem",
+      "menuitem",
+      "menuitem",
+    ]);
     expect(items.map((i) => i.getAttribute("href"))).toEqual([
       "/account",
       "/lesson-plans",
       "/worksheets",
+      null,
     ]);
   });
 });
