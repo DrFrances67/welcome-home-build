@@ -376,7 +376,7 @@ function TheTechSavvyTeacherAppRoot() {
           .site-brand { align-items: flex-start !important; text-align: left !important; padding: 8px 16px 14px !important; }
           .site-brand h1 { font-size: 20px !important; margin-bottom: 4px !important; }
           .site-brand p { font-size: 9px !important; letter-spacing: 1.5px !important; }
-          .site-brand-emoji, .powered-badge-wrap { display: none !important; }
+          .site-brand-emoji, .powered-badge, .powered-badge-wrap { display: none !important; }
           .tool-tabs-row { justify-content: flex-start !important; gap: 8px !important; padding: 10px 12px 14px !important; margin-top: 0 !important; background: rgba(0,0,0,0.12) !important; scroll-padding-inline: 12px; }
           .tool-tab { flex: 0 0 auto; padding: 10px 14px !important; font-size: 12px !important; border: 1px solid rgba(255,255,255,0.22) !important; border-radius: 12px !important; }
           .tool-tab[aria-selected="true"] { background: white !important; color: #8B0AB0 !important; border-color: white !important; box-shadow: 0 8px 20px rgba(58,7,77,0.2); }
