@@ -299,6 +299,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             Who are you writing to?
           </span>
           <div
+            className="form-2col"
             role="radiogroup"
             aria-labelledby="recipient-label"
             style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 18 }}
@@ -505,6 +506,7 @@ Respond ONLY as valid JSON (no markdown fences): {"subject":"...","email":"..."}
             );
           })()}
           <div
+            className="form-2col"
             role="group"
             aria-labelledby="situation-label"
             aria-describedby="situation-counter situation-help"

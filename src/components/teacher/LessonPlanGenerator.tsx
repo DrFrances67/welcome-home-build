@@ -1607,6 +1607,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
         }}
       >
         <div
+          className="lp-card-header"
           style={{
             background: BRAND,
             padding: "12px 18px",
@@ -1617,6 +1618,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           }}
         >
           <span
+            className="lp-card-title"
             style={{
               fontFamily: "'Playfair Display',serif",
               color: "white",
@@ -1626,8 +1628,9 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
           >
             📋 Lesson Details
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="lp-save-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span
+              className="lp-save-status"
               role="status"
               aria-live="polite"
               title={
@@ -3046,6 +3049,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
             </div>
 
             <div
+              className="mobile-result-3col"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr 1fr",
@@ -3333,6 +3337,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
               Assessment
             </p>
             <div
+              className="mobile-result-3col"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr 1fr",
@@ -3531,6 +3536,7 @@ ${result.teacherNotes ? `<h2>Teacher Notes</h2><p style="font-size:12px">${safeH
               Differentiation
             </p>
             <div
+              className="mobile-result-2col"
               style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}
             >
               {[

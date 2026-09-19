@@ -369,15 +369,26 @@ function TheTechSavvyTeacherAppRoot() {
 
         /* Phones */
         @media (max-width: 768px) {
-          .site-brand { padding: 16px 14px 0 !important; }
-          .site-brand h1 { font-size: 22px !important; }
-          .site-brand p { font-size: 9px !important; letter-spacing: 2px !important; }
-          .site-brand-emoji { font-size: 28px !important; margin-bottom: 6px !important; }
-          .powered-badge { position: static !important; margin: 8px auto 0 !important; align-self: center !important; }
-          .powered-badge-wrap { display: flex; justify-content: center; padding: 0 8px; }
-          .tool-tabs-row { justify-content: flex-start !important; padding: 0 8px; margin-top: 12px !important; }
-          .tool-tab { padding: 10px 14px !important; font-size: 12px !important; }
+          .site-header { padding-top: 58px; box-shadow: none !important; }
+          .site-header > div:first-of-type { top: 10px !important; left: 14px !important; }
+          .site-header > div:first-of-type label { display: none !important; }
+          .site-header > div:first-of-type select { max-width: 190px; min-height: 44px; padding: 8px 32px 8px 14px !important; }
+          .site-brand { align-items: flex-start !important; text-align: left !important; padding: 8px 16px 14px !important; }
+          .site-brand h1 { font-size: 20px !important; margin-bottom: 4px !important; }
+          .site-brand p { font-size: 9px !important; letter-spacing: 1.5px !important; }
+          .site-brand-emoji, .powered-badge, .powered-badge-wrap { display: none !important; }
+          .tool-tabs-row { justify-content: flex-start !important; gap: 8px !important; padding: 10px 12px 14px !important; margin-top: 0 !important; background: rgba(0,0,0,0.12) !important; scroll-padding-inline: 12px; }
+          .tool-tab { flex: 0 0 auto; padding: 10px 14px !important; font-size: 12px !important; border: 1px solid rgba(255,255,255,0.22) !important; border-radius: 12px !important; }
+          .tool-tab[aria-selected="true"] { background: white !important; color: #8B0AB0 !important; border-color: white !important; box-shadow: 0 8px 20px rgba(58,7,77,0.2); }
           .tool-tab span { font-size: 14px !important; }
+
+          .lesson-grid, .two-col-grid { padding: 16px 12px 96px !important; gap: 16px !important; }
+          .lp-card-header { align-items: flex-start !important; flex-direction: column !important; padding: 16px !important; }
+          .lp-card-title { font-size: 18px !important; }
+          .lp-save-actions { display: grid !important; grid-template-columns: minmax(0,1fr) minmax(0,1fr); width: 100%; gap: 8px !important; }
+          .lp-save-status { grid-column: 1 / -1; justify-self: start; }
+          .lp-save-actions button { width: 100%; white-space: normal !important; min-height: 44px; }
+          .mobile-result-3col, .mobile-result-2col { grid-template-columns: 1fr !important; }
 
           /* Worksheet builder: stack the 3-column body */
           .ws-body { flex-direction: column !important; overflow: visible !important; height: auto !important; }
@@ -836,6 +847,7 @@ function TheTechSavvyTeacherAppRoot() {
         onClick={() => setHelpOpen(true)}
         aria-label="Show keyboard shortcuts (press ? )"
         title="Keyboard shortcuts (?)"
+        className="keyboard-shortcuts-trigger"
         style={{
           position: "fixed",
           bottom: 20,

@@ -95,6 +95,10 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --mobile-toolbar: oklch(0.47 0.25 314);
+  --mobile-toolbar-foreground: oklch(0.99 0 0);
+  --mobile-surface: oklch(0.985 0.004 286);
+  --mobile-shadow: 0 14px 34px color-mix(in oklab, var(--primary) 22%, transparent);
 }
 
 .dark {
@@ -130,6 +134,10 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --mobile-toolbar: oklch(0.4 0.21 314);
+  --mobile-toolbar-foreground: oklch(0.99 0 0);
+  --mobile-surface: oklch(0.18 0.02 286);
+  --mobile-shadow: 0 14px 34px color-mix(in oklab, var(--primary) 32%, transparent);
 }
 
 @layer base {
@@ -141,6 +149,28 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+@media (max-width: 768px) {
+  .user-menu { top: max(10px, env(safe-area-inset-top)); right: 12px; }
+  .account-menu-trigger {
+    width: 44px; height: 44px; padding: 0; border-radius: 14px;
+    border-color: color-mix(in oklab, var(--mobile-toolbar-foreground) 28%, transparent);
+    background: color-mix(in oklab, var(--mobile-toolbar-foreground) 15%, transparent);
+    color: var(--mobile-toolbar-foreground); box-shadow: var(--mobile-shadow); backdrop-filter: blur(10px);
+  }
+  .account-menu-icon { display: block; width: 20px; height: 20px; }
+  .account-menu-label, .account-menu-chevron, .desktop-account-action { display: none; }
+  .contact-trigger {
+    left: auto; right: 14px; bottom: max(14px, env(safe-area-inset-bottom));
+    width: 52px; height: 52px; padding: 0; justify-content: center; border-radius: 16px;
+    box-shadow: var(--mobile-shadow);
+  }
+  .contact-trigger-label {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .keyboard-shortcuts-trigger { display: none !important; }
 }
 
 /* ── Accessibility helpers ─────────────────────────────────────────── */
