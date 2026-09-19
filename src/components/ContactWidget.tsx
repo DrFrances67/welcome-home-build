@@ -64,13 +64,14 @@ export function ContactWidget() {
         ref={triggerRef}
         onClick={() => setOpen((o) => !o)}
         style={{ backgroundColor: "#CF27F5" }}
-        className="fixed bottom-4 left-4 z-[999] flex items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 hover:shadow-xl sm:bottom-6 sm:left-6 sm:px-5 sm:py-3 sm:pl-4"
+        aria-label="Contact support"
+        className="contact-trigger fixed bottom-4 left-4 z-[999] flex items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 hover:shadow-xl sm:bottom-6 sm:left-6 sm:px-5 sm:py-3 sm:pl-4"
       >
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
         </span>
-        Contact Us
+        <span className="contact-trigger-label">Contact Us</span>
       </button>
 
       <div
