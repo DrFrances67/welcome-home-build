@@ -87,8 +87,32 @@ function renderElement(element: WorksheetPreviewData["elements"][number]) {
     body += `<table><thead><tr>${headers.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${(Array.isArray(row) ? row : []).map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
   } else if (["successCriteria", "exitTicket"].includes(element.type)) {
     body += `<ul>${(element.items ?? []).map((item) => `<li><b></b>${escapeHtml(item)}</li>`).join("")}</ul>`;
-  } else if (element.type === "image" && element.url?.startsWith("data:image/")) {
-    body = `<img src="${element.url}" alt="${escapeHtml(element.caption ?? "Worksheet illustration")}"><small>${escapeHtml(element.caption)}</small>`;
+  } else if (element.type === "image") {
+    const url = element.url ?? "";
+    const safe = /^(data:image\/|https:\/\/|http:\/\/)/i.test(url);
+    body = safe
+      ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(element.caption ?? "Worksheet illustration")}">${element.caption ? `<small>${escapeHtml(element.caption)}</small>` : ""}`
+      : `<div class="image-missing">Image unavailable</div>${element.caption ? `<small>${escapeHtml(element.caption)}</small>` : ""}`;
+  } else if (element.type === "divider") {
+    body = `<div class="divider">✦</div>`;
+  } else if (element.type === "dokQuestions") {
+    const levels = Array.isArray(element.levels) ? element.levels : [];
+    body += levels
+      .map((level) => {
+        const lv = level as { level?: number; label?: string; items?: unknown };
+        const items = Array.isArray(lv.items) ? lv.items : [];
+        return `<div class="dok-level"><p class="dok-title">DOK ${escapeHtml(lv.level ?? "")}${lv.label ? ` — ${escapeHtml(lv.label)}` : ""}</p><ul>${items.map((item) => `<li><b></b>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
+      })
+      .join("");
+  } else if (element.type === "customShape") {
+    const shapes = Array.isArray(element.shapes) ? element.shapes : [];
+    body += `<div class="shapes">${shapes
+      .map((shape) => {
+        const sh = shape as { label?: string; caption?: string; lines?: number };
+        const shapeLines = Array.from({ length: Math.min(20, Math.max(0, sh.lines ?? 0)) }, () => "<i></i>").join("");
+        return `<div class="shape-box"><span>${escapeHtml(sh.label ?? "")}</span>${shapeLines ? `<div class="answer-lines">${shapeLines}</div>` : ""}${sh.caption ? `<small>${escapeHtml(sh.caption)}</small>` : ""}</div>`;
+      })
+      .join("")}</div>`;
   }
   const left = Math.min(88, Math.max(0, element.x ?? 0));
   const top = Math.min(760, Math.max(0, element.y ?? 0));
