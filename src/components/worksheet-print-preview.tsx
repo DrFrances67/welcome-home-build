@@ -87,8 +87,35 @@ function renderElement(element: WorksheetPreviewData["elements"][number]) {
     body += `<table><thead><tr>${headers.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${(Array.isArray(row) ? row : []).map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
   } else if (["successCriteria", "exitTicket"].includes(element.type)) {
     body += `<ul>${(element.items ?? []).map((item) => `<li><b></b>${escapeHtml(item)}</li>`).join("")}</ul>`;
-  } else if (element.type === "image" && element.url?.startsWith("data:image/")) {
-    body = `<img src="${element.url}" alt="${escapeHtml(element.caption ?? "Worksheet illustration")}"><small>${escapeHtml(element.caption)}</small>`;
+  } else if (element.type === "image") {
+    const url = element.url ?? "";
+    const safe = /^(data:image\/|https:\/\/|http:\/\/)/i.test(url);
+    body = safe
+      ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(element.caption ?? "Worksheet illustration")}">${element.caption ? `<small>${escapeHtml(element.caption)}</small>` : ""}`
+      : `<div class="image-missing">Image unavailable</div>${element.caption ? `<small>${escapeHtml(element.caption)}</small>` : ""}`;
+  } else if (element.type === "divider") {
+    body = `<div class="divider">✦</div>`;
+  } else if (element.type === "dokQuestions") {
+    const levels = Array.isArray(element.levels) ? element.levels : [];
+    body += levels
+      .map((level) => {
+        const lv = level as { level?: number; label?: string; items?: unknown };
+        const items = Array.isArray(lv.items) ? lv.items : [];
+        return `<div class="dok-level"><p class="dok-title">DOK ${escapeHtml(lv.level ?? "")}${lv.label ? ` — ${escapeHtml(lv.label)}` : ""}</p><ul>${items.map((item) => `<li><b></b>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
+      })
+      .join("");
+  } else if (element.type === "customShape") {
+    const shapes = Array.isArray(element.shapes) ? element.shapes : [];
+    body += `<div class="shapes">${shapes
+      .map((shape) => {
+        const sh = shape as { label?: string; caption?: string; lines?: number };
+        const shapeLines = Array.from(
+          { length: Math.min(20, Math.max(0, sh.lines ?? 0)) },
+          () => "<i></i>",
+        ).join("");
+        return `<div class="shape-box"><span>${escapeHtml(sh.label ?? "")}</span>${shapeLines ? `<div class="answer-lines">${shapeLines}</div>` : ""}${sh.caption ? `<small>${escapeHtml(sh.caption)}</small>` : ""}</div>`;
+      })
+      .join("")}</div>`;
   }
   const left = Math.min(88, Math.max(0, element.x ?? 0));
   const top = Math.min(760, Math.max(0, element.y ?? 0));
@@ -113,6 +140,7 @@ export function buildWorksheetPrintHtml(input: unknown) {
   }).join("");
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>
 *{box-sizing:border-box}html,body{margin:0;background:#dfe3e8;color:#111827;font-family:Arial,sans-serif}.page{position:relative;width:760px;height:970px;margin:20px auto;background:#fff;padding:52px 64px;overflow:hidden;box-shadow:0 3px 16px #0002;break-after:page}.page aside{position:absolute;right:18px;top:14px;padding:4px 11px;border:1px solid #8b0ab0;border-radius:999px;color:#8b0ab0;font-size:11px;font-weight:700}.page header{height:92px;border-bottom:2px solid #8b0ab033}.page h1{margin:0 0 18px;color:#8b0ab0;font-size:22px}.page h1 small{color:#6b7280;font-size:12px}.student-lines{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:8px;align-items:end;font-size:12px}.student-lines i,.answer-lines i{display:block;border-bottom:1.5px solid #9ca3af;height:20px}.page main{position:relative;height:770px}.element{position:absolute;padding:0 6px;font-size:14px;line-height:1.45}.element p{margin:0 0 8px}.element ul{list-style:none;padding:0;margin:6px 0}.element li{display:flex;gap:8px;margin:6px 0}.element li b{width:17px;height:17px;border:2px solid #8b0ab0;border-radius:50%;flex:none}.element strong{float:right;color:#8b0ab0;font-size:11px}.word-bank{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#faf5ff}.word-bank span{border:1px solid #8b0ab0;border-radius:999px;padding:3px 9px}.element img{display:block;max-width:100%;max-height:220px;margin:auto}.element small{display:block;text-align:center;color:#6b7280}.answer-lines i{height:26px}.inline-blank{display:inline-block;width:90px;border-bottom:2px solid #8b0ab0}.matching{display:grid;grid-template-columns:1fr auto 1fr;gap:8px}.matching span{border:1px solid #8b0ab0;padding:6px;text-align:center}.element table{width:100%;border-collapse:collapse}.element th,.element td{border:1px solid #8b0ab0;padding:6px}.element th{background:#8b0ab0;color:white}
+.divider{text-align:center;color:#8b0ab0;font-size:16px;margin:8px 0}.image-missing{padding:18px;text-align:center;border:1px dashed #9ca3af;color:#6b7280;font-size:12px}.dok-level{margin:8px 0;border-left:4px solid #8b0ab0;padding-left:10px}.dok-title{font-weight:700;color:#8b0ab0;font-size:12px;margin:0 0 4px}.shapes{display:flex;flex-wrap:wrap;gap:10px}.shape-box{flex:1 1 45%;min-height:60px;border:2px solid #8b0ab0;border-radius:10px;padding:8px;text-align:center}
 @media print{html,body{background:#fff}.page{margin:0 auto;box-shadow:none}@page{size:letter portrait;margin:.4in}}
 </style></head><body>${pages}</body></html>`;
 }
