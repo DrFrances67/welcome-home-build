@@ -109,7 +109,10 @@ function renderElement(element: WorksheetPreviewData["elements"][number]) {
     body += `<div class="shapes">${shapes
       .map((shape) => {
         const sh = shape as { label?: string; caption?: string; lines?: number };
-        const shapeLines = Array.from({ length: Math.min(20, Math.max(0, sh.lines ?? 0)) }, () => "<i></i>").join("");
+        const shapeLines = Array.from(
+          { length: Math.min(20, Math.max(0, sh.lines ?? 0)) },
+          () => "<i></i>",
+        ).join("");
         return `<div class="shape-box"><span>${escapeHtml(sh.label ?? "")}</span>${shapeLines ? `<div class="answer-lines">${shapeLines}</div>` : ""}${sh.caption ? `<small>${escapeHtml(sh.caption)}</small>` : ""}</div>`;
       })
       .join("")}</div>`;
