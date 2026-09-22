@@ -113,10 +113,40 @@
   },
   "overrides": {
     "seroval": "^1.6.0",
-    "seroval-plugins": "^1.6.0"
+    "seroval-plugins": "^1.6.0",
+    "ws": "^8.21.3",
+    "sharp": "^0.35.4",
+    "undici": "^7.29.0",
+    "hono": "^4.13.8",
+    "fast-uri": "^3.1.8",
+    "qs": "^6.16.0",
+    "ip-address": "^10.7.2",
+    "js-yaml": "^4.3.2",
+    "baseline-browser-mapping": "^2.11.25",
+    "browserslist": "^4.29.0",
+    "@xmldom/xmldom": "^0.9.12",
+    "image-size": "^2.0.4",
+    "brace-expansion": "^5.0.12",
+    "socket.io-parser": "^4.2.7",
+    "@hono/node-server": "^1.19.17"
   },
   "resolutions": {
     "seroval": "^1.6.0",
-    "seroval-plugins": "^1.6.0"
+    "seroval-plugins": "^1.6.0",
+    "ws": "^8.21.3",
+    "sharp": "^0.35.4",
+    "undici": "^7.29.0",
+    "hono": "^4.13.8",
+    "fast-uri": "^3.1.8",
+    "qs": "^6.16.0",
+    "ip-address": "^10.7.2",
+    "js-yaml": "^4.3.2",
+    "baseline-browser-mapping": "^2.11.25",
+    "browserslist": "^4.29.0",
+    "@xmldom/xmldom": "^0.9.12",
+    "image-size": "^2.0.4",
+    "brace-expansion": "^5.0.12",
+    "socket.io-parser": "^4.2.7",
+    "@hono/node-server": "^1.19.17"
   }
 }
