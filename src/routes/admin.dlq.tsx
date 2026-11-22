@@ -1,193 +1,181 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { RefreshCw, Mail, X, Undo2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { getEmailReview } from "@/lib/admin-dlq.functions";
+import { resendVerificationEmails } from "@/lib/admin-users.functions";
 import {
-  getDlqOverview,
-  getDlqMessages,
-  actOnDlqMessage,
-  type DlqQueueSummary,
-  type DlqMessage,
-} from "@/lib/admin-dlq.functions";
-
-const QUEUES = ["auth_emails_dlq", "transactional_emails_dlq"] as const;
-type QueueName = (typeof QUEUES)[number];
-
-const QUEUE_LABELS: Record<QueueName, string> = {
-  auth_emails_dlq: "Sign-in & verification emails",
-  transactional_emails_dlq: "Other app emails",
-};
+  canRequestVerification,
+  visibleEmailReviews,
+  type EmailReviewRow,
+} from "@/lib/admin-email-review";
 
 export const Route = createFileRoute("/admin/dlq")({
   head: () => ({
     meta: [
-      { title: "Undelivered Emails — Admin" },
+      { title: "Email Review — Tech Savvy Teacher Admin" },
       {
         name: "description",
-        content: "Internal admin view of emails that failed delivery and are waiting for review.",
+        content:
+          "Review unsuccessful email delivery and request fresh account verification emails.",
       },
-      { property: "og:title", content: "Undelivered Emails — Admin" },
+      { property: "og:title", content: "Email Review — Tech Savvy Teacher Admin" },
       {
         property: "og:description",
-        content: "Internal admin view of emails that failed delivery and are waiting for review.",
+        content: "Private email delivery review for Tech Savvy Teacher administrators.",
       },
-      { property: "og:url", content: "https://techsavvyteacher.app/admin/dlq" },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-    links: [{ rel: "canonical", href: "https://techsavvyteacher.app/admin/dlq" }],
   }),
-  component: DlqAdminPage,
+  component: EmailReviewPage,
 });
 
-function DlqAdminPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
-  const overviewFn = useServerFn(getDlqOverview);
-  const messagesFn = useServerFn(getDlqMessages);
-  const actFn = useServerFn(actOnDlqMessage);
-
-  const [overview, setOverview] = useState<DlqQueueSummary[]>([]);
-  const [queue, setQueue] = useState<QueueName>("auth_emails_dlq");
-  const [messages, setMessages] = useState<DlqMessage[]>([]);
+function EmailReviewPage() {
+  const { isAdmin, loading: authLoading, user } = useAuth();
+  const review = useServerFn(getEmailReview);
+  const resend = useServerFn(resendVerificationEmails);
+  const [rows, setRows] = useState<EmailReviewRow[]>([]);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDismissed(new Set());
+    setRows([]);
+    setNotice(null);
+  }, [user?.id]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [o, m] = await Promise.all([
-        overviewFn({ data: undefined }),
-        messagesFn({ data: { queue, limit: 100 } }),
-      ]);
-      setOverview(o);
-      setMessages(m);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not load the queue.");
+      setRows(await review());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load email history.");
     } finally {
       setLoading(false);
     }
-  }, [overviewFn, messagesFn, queue]);
+  }, [review]);
 
   useEffect(() => {
-    if (!isAdmin) return;
-    void refresh();
+    if (isAdmin) void refresh();
   }, [isAdmin, refresh]);
 
-  if (authLoading) {
-    return <div className="p-8 text-muted-foreground">Loading…</div>;
-  }
-  if (!isAdmin) {
-    return <Navigate to="/" />;
-  }
-
-  const act = async (msgId: number, action: "requeue" | "discard") => {
-    setBusyId(msgId);
+  async function requestVerification(row: EmailReviewRow) {
+    if (!canRequestVerification(row) || busyId) return;
+    setBusyId(row.id);
+    setError(null);
     setNotice(null);
     try {
-      await actFn({ data: { queue, msgId, action } });
-      setNotice(action === "requeue" ? "Message sent for another try." : "Message removed.");
-      await refresh();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "That action did not work.");
+      const results = await resend({ data: { emails: [row.recipient_email] } });
+      const result = results[0];
+      if (!result?.ok) throw new Error(result?.detail ?? "Verification request failed.");
+      setNotice("A fresh verification email was requested. Delivery is not yet confirmed.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not request verification.");
     } finally {
       setBusyId(null);
     }
-  };
+  }
 
+  if (authLoading) return <div className="p-8 text-muted-foreground">Loading…</div>;
+  if (!isAdmin) return <Navigate to="/" />;
+
+  const visibleRows = visibleEmailReviews(rows, dismissed);
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <nav className="mb-4 text-sm">
+      <nav className="mb-4 flex flex-wrap gap-4 text-sm">
         <Link to="/admin" className="text-primary hover:underline">
           ← Back to admin
         </Link>
+        <Link to="/admin/users" className="text-primary hover:underline">
+          Account verification
+        </Link>
       </nav>
-      <h1 className="text-2xl font-bold text-foreground">Undelivered emails</h1>
+      <h1 className="text-2xl font-bold text-foreground">Email review</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Emails that failed repeatedly are parked here. Try them again or remove them.
+        Recent unsuccessful deliveries · {visibleRows.length} entries
       </p>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        {QUEUES.map((q) => {
-          const row = overview.find((o) => o.queue_name === q);
-          const active = q === queue;
-          return (
-            <button
-              key={q}
-              type="button"
-              onClick={() => setQueue(q)}
-              aria-pressed={active}
-              className={`rounded-lg border p-4 text-left transition ${
-                active ? "border-primary bg-muted" : "border-border bg-background hover:bg-muted/50"
-              }`}
-            >
-              <div className="text-sm font-semibold text-foreground">{QUEUE_LABELS[q]}</div>
-              <div className="mt-1 text-2xl font-bold text-foreground">
-                {row?.message_count ?? 0}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {row?.oldest_at
-                  ? `Oldest: ${new Date(row.oldest_at).toLocaleString()}`
-                  : "None waiting"}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-5 flex items-center gap-3">
-        <button
-          type="button"
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          className="min-h-11"
+          disabled={loading}
           onClick={() => void refresh()}
-          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
         >
+          <RefreshCw />
           Refresh
-        </button>
-        {loading && <span className="text-sm text-muted-foreground">Loading…</span>}
-        {notice && <span className="text-sm text-primary">{notice}</span>}
-        {error && (
-          <span role="alert" className="text-sm text-destructive">
-            {error}
-          </span>
+        </Button>
+        {dismissed.size > 0 && (
+          <Button variant="ghost" className="min-h-11" onClick={() => setDismissed(new Set())}>
+            <Undo2 />
+            Show dismissed ({dismissed.size})
+          </Button>
         )}
+        {loading && <span className="text-sm text-muted-foreground">Loading…</span>}
       </div>
-
+      {notice && (
+        <p role="status" className="mt-3 text-sm text-primary">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
       <ul className="mt-4 space-y-3">
-        {!loading && messages.length === 0 && (
-          <li className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
-            Nothing waiting in this queue.
+        {!loading && !error && visibleRows.length === 0 && (
+          <li className="p-4 text-sm text-muted-foreground">
+            No unsuccessful deliveries in the recent history.
           </li>
         )}
-        {messages.map((m) => (
-          <li key={m.msg_id} className="rounded-lg border border-border p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm text-muted-foreground">
-                #{m.msg_id} · {new Date(m.enqueued_at).toLocaleString()} · tries {m.read_ct}
+        {visibleRows.map((row) => (
+          <li key={row.id} className="rounded-lg border border-border p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+                <p className="break-all font-medium text-foreground">{row.recipient_email}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {row.template_name} · {row.status} · {new Date(row.created_at).toLocaleString()}
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busyId === m.msg_id}
-                  onClick={() => void act(m.msg_id, "requeue")}
-                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              <div className="flex flex-wrap gap-2">
+                {canRequestVerification(row) && (
+                  <Button
+                    className="min-h-11"
+                    disabled={busyId !== null}
+                    onClick={() => void requestVerification(row)}
+                  >
+                    <Mail />
+                    {busyId === row.id ? "Requesting…" : "Request verification"}
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="min-h-11 min-w-11"
+                  title="Dismiss from this view; keep delivery history"
+                  aria-label={`Dismiss ${row.recipient_email} from this view`}
+                  onClick={() => {
+                    setDismissed((current) => new Set([...current, row.id]));
+                    setNotice(
+                      "Entry dismissed from this view only. Delivery and history are unchanged.",
+                    );
+                  }}
                 >
-                  Try again
-                </button>
-                <button
-                  type="button"
-                  disabled={busyId === m.msg_id}
-                  onClick={() => void act(m.msg_id, "discard")}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  Remove
-                </button>
+                  <X />
+                </Button>
               </div>
             </div>
-            <pre className="mt-2 max-h-40 overflow-auto rounded bg-muted p-2 text-xs text-foreground">
-              {m.message}
-            </pre>
+            {row.error_message && (
+              <p className="mt-2 break-words text-sm text-muted-foreground">{row.error_message}</p>
+            )}
           </li>
         ))}
       </ul>

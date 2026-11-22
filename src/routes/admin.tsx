@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { AdminDashboard } from "@/components/AdminDashboard";
 
 export const Route = createFileRoute("/admin")({
@@ -17,9 +17,20 @@ export const Route = createFileRoute("/admin")({
       },
       { property: "og:url", content: "https://techsavvyteacher.app/admin" },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
     links: [{ rel: "canonical", href: "https://techsavvyteacher.app/admin" }],
   }),
-  component: AdminDashboard,
+  component: AdminLayout,
 });
+
+function AdminLayout() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return (
+    <>
+      {pathname.replace(/\/$/, "") === "/admin" && <AdminDashboard />}
+      <Outlet />
+    </>
+  );
+}
