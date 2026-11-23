@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { AdminEmailUpdateStatus } from "@/components/admin-email-update-status";
 import { getEmailReview } from "@/lib/admin-dlq.functions";
 import { resendVerificationEmails } from "@/lib/admin-users.functions";
+import { getEmailActionAudit, recordEmailDismissal } from "@/lib/admin-email-audit.functions";
+import type { EmailAuditRow } from "@/lib/admin-email-audit.impl";
 import {
   canRequestVerification,
   visibleEmailReviews,
@@ -39,6 +41,10 @@ function EmailReviewPage() {
   const { isAdmin, loading: authLoading, user } = useAuth();
   const review = useServerFn(getEmailReview);
   const resend = useServerFn(resendVerificationEmails);
+  const loadAudit = useServerFn(getEmailActionAudit);
+  const recordDismissal = useServerFn(recordEmailDismissal);
+  const [auditRows, setAuditRows] = useState<EmailAuditRow[]>([]);
+  const [auditError, setAuditError] = useState<string | null>(null);
   const [rows, setRows] = useState<EmailReviewRow[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -50,11 +56,23 @@ function EmailReviewPage() {
     setDismissed(new Set());
     setRows([]);
     setNotice(null);
+    setAuditRows([]);
+    setAuditError(null);
   }, [user?.id]);
+
+  const refreshAudit = useCallback(async () => {
+    try {
+      setAuditRows(await loadAudit());
+      setAuditError(null);
+    } catch {
+      setAuditError("Could not load the admin action log. Refresh to try again.");
+    }
+  }, [loadAudit]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
+    void refreshAudit();
     try {
       setRows(await review());
     } catch (e) {
@@ -62,7 +80,7 @@ function EmailReviewPage() {
     } finally {
       setLoading(false);
     }
-  }, [review]);
+  }, [review, refreshAudit]);
 
   useEffect(() => {
     if (isAdmin) void refresh();
@@ -80,6 +98,26 @@ function EmailReviewPage() {
       setNotice("A fresh verification email was requested. Delivery is not yet confirmed.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not request verification.");
+    } finally {
+      setBusyId(null);
+      void refreshAudit();
+    }
+  }
+
+  async function dismissEntry(row: EmailReviewRow) {
+    if (busyId) return;
+    setBusyId(row.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await recordDismissal({ data: { emailLogId: row.id } });
+      setDismissed((current) => new Set([...current, row.id]));
+      setNotice("Entry dismissed from this view only. Delivery and history are unchanged.");
+      void refreshAudit();
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not record dismissal; entry remains visible.",
+      );
     } finally {
       setBusyId(null);
     }
@@ -164,12 +202,8 @@ function EmailReviewPage() {
                   className="min-h-11 min-w-11"
                   title="Dismiss from this view; keep delivery history"
                   aria-label={`Dismiss ${row.recipient_email} from this view`}
-                  onClick={() => {
-                    setDismissed((current) => new Set([...current, row.id]));
-                    setNotice(
-                      "Entry dismissed from this view only. Delivery and history are unchanged.",
-                    );
-                  }}
+                  disabled={busyId !== null}
+                  onClick={() => void dismissEntry(row)}
                 >
                   <X />
                 </Button>
@@ -181,6 +215,48 @@ function EmailReviewPage() {
           </li>
         ))}
       </ul>
+      <section aria-label="Admin email action log" className="mt-8 border-t border-border pt-5">
+        <h2 className="text-lg font-semibold">Admin email action log</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Latest 100 actions, newest first. Verification requests are attempts, not delivery
+          confirmations. Dismissals affect only the current view. No email contents or recipient
+          addresses are stored in this log. Earlier actions were not backfilled.
+        </p>
+        {auditError && (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {auditError}
+          </p>
+        )}
+        <ul className="mt-3 divide-y divide-border">
+          {!auditError && auditRows.length === 0 && (
+            <li className="py-3 text-sm text-muted-foreground">
+              No admin email actions recorded yet.
+            </li>
+          )}
+          {auditRows.map((entry) => (
+            <li key={entry.id} className="py-3 text-sm">
+              <div className="flex flex-wrap justify-between gap-2">
+                <span className="font-medium">
+                  {entry.action === "entry_dismissed"
+                    ? "Entry dismissed from view"
+                    : "Verification retry requested"}
+                </span>
+                <time dateTime={entry.created_at}>
+                  {new Date(entry.created_at).toLocaleString()}
+                </time>
+              </div>
+              <p className="mt-1 break-all text-muted-foreground">
+                Admin account: {entry.actor_user_id}
+              </p>
+              {entry.email_log_id && (
+                <p className="mt-1 break-all text-muted-foreground">
+                  Delivery entry: {entry.email_log_id}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

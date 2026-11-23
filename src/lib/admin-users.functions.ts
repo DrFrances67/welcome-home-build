@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { appendEmailAudit, assertEmailAuditAdmin } from "@/lib/admin-email-audit.impl";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export interface AuthUserRow {
   id: string;
@@ -24,18 +27,11 @@ export interface ResendResult {
 }
 
 /**
- * Verify the authenticated caller is an admin using the service-role client.
- * Throws a 403 Response when the caller lacks the admin role.
+ * Verify the role as the caller before loading the privileged auth client.
  */
-async function assertAdmin(userId: string) {
+async function assertAdmin(client: SupabaseClient<Database>, userId: string) {
+  await assertEmailAuditAdmin(client, userId);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: isAdmin, error } = await supabaseAdmin.rpc("has_role", {
-    _user_id: userId,
-    _role: "admin",
-  });
-  if (error || !isAdmin) {
-    throw new Response("Forbidden", { status: 403 });
-  }
   return supabaseAdmin;
 }
 
@@ -58,7 +54,7 @@ export const searchAuthUsers = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }): Promise<SearchUsersResult> => {
-    const supabaseAdmin = await assertAdmin(context.userId);
+    const supabaseAdmin = await assertAdmin(context.supabase, context.userId);
     const needle = data.query.toLowerCase();
 
     const matches: AuthUserRow[] = [];
@@ -120,10 +116,11 @@ export const resendVerificationEmails = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }): Promise<ResendResult[]> => {
-    const supabaseAdmin = await assertAdmin(context.userId);
+    const supabaseAdmin = await assertAdmin(context.supabase, context.userId);
 
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const SUPABASE_URL = process.env["SUPABASE_URL"];
+    const PUBLISHABLE_KEY =
+      process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["SUPABASE_ANON_KEY"];
     if (!SUPABASE_URL || !PUBLISHABLE_KEY) {
       throw new Response("Email resend is not configured", { status: 500 });
     }
@@ -133,6 +130,10 @@ export const resendVerificationEmails = createServerFn({ method: "POST" })
 
     for (let i = 0; i < data.emails.length; i++) {
       const email = data.emails[i];
+      if (!email) continue;
+      // Record the request before the send attempt; not a delivery confirmation.
+      // Stop rather than performing an unrecorded admin action if logging fails.
+      await appendEmailAudit(context.supabase, context.userId, "verification_retry_requested");
       let result: ResendResult;
       try {
         const res = await fetch(`${SUPABASE_URL}/auth/v1/resend`, {

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_email_action_audit: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          email_log_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          email_log_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          email_log_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       ai_usage_log: {
         Row: {
           cost_usd: number
