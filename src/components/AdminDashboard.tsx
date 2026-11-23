@@ -15,6 +15,7 @@ import {
   type AiUsageRow,
 } from "@/lib/admin-data.functions";
 import { isBillableAction } from "@/lib/billable-actions";
+import { AdminEmailUpdateStatus } from "@/components/admin-email-update-status";
 
 export function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -170,6 +171,8 @@ export function AdminDashboard() {
           </Link>
         </div>
       </div>
+
+      <AdminEmailUpdateStatus />
 
       {loading ? (
         <p>Loading data…</p>

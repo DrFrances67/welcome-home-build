@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { RefreshCw, Mail, X, Undo2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { AdminEmailUpdateStatus } from "@/components/admin-email-update-status";
 import { getEmailReview } from "@/lib/admin-dlq.functions";
 import { resendVerificationEmails } from "@/lib/admin-users.functions";
 import {
@@ -102,6 +103,7 @@ function EmailReviewPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         Recent unsuccessful deliveries · {visibleRows.length} entries
       </p>
+      <AdminEmailUpdateStatus />
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button
           variant="outline"
