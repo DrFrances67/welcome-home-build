@@ -1,5 +1,8 @@
 # Email update
 
+- [x] Add a step-by-step safe admin guide for the protected-history restriction without edits or deletions to existing records.
+- [x] Add an admin-only, append-only trail of admin-confirmed blocker appearances/clearances; distinguish observations from live workflow status (18 focused tests; actual restriction recorded, repeat reports deduplicated, reload and mobile checks passed).
+
 - [x] Add and verify an admin-only action/timestamp audit log for verification requests and view dismissals, with no email contents or history edits (live dismissal/restore/reload and own-account verification request checked).
 
 - [x] Replace queue-specific admin retry and deletion with fresh verification requests and reversible view-only dismissal.

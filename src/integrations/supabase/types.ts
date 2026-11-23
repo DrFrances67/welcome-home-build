@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_email_history_observations: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          id: string
+          state: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          state: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          state?: string
+        }
+        Relationships: []
+      }
       ai_usage_log: {
         Row: {
           cost_usd: number
@@ -619,6 +640,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_email_history_observation: {
+        Args: { _state: string }
+        Returns: boolean
       }
     }
     Enums: {
